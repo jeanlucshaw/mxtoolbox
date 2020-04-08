@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>mxtoolbox.process package &#8212; mxtoolbox April 2020 documentation</title>
+    <title>process &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -12,8 +12,11 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="read" href="mxtoolbox.read.html" />
+    <link rel="prev" title="plot" href="mxtoolbox.plot.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -30,11 +33,8 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="mxtoolbox-process-package">
-<h1>mxtoolbox.process package<a class="headerlink" href="#mxtoolbox-process-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
+  <div class="section" id="process">
+<h1>process<a class="headerlink" href="#process" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-mxtoolbox.process.analyses">
 <span id="mxtoolbox-process-analyses-module"></span><h2>mxtoolbox.process.analyses module<a class="headerlink" href="#module-mxtoolbox.process.analyses" title="Permalink to this headline">¶</a></h2>
 <p>Complex analyses transforming data into other data.</p>
@@ -69,7 +69,7 @@ data scatter and return the basis change matrix.</p>
 <dt id="mxtoolbox.process.analyses.gaussian_smoothing">
 <code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">gaussian_smoothing</code><span class="sig-paren">(</span><em class="sig-param">xs</em>, <em class="sig-param">ys</em>, <em class="sig-param">zs</em>, <em class="sig-param">xg</em>, <em class="sig-param">yg</em>, <em class="sig-param">XR=1</em>, <em class="sig-param">YR=1</em>, <em class="sig-param">ITERS=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.gaussian_smoothing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gaussian smoothing filter of scattered data onto
-gridded coordinates. Simplified version of the 
+gridded coordinates. Simplified version of the
 Barnes smoothing algorithm.</p>
 </dd></dl>
 
@@ -135,27 +135,62 @@ conversions.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.convert.anomaly2rgb">
 <code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">anomaly2rgb</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.anomaly2rgb" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an RGB triplet according to standardized anomaly value
-passed as argument. Colors ar defined in intervals of 0.5 std and
+<dd><p>Map standardized anomaly to discretized red to blue color scheme.</p>
+<p>Returns an RGB triplet according to standardized anomaly value
+passed as argument. Colors are defined in intervals of 0.5 std and
 saturate at -2 and 2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>float</em>) – Standardized anomaly value.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>RGB triplet.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.convert.binc2edge">
 <code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">binc2edge</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.binc2edge" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns edges from bin centers. z can be of type:</p>
-<p>1- numpy.array
-2- pandas.core.indexes.datetimes.DatetimeIndex
-3- pandas.core.series.Series</p>
+<dd><p>Get bin edges from bin centers.</p>
+<p>Bin centers can be irregularly spaced. Edges are halfway between
+one point and the next.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>numpy.array, pandas.DatetimeIndex, pandas.Series</em>) – Bin centers.</p></li>
+<li><p><strong>Returns</strong></p></li>
+<li><p><strong>numpy.array, pandas.DatetimeIndex, pandas.Series</strong> – Bin edges.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.convert.hd2uv">
 <code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">hd2uv</code><span class="sig-paren">(</span><em class="sig-param">heading</em>, <em class="sig-param">magnitude</em>, <em class="sig-param">rotate_by=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.hd2uv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return u, v vector components from heading and magnitude. Heading is assumed
-to start from North at 0 and rotate clockwise (90 at East). The components can
-be returned in a frame of reference rotated clockwise by setting the variable
-rotate_by in degrees.</p>
+<dd><p>Return u, v vector components from heading and magnitude.</p>
+<p><cite>heading</cite> is assumed to start from North at 0 and rotate clockwise (90 at
+East). The components can be returned in a frame of reference rotated
+clockwise by setting <cite>rotate_by</cite> in degrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>heading</strong> (<em>array_like</em>) – Compass direction (degrees).</p></li>
+<li><p><strong>magnitude</strong> (<em>array_like</em>) – Vector norm.</p></li>
+<li><p><strong>rotate_by</strong> (<em>float</em>) – Theta direction of returned <cite>u</cite> component.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>u, v</strong> – Vector components in chosen frame of reference.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -201,12 +236,26 @@ columns as calculated by the Gibbs Seawater package gsw.</p>
 <p>Mathematical, geometrical and simple matrix operations.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.math.broadcastable">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">broadcastable</code><span class="sig-paren">(</span><em class="sig-param">a: &lt;numpy.ndarray&gt;</em>, <em class="sig-param">b: &lt;numpy.ndarray&gt;</em><span class="sig-paren">)</span> &#x2192; list or None<a class="headerlink" href="#mxtoolbox.process.math.broadcastable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return shape in which b could be broadcasted with a. If arrays
-can not be broadcast None is returned, therefore this function
-can also serve as a boolean test answering:</p>
-<p>Can b be broadcast to a through appending through prepending and
-appending empty dimensions?</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">broadcastable</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.broadcastable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return shape in which b could be broadcasted with a.</p>
+<p>If arrays can not be broadcast None is returned, therefore this
+function can also serve as a boolean test answering if b be broadcast
+to a through appending through prepending and appending empty dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>ndarray</em>) – Array whose shape will not change.</p></li>
+<li><p><strong>b</strong> (<em>ndarray</em>) – Array to broadcast to <cite>a</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>If <cite>tuple</cite>, numpy.reshape(b, <cite>tuple</cite>) broadcasts to <cite>a</cite>, otherwise
+arrays can not be broadcast.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple or None</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -219,493 +268,422 @@ appending empty dimensions?</p>
 <p>Returns to ‘d’ the distance between angles a1 and a2
 expected to be radians by default, or degrees if units
 is specified to ‘deg’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a1, a2</strong> (<em>float</em>) – Input angle.</p></li>
+<li><p><strong>units</strong> (<em>str</em>) – Units of input angles (‘deg’, ‘rad’)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Angular distance between <cite>a1</cite> and <cite>a2</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math.distance_along_bearing">
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">distance_along_bearing</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">bearing</em>, <em class="sig-param">x0=0</em>, <em class="sig-param">y0=0</em>, <em class="sig-param">dfunc=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.distance_along_bearing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return distance from (<cite>x0</cite>, <cite>y0</cite>) in an arbitrary direction.</p>
+<p>Project coordinates defined by (<cite>xpts</cite>, <cite>ypts</cite>) to the nearest point
+on a line passing through (<cite>x0</cite>, <cite>y0</cite>) and who’s angle to the x axis
+is given by <cite>bearing</cite>. Then use <cite>dfunc</cite> to calculate distance of them
+projected points to the origin. The distance function is assumed to
+be of the form,</p>
+<blockquote>
+<div><p>distance = dfunc(xpts, x0, ypts, y0)</p>
+</div></blockquote>
+<p>and defautls to cartesian distance,</p>
+<blockquote>
+<div><p>distance = np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)</p>
+</div></blockquote>
+<p>Points where ypts &lt; y0 are returned as negative along the new dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xpts, ypts</strong> (<em>array_like</em>) – Input coordinates.</p></li>
+<li><p><strong>bearing</strong> (<em>float</em>) – Direction along which to measure distance (degrees).</p></li>
+<li><p><strong>x0, y0</strong> (<em>float</em>) – Origin coordinates.</p></li>
+<li><p><strong>dfunc</strong> (<em>Object</em>) – Distance calculating function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Distance along new dimension.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.haversine">
 <code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">haversine</code><span class="sig-paren">(</span><em class="sig-param">lon1</em>, <em class="sig-param">lat1</em>, <em class="sig-param">lon2</em>, <em class="sig-param">lat2</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.haversine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the great circle distance between two points
-on the earth (specified in decimal degrees). Return value
-in meters.</p>
+<dd><p>Calculate the great circle distance between two points.</p>
+<p>Used to calculate the distance between points defined in decimal
+degrees. Uses the equation,</p>
+<div class="math notranslate nohighlight">
+\[h = 2R\sin^{-1}\left(\left[
+\sin^{-1}\left(\frac{lat_2-lat_1}{2}\right)^2 +
+\cos(lat_1)\cos(lat_2)\left(\frac{lon_2-lon_1}{2}\right)^2
+\right]^{1/2}\right)\]</div>
+<p>where the earth radius <cite>R</cite> is set to 6371 km.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon1, lat1</strong> (<em>float</em>) – Compare to this coordinate (decimal degrees).</p></li>
+<li><p><strong>lon2, lat2</strong> (<em>array_like</em>) – Get distance from (<cite>lon1</cite>, <cite>lat1</cite>) for these coordinates (decimal degrees).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Distance between coordinates2 and coordinate1 (meters).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.increase_resolution">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">increase_resolution</code><span class="sig-paren">(</span><em class="sig-param">ptsx</em>, <em class="sig-param">ptsy</em>, <em class="sig-param">N</em>, <em class="sig-param">offset_idx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.increase_resolution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a higher resolution track described in 2D by ptsx and
-ptsy, 2 numpy 1D arrays, with N linearly equidistant points
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">increase_resolution</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">N</em>, <em class="sig-param">offset_idx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.increase_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get high resolution track from low resolution track.</p>
+<p>Create a higher resolution track described in 2D by xpts and
+ypts, 2 numpy 1D arrays, with N linearly equidistant points
 added in between.</p>
-<p>ptsx and ptsy are assumed to be longitudes and latitudes and
+<p>xpts and ypts are assumed to be longitudes and latitudes and
 along track distance from the first point is returned in
-km. Example:</p>
-<p>trk_lon, trk_lat, trk_dist = points_to_hrtrack(ptsx, ptsy, 100)</p>
+km.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xpts, ypts</strong> (<em>array_like</em>) – Coordinates of low resolution track.</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of points to have between input coordinates.</p></li>
+<li><p><strong>offset_idx</strong> (<em>int</em>) – Index of the LR track used as origin in distance calculation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>array_like</em> – HR track horizontal coordinate.</p></li>
+<li><p><em>array_like</em> – HR track vertical coordinate.</p></li>
+<li><p><em>array_like</em> – HR track distance from origin.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.in_polygon">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">in_polygon</code><span class="sig-paren">(</span><em class="sig-param">x_pts</em>, <em class="sig-param">y_pts</em>, <em class="sig-param">x_poly</em>, <em class="sig-param">y_poly</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.in_polygon" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a boolean array identifying points of x_pts, y_pts inside
-the polygon defined by x_poly,y_poly.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">in_polygon</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">x_poly</em>, <em class="sig-param">y_poly</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.in_polygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find points inside an arbitraty polygon.</p>
+<p>Given coordinates of 2D space (<cite>xpts</cite>, <cite>ypts</cite>), returns a boolean array
+of the same size as <cite>xpts</cite> and <cite>ypts</cite> where True values indicate
+coordinates inside the polygon defined by (<cite>x_poly</cite>, <cite>y_poly</cite>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xpts, ypts</strong> (<em>array_like</em>) – Input coordinates.</p></li>
+<li><p><strong>x_poly, y_poly</strong> (<em>array_like</em>) – Polygon coordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True for points inside polygon.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>boolean array</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.get_contour_xy">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">get_contour_xy</code><span class="sig-paren">(</span><em class="sig-param">cs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.get_contour_xy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Let cs be the handle to a contour with one line. This returns
-its x,y values.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">get_contour_xy</code><span class="sig-paren">(</span><em class="sig-param">contour</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.get_contour_xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return (x, y) coordinates of contour line.</p>
+<p>Input is assumed to be a QuadContourSet object
+containing only one contour line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>contour</strong> (<em>QuadContourSet</em>) – Object returned by matplotlib.pyplot.contour</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Coordinates (x, y) as array of shape (m, 2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math.project_to_line">
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">project_to_line</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">c</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.project_to_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find point on line nearest to coordinate.</p>
+<p>Given the points (<cite>xpts</cite>, <cite>ypts</cite>) and line <cite>d</cite> defined by,</p>
+<div class="math notranslate nohighlight">
+\[ax + by + c = 0\]</div>
+<p>coordinates on line <cite>d</cite> nearest to each point are given by,</p>
+<div class="math notranslate nohighlight">
+\[x = \frac{b(bx_{pts} - ay_{pts}) - ac}{a^2 + b^2}\]</div>
+<p>and,</p>
+<div class="math notranslate nohighlight">
+\[y = \frac{a(-bx_{pts} - ay_{pts}) - bc}{a^2 + b^2}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xpts, ypts</strong> (<em>array_like</em>) – Coordinates to project on line.</p></li>
+<li><p><strong>a, b, c</strong> (<em>float</em>) – Factors defining line <cite>d</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x, y</strong> – Points on line <cite>d</cite> nearest to each input coordinate.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.proximity_group">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">proximity_group</code><span class="sig-paren">(</span><em class="sig-param">A</em>, <em class="sig-param">D</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.proximity_group" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function proxGroup usage:   G,N,I   =   proxGroup(A,D)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Proximity grouping of values in an irregular but
-monotonically increasing array ‘A’. Adjacent values
-are group if the distance between them is less than
-or equal to ‘D’. Returned values are the group ID
-of each element ‘G’, number of elements per group
-‘N’, and index values by group ‘I’.</p>
-</div></blockquote>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">proximity_group</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">distance</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.proximity_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group consecutive array values by proximity.</p>
+<p>Proximity grouping of values in an irregular but
+monotonously increasing <cite>array</cite>. Adjacent values
+are grouped if the distance between them is less than
+or equal to <cite>distance</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> (<em>array_like</em>) – Monotonously increasing values.</p></li>
+<li><p><strong>distance</strong> (<em>same type as array</em>) – Maximum distance to neighboor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>gid</strong> (<em>array_like</em>) – Group ID of each value in growing integers.</p></li>
+<li><p><strong>gn</strong> (<em>array_like</em>) – Number of values per group.</p></li>
+<li><p><strong>gindex</strong> (<em>list</em>) – Index values in <cite>array</cite> divided by group.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.polygon_area">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">vecx</em>, <em class="sig-param">vecy</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.polygon_area" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use Greene’s theorem to compute polygon area. Input vectors
-can be longitudes and latitudes if bm is specified. Otherwise
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.polygon_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute polygon area.</p>
+<p>Use Greene’s theorem to compute polygon area. Input vectors
+can be longitudes and latitudes if lonlat is specified. Otherwise
 they are assumed coordinates of linear space.</p>
-<p>vecx:    array like, horizontal vector in linear space
-vecy:    array like, vertical vector in linear space
-lonlat:    bool, if input is lonlat, convert to CEA projection
-pos: bool, return absolute value, defaults to True</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xpts, ypts</strong> (<em>array like</em>) – Polygon coordinates.</p></li>
+<li><p><strong>lonlat</strong> (<em>bool</em>) – If input is lonlat, convert to CEA projection.</p></li>
+<li><p><strong>pos</strong> (<em>bool</em>) – Return absolute value of area, defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Polygon area. Units are coordinate dependent.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.rotate_frame">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">rotate_frame</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">ang</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.rotate_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rotates values of 2D vector space whose component values
-are given by u and v.</p>
-<dl class="simple">
-<dt>u,v:    eastward and northward vector component arrays. Must</dt><dd><p>be of same size, of arbitrary dimension.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">rotate_frame</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">angle</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.rotate_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return 2D data in rotated frame of reference.</p>
+<p>Rotates values of 2D vectors whose component values
+are given by <cite>u</cite> and <cite>v</cite>. This function should be thought
+of as rotating the frame of reference anti-clockwise by
+<cite>angle</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u, v</strong> (<em>array_like</em>) – Eastward and northward vector components.</p></li>
+<li><p><strong>angle</strong> (<em>float</em>) – Rotate the frame of reference by this value.</p></li>
+<li><p><strong>units</strong> (<em>str (‘deg’ or ‘rad’)</em>) – Units of <cite>angle</cite>.</p></li>
+</ul>
 </dd>
-<dt>ang:    the angle by which you turn the frame of reference</dt><dd><p>positive being anti-clockwise.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ur, vr</strong> – Vector components in rotated reference frame.</p>
 </dd>
-<dt>units:  units of ang, ‘rad’ (default) for radians and ‘deg’</dt><dd><p>for degrees.</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.xr_abs">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_abs</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_abs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return dataset ds with field taken absolute.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_abs</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return dataset dataset with field taken absolute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Dataset on which to operate.</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Field to return as absolute.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dataset with field made positive.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.xr_time_step">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_time_step</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">tname</em>, <em class="sig-param">unit</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_time_step" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_time_step</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">tname</em>, <em class="sig-param">unit</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_time_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get median step of the time axis in dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Dataset on which to operate.</p></li>
+<li><p><strong>tname</strong> (<em>str</em>) – Name of the time variable or coordinate.</p></li>
+<li><p><strong>unit</strong> (<em>str (‘s’, ‘m’ or ‘h’)</em>) – Unit of the return value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Median time step.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math.xr_unique">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_unique</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">sort_label</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_unique" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the xarray dataset or dataarry with duplicate values along
-dimension sort_label have been removed.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_unique</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_unique" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove duplicates along dimension <cite>dim</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Dataset to operate on.</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – Name of dimension to operate along.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dataset with duplicates removed along <cite>dim</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
 <div class="section" id="module-mxtoolbox.process.signal">
 <span id="mxtoolbox-process-signal-module"></span><h2>mxtoolbox.process.signal module<a class="headerlink" href="#module-mxtoolbox.process.signal" title="Permalink to this headline">¶</a></h2>
 <p>Analyses of 1D signal type datasets or multidimensional
-arrays processed along one dimension. This includes 
+arrays processed along one dimension. This includes
 filtering and binning functions.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.signal.pd_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">pd_bin</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">dimension</em>, <em class="sig-param">grid</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.pd_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper around xr_bin to allow bin averaging in pandas
+<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">pd_bin</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.pd_bin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bin values in pandas dataframe.</p>
+<p>Wrapper around xr_bin to allow bin averaging in pandas
 dataframes.</p>
-<p>dataframe [pandas dataframe]  : input data
-dimesion  [string]            : index along which to bin
-grid      [array-like]        : bin centers
-func      [callable]          : function to pass xrutils.xr_bin</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.Dataframe</em>) – Dataframe to operate on.</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – Dimension to operate along</p></li>
+<li><p><strong>binc</strong> (<em>array_like</em>) – Bin centers.</p></li>
+<li><p><strong>func</strong> (<em>Object</em>) – Function used to reduce bin groups.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Input dataframe binned at <cite>binc</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.Dataframe</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.signal.xr_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_bin</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xr_bin usage:  ds = xr_bin(ds, dim, binc, func=numpy.nanmean)</p>
-<p>Wrapper function for the groupby_bins xarray method. Meant for
-simply binning xarray ds to the values of dimension dim, and
-return values at bin centers binc.</p>
-<p>ds: input Dataset of DataArray
-dim: string: name of dimension along which to bin
-binc: array: bin centers
-func: callable: reducing function, defaults to numpy.nanmean</p>
+<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_bin</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_bin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bin dataset along <cite>dim</cite>.</p>
+<p>Convenience wrapper for the groupby_bins xarray method. Meant for
+simply binning xarray <cite>dataset</cite> to the values of dimension <cite>dim</cite>, and
+return values at bin centers <cite>binc</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Dataset to operate on.</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – Name of dimension along which to bin.</p></li>
+<li><p><strong>binc</strong> (<em>array_like</em>) – Bin centers.</p></li>
+<li><p><strong>func</strong> (<em>Object</em>) – Function used to reduce bin groups.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dataset binned at <cite>binc</cite> along <cite>dim</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.signal.xr_filter">
 <code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_filter</code><span class="sig-paren">(</span><em class="sig-param">coord</em>, <em class="sig-param">val</em>, <em class="sig-param">fc</em>, <em class="sig-param">btype='high'</em>, <em class="sig-param">axis=-1</em>, <em class="sig-param">order=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xrflt usage:   da  =  xrflt(coord,val,fc,btype=’high’,axis=-1,order=1)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Wrapper of scipy.signal.filtfilt that takes for input a coordinate
+<dd><p>Apply zero phase shift butterworth filter to xarray.</p>
+<p>!!!This needs to be tested and the UI needs a rework!!!</p>
+<p>Wrapper of scipy.signal.filtfilt that takes for input a coordinate
 DataArray and a val DataArray. Returns a DataArray of the filtered
 val values along the initial coordinate. Cutoff frequency should be
 supplied in seconds -1.</p>
-</div></blockquote>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.signal.xr_godin">
 <code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_godin</code><span class="sig-paren">(</span><em class="sig-param">dataarray</em>, <em class="sig-param">tname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_godin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tide killing Godin filter of dataarray along dimension ‘tname’.</p>
+<dd><p>Apply Godin filter to <cite>dataarray</cite> along time dimension.</p>
+<p>Godin filtering is meant to remove the semi-diurnal and
+diurnal components of tide. It consists of iteratively
+time averaging over 24, 24, and 25 hours, and then
+downsampling to the daily scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataarray</strong> (<em>xarray.DataArray</em>) – DataArray on which to operate.</p></li>
+<li><p><strong>tname</strong> (<em>str</em>) – Name of the time dimension.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Godin filtered DataArray.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.DataArray</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.signal.xr_peaks">
 <code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_peaks</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">th_array</em>, <em class="sig-param">tname</em>, <em class="sig-param">two_sided=True</em>, <em class="sig-param">fp_kwargs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_peaks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xrPks usage:   out  =  xrPks(array,th_array,tname,two_sided=True,fp_kwargs=None)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Wrapper of scipy.signal.find_peaks that takes as input the array in which
+<dd><p>Find peaks in xarray dataset.</p>
+<p>!!!The UI here needs to be reworked and tested!!!</p>
+<p>Wrapper of scipy.signal.find_peaks that takes as input the array in which
 to find peaks, the variable threshold array ‘th_array’ and their matching
 x coordinate name ‘tname’. If two_sided is True, positive and negative peaks
 above the threshold will be returned.</p>
 <p>out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
 index of peaks in original array.</p>
-</div></blockquote>
-</dd></dl>
-
-</div>
-<div class="section" id="module-mxtoolbox.process">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mxtoolbox.process" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="mxtoolbox.process.eigenvalues">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">eigenvalues</code><span class="sig-paren">(</span><em class="sig-param">args</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.eigenvalues" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function eigDec summary:</p>
-<blockquote>
-<div><p>Find the principal directions of variation of an ND
-data scatter and return the basis change matrix.</p>
-</div></blockquote>
-<p>Usage:</p>
-<blockquote>
-<div><p>vals,vecs,B =   eigDec(args)</p>
-</div></blockquote>
-<p>Input:</p>
-<blockquote>
-<div><p>args:   tuple of same length vectors to decompose</p>
-</div></blockquote>
-<p>Output:</p>
-<blockquote>
-<div><p>vals:   sorted eigenvalues of the covariance matrix</p>
-<p>vecs:   sorted eigenvectors (columns)</p>
-<dl class="simple">
-<dt>B<span class="classifier">basis change matrix from prior to principal</span></dt><dd><p>directions of variation.</p>
-</dd>
-</dl>
-</div></blockquote>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.gaussian_smoothing">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">gaussian_smoothing</code><span class="sig-paren">(</span><em class="sig-param">xs</em>, <em class="sig-param">ys</em>, <em class="sig-param">zs</em>, <em class="sig-param">xg</em>, <em class="sig-param">yg</em>, <em class="sig-param">XR=1</em>, <em class="sig-param">YR=1</em>, <em class="sig-param">ITERS=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.gaussian_smoothing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gaussian smoothing filter of scattered data onto
-gridded coordinates. Simplified version of the 
-Barnes smoothing algorithm.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.fit_lsq">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">fit_lsq</code><span class="sig-paren">(</span><em class="sig-param">function</em>, <em class="sig-param">parameters</em>, <em class="sig-param">y</em>, <em class="sig-param">x=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.fit_lsq" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.pd_regression_statistics">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">pd_regression_statistics</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">xname</em>, <em class="sig-param">yname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.pd_regression_statistics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print analysis of variance (ANOVA) table for a linear regression
-drawn for yname from xname, two columns of dataframe. The independent
-variable is considered to be xname.</p>
-<p>This is based on an example from:</p>
-<p>Van Emden, Helmut (2008)
-Statistics for terrified biologists,
-Blackwell publishing
-p. 262</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_cross_correlate">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_cross_correlate</code><span class="sig-paren">(</span><em class="sig-param">da_a</em>, <em class="sig-param">da_b</em>, <em class="sig-param">coord='time'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_cross_correlate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cross correlation between dataarrays da_a and da_b. The
-two input arrays can contain NaN values and be of different
-lengths but they must have the same coordinate resolution
-and coordinates must match on overlap. Resample prior to
-using if necessary.</p>
-<dl>
-<dt>Outputs</dt><dd><dl class="simple">
-<dt>tau: by how much da_a must be shifted forward</dt><dd><p>to match da_b.</p>
-</dd>
-</dl>
-<p>r2: variance explained at maximum cross correlation</p>
-<p>da_c: da_b shifted to max correlation</p>
-<p>cc: cross correlation vector</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_time_aht">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_time_aht</code><span class="sig-paren">(</span><em class="sig-param">sl</em>, <em class="sig-param">h='h'</em>, <em class="sig-param">period=12.4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_time_aht" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xr_t_aht summary:</p>
-<p>A much simplified version of libmx.physics.ocn.t_aht_ast</p>
-<p>Serves as validation of the aforementioned code and as a fast
-way to get time aht from a libmx.physics.xri.sealev xarray
-object.</p>
-<p>Parameters:</p>
-<p>sl: sealev object
-h: either ‘h’ or ‘hp’ to use measure or predicted sea level
-period: defaults to 12.40 hours (semidiurnal). This adjusts
-the required distance between high tides as well as the filtering
-frequency.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.anomaly2rgb">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">anomaly2rgb</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.anomaly2rgb" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an RGB triplet according to standardized anomaly value
-passed as argument. Colors ar defined in intervals of 0.5 std and
-saturate at -2 and 2.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.binc2edge">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">binc2edge</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.binc2edge" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns edges from bin centers. z can be of type:</p>
-<p>1- numpy.array
-2- pandas.core.indexes.datetimes.DatetimeIndex
-3- pandas.core.series.Series</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.hd2uv">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">hd2uv</code><span class="sig-paren">(</span><em class="sig-param">heading</em>, <em class="sig-param">magnitude</em>, <em class="sig-param">rotate_by=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.hd2uv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return u, v vector components from heading and magnitude. Heading is assumed
-to start from North at 0 and rotate clockwise (90 at East). The components can
-be returned in a frame of reference rotated clockwise by setting the variable
-rotate_by in degrees.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.pd_add_seasons">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">pd_add_seasons</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">time='time'</em>, <em class="sig-param">stype='astro'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.pd_add_seasons" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add season column to a dataframe containing a datetime column. The name
-of the datetime column can be specified in parameter time. Astronimical
-or meteorological seasons can be returned by specifiying ‘astro’ or
-or ‘met’ at the stype parameter. Astronomical seasons are taken to start
-on the 20th (near the solstice and equinoxes) and meteorological seasons
-are given starting one the 1st of the months containing the solstices and
-equinoxes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.tetha2hd">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">tetha2hd</code><span class="sig-paren">(</span><em class="sig-param">angle</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.tetha2hd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function tta2hd usage :           output    = tta2hd(angle)</p>
-<p>Takes as angle angle vector in cartesian coordinates running counter-
-clockwise from 0 (east) to 360 degrees and transforms it into a heading
-vector running clockwise from 0 to the north to 360 degrees.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.uv2hd">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">uv2hd</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.uv2hd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function uv2hd usage :          nm, hd      = uv2hd(u,v)</p>
-<p>Converts vector components (u in the abscissa and v in the ordinates) of a 2D space
-to a heading angle ‘hd’ in degrees with 0 towards positive y and 90 towards positive x.
-Also returns the norm of vector (u,v) to variable ‘nm’.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_SA_CT_pden">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_SA_CT_pden</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">t='temperature'</em>, <em class="sig-param">s='salinity'</em>, <em class="sig-param">p='z'</em>, <em class="sig-param">lon='longitude'</em>, <em class="sig-param">lat='latitude'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_SA_CT_pden" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an xarray dataset width added CT, SA and sigma0
-columns as calculated by the Gibbs Seawater package gsw.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.broadcastable">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">broadcastable</code><span class="sig-paren">(</span><em class="sig-param">a: &lt;numpy.ndarray&gt;</em>, <em class="sig-param">b: &lt;numpy.ndarray&gt;</em><span class="sig-paren">)</span> &#x2192; list or None<a class="headerlink" href="#mxtoolbox.process.broadcastable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return shape in which b could be broadcasted with a. If arrays
-can not be broadcast None is returned, therefore this function
-can also serve as a boolean test answering:</p>
-<p>Can b be broadcast to a through appending through prepending and
-appending empty dimensions?</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.circular_distance">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">circular_distance</code><span class="sig-paren">(</span><em class="sig-param">a1</em>, <em class="sig-param">a2</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.circular_distance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function circdist usage:</p>
-<blockquote>
-<div><p>d   =   circdist(a1,a2,units=’rad’)</p>
-</div></blockquote>
-<p>Returns to ‘d’ the distance between angles a1 and a2
-expected to be radians by default, or degrees if units
-is specified to ‘deg’.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.haversine">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">haversine</code><span class="sig-paren">(</span><em class="sig-param">lon1</em>, <em class="sig-param">lat1</em>, <em class="sig-param">lon2</em>, <em class="sig-param">lat2</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.haversine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the great circle distance between two points
-on the earth (specified in decimal degrees). Return value
-in meters.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.increase_resolution">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">increase_resolution</code><span class="sig-paren">(</span><em class="sig-param">ptsx</em>, <em class="sig-param">ptsy</em>, <em class="sig-param">N</em>, <em class="sig-param">offset_idx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.increase_resolution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a higher resolution track described in 2D by ptsx and
-ptsy, 2 numpy 1D arrays, with N linearly equidistant points
-added in between.</p>
-<p>ptsx and ptsy are assumed to be longitudes and latitudes and
-along track distance from the first point is returned in
-km. Example:</p>
-<p>trk_lon, trk_lat, trk_dist = points_to_hrtrack(ptsx, ptsy, 100)</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.in_polygon">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">in_polygon</code><span class="sig-paren">(</span><em class="sig-param">x_pts</em>, <em class="sig-param">y_pts</em>, <em class="sig-param">x_poly</em>, <em class="sig-param">y_poly</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.in_polygon" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a boolean array identifying points of x_pts, y_pts inside
-the polygon defined by x_poly,y_poly.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.get_contour_xy">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">get_contour_xy</code><span class="sig-paren">(</span><em class="sig-param">cs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.get_contour_xy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Let cs be the handle to a contour with one line. This returns
-its x,y values.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.proximity_group">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">proximity_group</code><span class="sig-paren">(</span><em class="sig-param">A</em>, <em class="sig-param">D</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.proximity_group" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function proxGroup usage:   G,N,I   =   proxGroup(A,D)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Proximity grouping of values in an irregular but
-monotonically increasing array ‘A’. Adjacent values
-are group if the distance between them is less than
-or equal to ‘D’. Returned values are the group ID
-of each element ‘G’, number of elements per group
-‘N’, and index values by group ‘I’.</p>
-</div></blockquote>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.polygon_area">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">vecx</em>, <em class="sig-param">vecy</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.polygon_area" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use Greene’s theorem to compute polygon area. Input vectors
-can be longitudes and latitudes if bm is specified. Otherwise
-they are assumed coordinates of linear space.</p>
-<p>vecx:    array like, horizontal vector in linear space
-vecy:    array like, vertical vector in linear space
-lonlat:    bool, if input is lonlat, convert to CEA projection
-pos: bool, return absolute value, defaults to True</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.rotate_frame">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">rotate_frame</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">ang</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.rotate_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rotates values of 2D vector space whose component values
-are given by u and v.</p>
-<dl class="simple">
-<dt>u,v:    eastward and northward vector component arrays. Must</dt><dd><p>be of same size, of arbitrary dimension.</p>
-</dd>
-<dt>ang:    the angle by which you turn the frame of reference</dt><dd><p>positive being anti-clockwise.</p>
-</dd>
-<dt>units:  units of ang, ‘rad’ (default) for radians and ‘deg’</dt><dd><p>for degrees.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_abs">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_abs</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_abs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return dataset ds with field taken absolute.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_time_step">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_time_step</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">tname</em>, <em class="sig-param">unit</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_time_step" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_unique">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_unique</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">sort_label</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_unique" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the xarray dataset or dataarry with duplicate values along
-dimension sort_label have been removed.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.pd_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">pd_bin</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">dimension</em>, <em class="sig-param">grid</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.pd_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper around xr_bin to allow bin averaging in pandas
-dataframes.</p>
-<p>dataframe [pandas dataframe]  : input data
-dimesion  [string]            : index along which to bin
-grid      [array-like]        : bin centers
-func      [callable]          : function to pass xrutils.xr_bin</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_bin</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xr_bin usage:  ds = xr_bin(ds, dim, binc, func=numpy.nanmean)</p>
-<p>Wrapper function for the groupby_bins xarray method. Meant for
-simply binning xarray ds to the values of dimension dim, and
-return values at bin centers binc.</p>
-<p>ds: input Dataset of DataArray
-dim: string: name of dimension along which to bin
-binc: array: bin centers
-func: callable: reducing function, defaults to numpy.nanmean</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_filter">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_filter</code><span class="sig-paren">(</span><em class="sig-param">coord</em>, <em class="sig-param">val</em>, <em class="sig-param">fc</em>, <em class="sig-param">btype='high'</em>, <em class="sig-param">axis=-1</em>, <em class="sig-param">order=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xrflt usage:   da  =  xrflt(coord,val,fc,btype=’high’,axis=-1,order=1)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Wrapper of scipy.signal.filtfilt that takes for input a coordinate
-DataArray and a val DataArray. Returns a DataArray of the filtered
-val values along the initial coordinate. Cutoff frequency should be
-supplied in seconds -1.</p>
-</div></blockquote>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_godin">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_godin</code><span class="sig-paren">(</span><em class="sig-param">dataarray</em>, <em class="sig-param">tname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_godin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tide killing Godin filter of dataarray along dimension ‘tname’.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.process.xr_peaks">
-<code class="sig-prename descclassname">mxtoolbox.process.</code><code class="sig-name descname">xr_peaks</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">th_array</em>, <em class="sig-param">tname</em>, <em class="sig-param">two_sided=True</em>, <em class="sig-param">fp_kwargs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.xr_peaks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xrPks usage:   out  =  xrPks(array,th_array,tname,two_sided=True,fp_kwargs=None)</p>
-<p>Summary:</p>
-<blockquote>
-<div><p>Wrapper of scipy.signal.find_peaks that takes as input the array in which
-to find peaks, the variable threshold array ‘th_array’ and their matching
-x coordinate name ‘tname’. If two_sided is True, positive and negative peaks
-above the threshold will be returned.</p>
-<p>out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
-index of peaks in original array.</p>
-</div></blockquote>
 </dd></dl>
 
 </div>
@@ -728,11 +706,26 @@ index of peaks in original array.</p>
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.convert.html">convert</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.plot.html">plot</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">process</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.analyses">mxtoolbox.process.analyses module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.convert">mxtoolbox.process.convert module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math">mxtoolbox.process.math module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal">mxtoolbox.process.signal module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="mxtoolbox.plot.html" title="previous chapter">plot</a></li>
+      <li>Next: <a href="mxtoolbox.read.html" title="next chapter">read</a></li>
   </ul></li>
 </ul>
 </div>

@@ -4,8 +4,8 @@ conversions.
 """
 import gsw
 import numpy as np
-from .math import broadcastable
-
+import pandas as pd
+from .math import broadcastable, rotate_frame
 
 __all__ = ['anomaly2rgb',
            'binc2edge',
@@ -18,9 +18,22 @@ __all__ = ['anomaly2rgb',
 
 def anomaly2rgb(value):
     """
+    Map standardized anomaly to discretized red to blue color scheme.
+
     Returns an RGB triplet according to standardized anomaly value
-    passed as argument. Colors ar defined in intervals of 0.5 std and
+    passed as argument. Colors are defined in intervals of 0.5 std and
     saturate at -2 and 2.
+
+    Parameters
+    ----------
+    value : float
+        Standardized anomaly value.
+
+    Returns
+    -------
+    list
+        RGB triplet.
+
     """
     # Select color
     if -0.5 < value < 0.5:
@@ -49,11 +62,20 @@ def anomaly2rgb(value):
 
 def binc2edge(z):
     """
-    Returns edges from bin centers. z can be of type:
+    Get bin edges from bin centers.
 
-    1- numpy.array
-    2- pandas.core.indexes.datetimes.DatetimeIndex
-    3- pandas.core.series.Series
+    Bin centers can be irregularly spaced. Edges are halfway between
+    one point and the next.
+
+    Parameters
+    ----------
+    z : numpy.array, pandas.DatetimeIndex, pandas.Series
+        Bin centers.
+
+    Returns
+    numpy.array, pandas.DatetimeIndex, pandas.Series
+        Bin edges.
+
     """
     if type(z) is pd.core.indexes.datetimes.DatetimeIndex:
         TIME = pd.Series(z)
@@ -91,14 +113,30 @@ def binc2edge(z):
 
 def hd2uv(heading, magnitude, rotate_by=0):
     """
-    Return u, v vector components from heading and magnitude. Heading is assumed
-    to start from North at 0 and rotate clockwise (90 at East). The components can
-    be returned in a frame of reference rotated clockwise by setting the variable
-    rotate_by in degrees.
+    Return u, v vector components from heading and magnitude.
+
+    `heading` is assumed to start from North at 0 and rotate clockwise (90 at
+    East). The components can be returned in a frame of reference rotated
+    clockwise by setting `rotate_by` in degrees.
+
+    Parameters
+    ----------
+    heading : array_like
+        Compass direction (degrees).
+    magnitude : array_like
+        Vector norm.
+    rotate_by : float
+        Theta direction of returned `u` component.
+
+    Returns
+    -------
+    u, v : array_like
+        Vector components in chosen frame of reference.
+
     """
     u = magnitude * np.sin(np.pi * heading /180)
     v = magnitude * np.cos(np.pi * heading / 180)
-    u, v = Rarray2D(u, v, -rotate_by, units='deg')
+    u, v = rotate_frame(u, v, -rotate_by, units='deg')
 
     return u, v
 

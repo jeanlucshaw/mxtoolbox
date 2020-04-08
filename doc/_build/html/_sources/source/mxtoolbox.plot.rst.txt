@@ -1,8 +1,5 @@
-mxtoolbox.plot package
-======================
-
-Submodules
-----------
+plot
+=====
 
 mxtoolbox.plot.mplutils module
 ------------------------------
@@ -16,15 +13,6 @@ mxtoolbox.plot.plots module
 ---------------------------
 
 .. automodule:: mxtoolbox.plot.plots
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: mxtoolbox.plot
    :members:
    :undoc-members:
    :show-inheritance:

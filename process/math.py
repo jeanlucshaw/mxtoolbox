@@ -9,10 +9,12 @@ from scipy.interpolate import interp1d
 
 __all__ = ['broadcastable',
            'circular_distance',
+           'distance_along_bearing',
            'haversine',
            'increase_resolution',
            'in_polygon',
            'get_contour_xy',
+           'project_to_line',
            'proximity_group',
            'polygon_area',
            'rotate_frame',
@@ -20,14 +22,27 @@ __all__ = ['broadcastable',
            'xr_time_step',
            'xr_unique']
 
-def broadcastable(a: '<numpy.ndarray>', b: '<numpy.ndarray>') -> 'list or None':
+def broadcastable(a, b):
     """
-    Return shape in which b could be broadcasted with a. If arrays
-    can not be broadcast None is returned, therefore this function
-    can also serve as a boolean test answering:
+    Return shape in which b could be broadcasted with a.
 
-    Can b be broadcast to a through appending through prepending and
-    appending empty dimensions?
+    If arrays can not be broadcast None is returned, therefore this
+    function can also serve as a boolean test answering if b be broadcast
+    to a through appending through prepending and appending empty dimensions.
+
+    Parameters
+    ----------
+    a : ndarray
+        Array whose shape will not change.
+    b : ndarray
+        Array to broadcast to `a`.
+
+    Returns
+    -------
+    tuple or None
+        If `tuple`, numpy.reshape(b, `tuple`) broadcasts to `a`, otherwise
+        arrays can not be broadcast.
+
     """
     # Fail if input conditions are not respected
     if len(a.shape) < len(b.shape):
@@ -63,6 +78,18 @@ def circular_distance(a1, a2, units='rad'):
     expected to be radians by default, or degrees if units
     is specified to 'deg'.
 
+    Parameters
+    ----------
+    a1, a2 : float
+        Input angle.
+    units: str
+        Units of input angles ('deg', 'rad')
+
+    Returns
+    -------
+    float
+        Angular distance between `a1` and `a2`.
+
     '''
     if units=='deg':
         a1  =   np.pi*a1/180
@@ -92,21 +119,125 @@ def circular_distance(a1, a2, units='rad'):
     return res
 
 
-def get_contour_xy(cs):
+def _distance(xpts, ypts, x0, y0):
     """
-    Let cs be the handle to a contour with one line. This returns
-    its x,y values.
+    Return cartesian distance from (xpts, ypts) to (x0, y0).
     """
-    nctr = len(cs.collections[0].get_paths())
-    v = [cs.collections[0].get_paths()[i].vertices for i in range(nctr)]
+    return np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
+
+
+def distance_along_bearing(xpts,
+                           ypts,
+                           bearing,
+                           x0=0,
+                           y0=0,
+                           dfunc=None):
+    """
+    Return distance from (`x0`, `y0`) in an arbitrary direction.
+
+    Summary
+    -------
+
+    Project coordinates defined by (`xpts`, `ypts`) to the nearest point
+    on a line passing through (`x0`, `y0`) and who's angle to the x axis
+    is given by `bearing`. Then use `dfunc` to calculate distance of them
+    projected points to the origin. The distance function is assumed to
+    be of the form,
+
+        distance = dfunc(xpts, x0, ypts, y0)
+
+    and defautls to cartesian distance,
+
+        distance = np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
+
+    Points where ypts < y0 are returned as negative along the new dimension.
+
+    Parameters
+    ----------
+    xpts, ypts : array_like
+        Input coordinates.
+    bearing : float
+        Direction along which to measure distance (degrees).
+    x0, y0 : float
+        Origin coordinates.
+    dfunc : Object
+        Distance calculating function.
+
+    Returns
+    -------
+    array_like
+        Distance along new dimension.
+
+    """
+    # Project coordinates to bearing line
+    a = -np.tan(bearing * np.pi / 180)
+    b = 1
+    c = -y0
+    xprj, yprj = project_to_line(xpts, ypts, a, b, c)
+
+    # Calculate distance
+    if dfunc:
+        distance = dfunc(xprj, yprj, x0, y0)
+    else:
+        distance = _distance(xprj, yprj, x0, y0)
+
+    # Make negative distances where y < y0
+    distance[yprj < y0] = -distance[yprj < y0]
+
+    return distance
+
+
+def get_contour_xy(contour):
+    """
+    Return (x, y) coordinates of contour line.
+
+    Input is assumed to be a QuadContourSet object
+    containing only one contour line.
+
+    Parameters
+    ----------
+    contour : QuadContourSet
+        Object returned by matplotlib.pyplot.contour
+
+    Returns
+    -------
+    ndarray
+        Coordinates (x, y) as array of shape (m, 2)
+
+    """
+    nctr = len(contour.collections[0].get_paths())
+    v = [contour.collections[0].get_paths()[i].vertices for i in range(nctr)]
     return v
 
 
 def haversine(lon1, lat1, lon2, lat2):
     """
-    Calculate the great circle distance between two points
-    on the earth (specified in decimal degrees). Return value
-    in meters.
+    Calculate the great circle distance between two points.
+
+    Used to calculate the distance between points defined in decimal
+    degrees. Uses the equation,
+
+    .. math::
+
+        h = 2R\\sin^{-1}\\left(\\left[ 
+        \\sin^{-1}\\left(\\frac{lat_2-lat_1}{2}\\right)^2 +
+        \\cos(lat_1)\\cos(lat_2)\\left(\\frac{lon_2-lon_1}{2}\\right)^2
+        \\right]^{1/2}\\right)
+
+    where the earth radius `R` is set to 6371 km.
+
+    Parameters
+    ----------
+    lon1, lat1 : float
+        Compare to this coordinate (decimal degrees).
+    lon2, lat2 : array_like
+        Get distance from (`lon1`, `lat1`) for these coordinates (decimal degrees).
+
+    Returns
+    -------
+    array_like
+        Distance between coordinates2 and coordinate1 (meters).
+
     """
     # convert decimal degrees to radians 
     lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
@@ -120,10 +251,26 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
-def in_polygon(x_pts, y_pts, x_poly, y_poly):
+def in_polygon(xpts, ypts, x_poly, y_poly):
     """
-    Return a boolean array identifying points of x_pts, y_pts inside
-    the polygon defined by x_poly,y_poly.
+    Find points inside an arbitraty polygon.
+
+    Given coordinates of 2D space (`xpts`, `ypts`), returns a boolean array
+    of the same size as `xpts` and `ypts` where True values indicate
+    coordinates inside the polygon defined by (`x_poly`, `y_poly`).
+
+    Parameters
+    ----------
+    xpts, ypts : array_like
+        Input coordinates.
+    x_poly, y_poly: array_like
+        Polygon coordinates.
+
+    Returns
+    -------
+    boolean array
+        True for points inside polygon.
+
     """
     # Polygon border
     poly = Polygon([(xp, yp) for (xp, yp) in zip(x_poly, y_poly)])
@@ -131,25 +278,44 @@ def in_polygon(x_pts, y_pts, x_poly, y_poly):
     # Bool vector
     return [poly.contains(Point(x_pt, y_pt))
             for (x_pt, y_pt)
-            in zip(x_pts, y_pts)]
+            in zip(xpts, ypts)]
 
 
-def increase_resolution(ptsx, ptsy, N, offset_idx=0):
+def increase_resolution(xpts, ypts, N, offset_idx=0):
     """
-    Create a higher resolution track described in 2D by ptsx and
-    ptsy, 2 numpy 1D arrays, with N linearly equidistant points
+    Get high resolution track from low resolution track.
+
+    Create a higher resolution track described in 2D by xpts and
+    ypts, 2 numpy 1D arrays, with N linearly equidistant points
     added in between.
 
-    ptsx and ptsy are assumed to be longitudes and latitudes and
+    xpts and ypts are assumed to be longitudes and latitudes and
     along track distance from the first point is returned in
-    km. Example:
+    km.
 
-    trk_lon, trk_lat, trk_dist = points_to_hrtrack(ptsx, ptsy, 100)
+    Parameters
+    ----------
+    xpts, ypts : array_like
+        Coordinates of low resolution track.
+    N : int
+        Number of points to have between input coordinates.
+    offset_idx : int
+        Index of the LR track used as origin in distance calculation.
+
+    Returns
+    -------
+    array_like
+        HR track horizontal coordinate.
+    array_like
+        HR track vertical coordinate.
+    array_like
+        HR track distance from origin.
+
     """
-    xout = ptsx[0]
-    yout = ptsy[0]
+    xout = xpts[0]
+    yout = ypts[0]
     dout = np.array(0)
-    for (x1, y1, x2, y2) in zip(ptsx[:-1], ptsy[:-1], ptsx[1:], ptsy[1:]):
+    for (x1, y1, x2, y2) in zip(xpts[:-1], ypts[:-1], xpts[1:], ypts[1:]):
         xout = np.hstack((xout, np.linspace(x1, x2, N)[1:]))
         yout = np.hstack((yout, np.linspace(y1, y2, N)[1:]))
     for (x1, y1, x2, y2) in zip(xout[:-1], yout[:-1], xout[1:], yout[1:]):
@@ -157,39 +323,51 @@ def increase_resolution(ptsx, ptsy, N, offset_idx=0):
     dout = np.cumsum(dout) / 1000
 
     # Make the distance with respect to poin offset_idx
-    origin = np.flatnonzero(np.logical_and(xout == ptsx[offset_idx],
-                                           yout == ptsy[offset_idx]))
+    origin = np.flatnonzero(np.logical_and(xout == xpts[offset_idx],
+                                           yout == ypts[offset_idx]))
     dout -= dout[origin]
 
     return xout, yout, dout
 
 
-def polygon_area(vecx, vecy, lonlat=False, pos=True):
+def polygon_area(xpts, ypts, lonlat=False, pos=True):
     """
+    Compute polygon area.
+
     Use Greene's theorem to compute polygon area. Input vectors
-    can be longitudes and latitudes if bm is specified. Otherwise
+    can be longitudes and latitudes if lonlat is specified. Otherwise
     they are assumed coordinates of linear space.
 
-    vecx:    array like, horizontal vector in linear space
-    vecy:    array like, vertical vector in linear space
-    lonlat:    bool, if input is lonlat, convert to CEA projection
-    pos: bool, return absolute value, defaults to True
+    Parameters
+    ----------
+    xpts, ypts : array like
+        Polygon coordinates.
+    lonlat : bool
+        If input is lonlat, convert to CEA projection.
+    pos : bool
+        Return absolute value of area, defaults to True.
+
+    Returns
+    -------
+    float
+        Polygon area. Units are coordinate dependent.
+
     """
     # Ensure polygon is closed
-    if vecx[0] != vecx[-1] or vecy[0] != vecy[-1]:
-        vecx, vecy = np.hstack((vecx, vecx[0])), np.hstack((vecy, vecy[0]))
+    if xpts[0] != xpts[-1] or ypts[0] != ypts[-1]:
+        xpts, ypts = np.hstack((xpts, xpts[0])), np.hstack((ypts, ypts[0]))
 
     # If in longitudes and latitudes, convert to linear 2D space
     if lonlat:
         cea = Basemap(projection='cea',
-                      llcrnrlat=vecy.min(),
-                      urcrnrlat=vecy.max(),
-                      llcrnrlon=vecx.min(),
-                      urcrnrlon=vecx.max())
-        vecx, vecy = cea(vecx, vecy)
+                      llcrnrlat=ypts.min(),
+                      urcrnrlat=ypts.max(),
+                      llcrnrlon=xpts.min(),
+                      urcrnrlon=xpts.max())
+        xpts, ypts = cea(xpts, ypts)
 
     # Compute area
-    area = 0.5 * np.sum(vecy[:-1] * np.diff(vecx) - vecx[:-1] * np.diff(vecy))
+    area = 0.5 * np.sum(ypts[:-1] * np.diff(xpts) - xpts[:-1] * np.diff(ypts))
 
     # By default, disregard sign
     if pos:
@@ -198,111 +376,220 @@ def polygon_area(vecx, vecy, lonlat=False, pos=True):
     return area
 
 
-def proximity_group(A, D):
+def project_to_line(xpts,
+                    ypts,
+                    a,
+                    b,
+                    c):
     """
+    Find point on line nearest to coordinate.
 
-    Function proxGroup usage:   G,N,I   =   proxGroup(A,D)
+    Given the points (`xpts`, `ypts`) and line `d` defined by,
 
-    Summary:
+    .. math::
 
-        Proximity grouping of values in an irregular but
-        monotonically increasing array 'A'. Adjacent values
-        are group if the distance between them is less than
-        or equal to 'D'. Returned values are the group ID
-        of each element 'G', number of elements per group
-        'N', and index values by group 'I'.
+       ax + by + c = 0
+
+    coordinates on line `d` nearest to each point are given by,
+
+    .. math::
+
+       x = \\frac{b(bx_{pts} - ay_{pts}) - ac}{a^2 + b^2}
+
+    and,
+
+    .. math::
+
+       y = \\frac{a(-bx_{pts} - ay_{pts}) - bc}{a^2 + b^2}
+
+    Parameters
+    ----------
+    xpts, ypts : array_like
+        Coordinates to project on line.
+    a, b, c : float
+        Factors defining line `d`.
+
+    Returns
+    -------
+    x, y : array_like
+        Points on line `d` nearest to each input coordinate.
+
+    """
+    x = (b * (b * xpts - a * ypts) - a * c) / (a ** 2 + b ** 2)
+    y = (a * (-b * xpts + a * ypts) - b * c) / (a ** 2 + b ** 2)
+    return x, y
+
+def _distance(xpts, ypts, x0, y0):
+    """
+    Return cartesian distance from (xpts, ypts) to (x0, y0).
+    """
+    return np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
+
+
+def proximity_group(array, distance):
+    """
+    Group consecutive array values by proximity.
+
+    Proximity grouping of values in an irregular but
+    monotonously increasing `array`. Adjacent values
+    are grouped if the distance between them is less than
+    or equal to `distance`.
+
+    Parameters
+    ----------
+    array : array_like
+        Monotonously increasing values.
+    distance : same type as array
+        Maximum distance to neighboor.
+
+    Returns
+    -------
+    gid : array_like
+        Group ID of each value in growing integers.
+    gn : array_like
+        Number of values per group.
+    gindex : list
+        Index values in `array` divided by group.
 
     """
     # Init
-    I = []
+    gindex = []
     k = 0
-    G = np.zeros(A.size)
+    gid = np.zeros(array.size)
 
     # Group ID for each element
-    for i in range(1, A.size):
-        if A[i] - A[i-1] <= D:
-            G[i] = k
+    for i in range(1, array.size):
+        if array[i] - array[i-1] <= distance:
+            gid[i] = k
         else:
             k += 1
-            G[i] = k
+            gid[i] = k
 
     # Number of elements per group
     #             and
     # Index numbers for each group
-    N = np.zeros(int(G.max()+1))
-    for i in np.unique(G):
-        N[int(i)] = np.sum(G == int(i))
-        I.append(np.flatnonzero(G == int(i)))
+    gn = np.zeros(int(gid.max()+1))
+    for i in np.unique(gid):
+        gn[int(i)] = np.sum(gid == int(i))
+        gindex.append(np.flatnonzero(gid == int(i)))
 
-    return G, N, I
+    return gid, gn, gindex
 
 
-def rotate_frame(u,v,ang,units='rad'):
+def rotate_frame(u, v, angle, units='rad'):
     """
+    Return 2D data in rotated frame of reference.
 
-    Rotates values of 2D vector space whose component values
-    are given by u and v.
+    Rotates values of 2D vectors whose component values
+    are given by `u` and `v`. This function should be thought
+    of as rotating the frame of reference anti-clockwise by
+    `angle`.
 
-    u,v:    eastward and northward vector component arrays. Must
-            be of same size, of arbitrary dimension.
+    Parameters
+    ----------
+    u, v : array_like
+        Eastward and northward vector components.
+    angle : float
+        Rotate the frame of reference by this value.
+    units : str ('deg' or 'rad')
+        Units of `angle`.
 
-    ang:    the angle by which you turn the frame of reference
-            positive being anti-clockwise.
-
-    units:  units of ang, 'rad' (default) for radians and 'deg'
-            for degrees.
+    Returns
+    -------
+    ur, vr : array_like
+        Vector components in rotated reference frame.
 
     """
-
     # Size errors
     if u.shape==v.shape:
-        (sz)    =   u.shape
+        (sz) = u.shape
     else:
         raise ValueError("u and v must be of same size")
 
     # Prepare vectors
-    u   =   u.flatten()
-    v   =   v.flatten()
+    u = u.flatten()
+    v = v.flatten()
 
     # Handle deg/rad opts and build rotation matrix
-    ang =   ang if units=='rad' else np.pi*ang/180
-    B   =   np.array([[np.cos(ang),np.sin(ang)],[-np.sin(ang),np.cos(ang)]])
+    angle = angle if units=='rad' else np.pi * angle / 180
+    B = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
 
     # Rotate
-    ur  =   ( B @ np.array([u,v]) )[0,:]
-    vr  =   ( B @ np.array([u,v]) )[1,:]
+    ur = (B @ np.array([u, v]))[0, :]
+    vr = (B @ np.array([u, v]))[1, :]
 
     # Reshape
-    ur  =   np.reshape(ur,sz)
-    vr  =   np.reshape(vr,sz)
+    ur = np.reshape(ur, sz)
+    vr = np.reshape(vr, sz)
 
     return ur, vr
 
 
-def xr_abs(ds, field):
+def xr_abs(dataset, field):
     """
-    Return dataset ds with field taken absolute.
+    Return dataset dataset with field taken absolute.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset on which to operate.
+    field : str
+        Field to return as absolute.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset with field made positive.
+
     """
-    ds[field] = (ds[field].dims, np.abs(ds[field].values))
-    return ds
+    dataset[field] = (dataset[field].dims, np.abs(dataset[field].values))
+    return dataset
 
 
-def xr_time_step(ds, tname, unit):
-    diff = np.array(np.diff(ds[tname]).tolist())/10**9
-    if unit == 'second':
+def xr_time_step(dataset, tname, unit):
+    """
+    Get median step of the time axis in dataset.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset on which to operate.
+    tname : str
+        Name of the time variable or coordinate.
+    unit: str ('s', 'm' or 'h')
+        Unit of the return value.
+
+    Returns
+    -------
+    float
+        Median time step.
+    """
+    diff = np.array(np.diff(dataset[tname]).tolist())/10**9
+    if unit == 's':
         pass
-    if unit == 'minute':
+    if unit == 'm':
         diff = diff / 60
-    if unit == 'hour':
+    if unit == 'h':
         diff = diff / 3600
 
     return np.median(diff)
 
 
-def xr_unique(ds, sort_label):
+def xr_unique(dataset, dim):
     '''
-    Returns the xarray dataset or dataarry with duplicate values along
-    dimension sort_label have been removed.
+    Remove duplicates along dimension `dim`.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset to operate on.
+    dim : str
+        Name of dimension to operate along.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset with duplicates removed along `dim`.
     '''
-    _, index = np.unique(ds[sort_label], return_index=True)
-    return ds.isel({sort_label: index})
+    _, index = np.unique(dataset[dim], return_index=True)
+    return dataset.isel({dim: index})

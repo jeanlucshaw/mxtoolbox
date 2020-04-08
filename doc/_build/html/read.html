@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>mxtoolbox.read &#8212; mxtoolbox April 2020 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="mxtoolbox.process" href="process.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-mxtoolbox.read">
+<span id="mxtoolbox-read"></span><h1><a class="reference internal" href="#module-mxtoolbox.read" title="mxtoolbox.read"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.read</span></code></a><a class="headerlink" href="#module-mxtoolbox.read" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mxtoolbox.read.list2cm">
+<code class="sig-prename descclassname">mxtoolbox.read.</code><code class="sig-name descname">list2cm</code><span class="sig-paren">(</span><em class="sig-param">array_file</em>, <em class="sig-param">N: integer = 256</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.list2cm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a N step colormap object generated from the RGB
+triplets in array_file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.read.pd_cat_column_files">
+<code class="sig-prename descclassname">mxtoolbox.read.</code><code class="sig-name descname">pd_cat_column_files</code><span class="sig-paren">(</span><em class="sig-param">path_list</em>, <em class="sig-param">cols</em>, <em class="sig-param">index_cols</em>, <em class="sig-param">sep='\\s+'</em>, <em class="sig-param">axis=1</em>, <em class="sig-param">parse_dates=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.pd_cat_column_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes as input a list of file paths pointing to ascii
+column data with the same columns, but not necessarily the
+the same rows and merges them into one pandas DataFrame.</p>
+<p>If merging on axis 0, make sure the text files have no header!</p>
+<p>path_list:    list of strings, paths to files to merge
+cols:         list of strings or integer lists. If a column is</p>
+<blockquote>
+<div><p>defined by an integer list, the column name will
+be extracted from the file name.</p>
+</div></blockquote>
+<p>index_cols:   list of strings, column(s) to use as coordinates</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.read.pd_read_odf">
+<code class="sig-prename descclassname">mxtoolbox.read.</code><code class="sig-name descname">pd_read_odf</code><span class="sig-paren">(</span><em class="sig-param">FNAME</em>, <em class="sig-param">sep='\\s+'</em>, <em class="sig-param">col_name='WMO_CODE'</em>, <em class="sig-param">missing_values=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.pd_read_odf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read ocean data format (odf) files and return a pandas
+dataframe. Column names are determined by reading the header. By
+default, the WMO_CODE field of the parameter headings is used to
+choose column names but this can be changed by setting the col_name
+option.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.read.wod_cast_n">
+<code class="sig-prename descclassname">mxtoolbox.read.</code><code class="sig-name descname">wod_cast_n</code><span class="sig-paren">(</span><em class="sig-param">rag_arr, n, var_names=['Temperature', 'Salinity'], anc_names=None, do_qc=True, do_teos10=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.wod_cast_n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an individual cast from WOD ragged array</p>
+<p>If do_qc is true, data are filtered keeping only those with
+quality flags of 0 or 1. Refused data are returned as NaN. Some
+profiles do not have quality flags. There are three possible cases
+and here are the meaning of the quality flags they produce.</p>
+<dl class="simple">
+<dt>Profile quality flag missing</dt><dd><p>-&gt; Profile flag = -1
+-&gt; value flags = -1</p>
+</dd>
+<dt>Profile quality flag exists but is not accepted</dt><dd><p>-&gt; Profile flag = passed from original file
+-&gt; Value flags = -2</p>
+</dd>
+<dt>Profile quality flag exists and is accepted, but value flags are missing</dt><dd><p>-&gt; Profile flag = passed from original file
+-&gt; Value flags = -3</p>
+</dd>
+</dl>
+<p>Input:</p>
+<dl class="simple">
+<dt>rag_arr: either xarray Dataset or path to a WOD netCDF file</dt><dd><p>containing a CTD ragged array.</p>
+</dd>
+</dl>
+<p>n: [int], cast number to return as xarray Dataset</p>
+<dl class="simple">
+<dt>var_names: [list of strings], names of the variables to extract.</dt><dd><p>Defaults to [‘Temperature’, ‘Salinity’]</p>
+</dd>
+<dt>anc_names: [list of strings], names of the ancillary data variables</dt><dd><p>to extract. Defaults to None.</p>
+</dd>
+<dt>do_qc: [bool], if True keep only data with WOD quality flags 0 or 1.</dt><dd><p>Defaults to True. This also passes the WOD quality flags to
+the child cast.</p>
+</dd>
+<dt>do_teos10: [bool], if True calculate CT, SA and sigma0 using the</dt><dd><p>gsw package, implementing TEOS10. Defaults to True.</p>
+</dd>
+</dl>
+<p>Returns:</p>
+<p>xarray Dataset</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">mxtoolbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="convert.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.plot</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.process</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.read</span></code></a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="process.html" title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.process</span></code></a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Jean-Luc Shaw.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/read.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

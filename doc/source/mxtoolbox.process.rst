@@ -1,8 +1,5 @@
-mxtoolbox.process package
-=========================
-
-Submodules
-----------
+process
+=======
 
 mxtoolbox.process.analyses module
 ---------------------------------
@@ -32,15 +29,6 @@ mxtoolbox.process.signal module
 -------------------------------
 
 .. automodule:: mxtoolbox.process.signal
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: mxtoolbox.process
    :members:
    :undoc-members:
    :show-inheritance:

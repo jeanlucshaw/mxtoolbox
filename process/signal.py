@@ -16,57 +16,82 @@ __all__ = ['pd_bin',
            'xr_peaks']
 
 
-def pd_bin(dataframe, dimension, grid, func=np.nanmean):
+def pd_bin(dataframe, dim, binc, func=np.nanmean):
     """
+    Bin values in pandas dataframe.
+
     Wrapper around xr_bin to allow bin averaging in pandas
     dataframes.
 
-    dataframe [pandas dataframe]  : input data
-    dimesion  [string]            : index along which to bin
-    grid      [array-like]        : bin centers
-    func      [callable]          : function to pass xrutils.xr_bin
+    Parameters
+    ----------
+    dataframe : pandas.Dataframe
+        Dataframe to operate on.
+    dim : str
+        Dimension to operate along
+    binc : array_like
+        Bin centers.
+    func : Object
+        Function used to reduce bin groups.
+
+    Returns
+    -------
+    pandas.Dataframe
+        Input dataframe binned at `binc`.
+
     """
     index_names = dataframe.index.names
-    dataset = dataframe.reset_index().set_index(dimension).to_xarray()
-    dataset = xr_bin(dataset, dimension, grid, func=func)
+    dataset = dataframe.reset_index().set_index(dim).to_xarray()
+    dataset = xr_bin(dataset, dim, binc, func=func)
     return dataset.to_dataframe().reset_index().set_index(index_names)
 
 
-def xr_bin(ds, dim, binc, func=np.nanmean):
+def xr_bin(dataset, dim, binc, func=np.nanmean):
     '''
-    Function xr_bin usage:  ds = xr_bin(ds, dim, binc, func=numpy.nanmean)
+    Bin dataset along `dim`.
 
-    Wrapper function for the groupby_bins xarray method. Meant for
-    simply binning xarray ds to the values of dimension dim, and
-    return values at bin centers binc.
+    Convenience wrapper for the groupby_bins xarray method. Meant for
+    simply binning xarray `dataset` to the values of dimension `dim`, and
+    return values at bin centers `binc`.
 
-    ds: input Dataset of DataArray
-    dim: string: name of dimension along which to bin
-    binc: array: bin centers
-    func: callable: reducing function, defaults to numpy.nanmean
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Dataset to operate on.
+    dim: str
+        Name of dimension along which to bin.
+    binc: array_like
+        Bin centers.
+    func: Object
+        Function used to reduce bin groups.
+
+    Returns
+    -------
+    xarray.Dataset
+        Dataset binned at `binc` along `dim`.
     '''
     edge = binc2edge(binc)
-    dimorder = tuple(ds.coords)
-    attributes = ds.attrs
-    ds = (ds.groupby_bins(ds[dim], bins=edge, labels=binc)
+    dimorder = tuple(dataset.coords)
+    attributes = dataset.attrs
+    dataset = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
           .reduce(func, dim=dim)
           .rename({dim+'_bins': dim})
           .transpose(*dimorder))
-    ds.attrs = attributes
+    dataset.attrs = attributes
 
-    return ds
+    return dataset
 
 
 def xr_filter(coord, val, fc, btype='high', axis=-1, order=1):
     """
-    Function xrflt usage:   da  =  xrflt(coord,val,fc,btype='high',axis=-1,order=1)
+    Apply zero phase shift butterworth filter to xarray.
 
-    Summary:
+    !!!This needs to be tested and the UI needs a rework!!!
 
-        Wrapper of scipy.signal.filtfilt that takes for input a coordinate
-        DataArray and a val DataArray. Returns a DataArray of the filtered
-        val values along the initial coordinate. Cutoff frequency should be
-        supplied in seconds -1.
+    Wrapper of scipy.signal.filtfilt that takes for input a coordinate
+    DataArray and a val DataArray. Returns a DataArray of the filtered
+    val values along the initial coordinate. Cutoff frequency should be
+    supplied in seconds -1.
     """
 
     # Replace nan by interpolated values
@@ -94,9 +119,27 @@ def xr_filter(coord, val, fc, btype='high', axis=-1, order=1):
 
 def xr_godin(dataarray, tname):
     """
-    Tide killing Godin filter of dataarray along dimension 'tname'.
+    Apply Godin filter to `dataarray` along time dimension.
+
+    Godin filtering is meant to remove the semi-diurnal and
+    diurnal components of tide. It consists of iteratively
+    time averaging over 24, 24, and 25 hours, and then
+    downsampling to the daily scale.
+
+    Parameters
+    ----------
+    dataarray : xarray.DataArray
+        DataArray on which to operate.
+    tname : str
+        Name of the time dimension.
+
+    Returns
+    -------
+    xarray.DataArray
+        Godin filtered DataArray.
+
     """
-    time_step = xrtimestep(dataarray, tname, 'second')
+    time_step = ps.xr_time_step(dataarray, tname, 'second')
     flt_godin = (dataarray
                  .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
                  .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
@@ -108,17 +151,17 @@ def xr_godin(dataarray, tname):
 
 def xr_peaks(array, th_array, tname, two_sided=True, fp_kwargs=None):
     """
-    Function xrPks usage:   out  =  xrPks(array,th_array,tname,two_sided=True,fp_kwargs=None)
+    Find peaks in xarray dataset.
 
-    Summary:
+    !!!The UI here needs to be reworked and tested!!!
 
-        Wrapper of scipy.signal.find_peaks that takes as input the array in which
-        to find peaks, the variable threshold array 'th_array' and their matching
-        x coordinate name 'tname'. If two_sided is True, positive and negative peaks
-        above the threshold will be returned.
+    Wrapper of scipy.signal.find_peaks that takes as input the array in which
+    to find peaks, the variable threshold array 'th_array' and their matching
+    x coordinate name 'tname'. If two_sided is True, positive and negative peaks
+    above the threshold will be returned.
 
-        out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
-        index of peaks in original array.
+    out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
+    index of peaks in original array.
     """
 
     hpksi, props = signal.find_peaks(array.values, fp_kwargs)

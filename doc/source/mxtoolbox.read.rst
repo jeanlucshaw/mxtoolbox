@@ -1,8 +1,5 @@
-mxtoolbox.read package
-======================
-
-Submodules
-----------
+read
+====
 
 mxtoolbox.read.text module
 --------------------------
@@ -16,15 +13,6 @@ mxtoolbox.read.wod module
 -------------------------
 
 .. automodule:: mxtoolbox.read.wod
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: mxtoolbox.read
    :members:
    :undoc-members:
    :show-inheritance:

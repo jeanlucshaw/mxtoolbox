@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>mxtoolbox.plot &#8212; mxtoolbox April 2020 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mxtoolbox.process" href="process.html" />
+    <link rel="prev" title="mxtoolbox.convert" href="convert.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-mxtoolbox.plot">
+<span id="mxtoolbox-plot"></span><h1><a class="reference internal" href="#module-mxtoolbox.plot" title="mxtoolbox.plot"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.plot</span></code></a><a class="headerlink" href="#module-mxtoolbox.plot" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mxtoolbox.plot.cp_mercator_panel">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">cp_mercator_panel</code><span class="sig-paren">(</span><em class="sig-param">axes: array of subplots</em>, <em class="sig-param">preset: GSL or WA = None</em>, <em class="sig-param">loc: array position of panel as iterable = None</em>, <em class="sig-param">**m_kwargs</em><span class="sig-paren">)</span> &#x2192; GeoAxes<a class="headerlink" href="#mxtoolbox.plot.cp_mercator_panel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Mercator projection map panel to an existing multipanel figure.</p>
+<p>Usage:</p>
+<p>Create a multipanel figure using plt.subplots(). Pass the axes array as
+input along with the index of the panel to replace with this map as parameter
+loc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.axlabel_doy2months">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">axlabel_doy2months</code><span class="sig-paren">(</span><em class="sig-param">ax</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.axlabel_doy2months" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change x axis labels of x to show month abbreviation
+instead of day of year.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.axlabel_woy2months">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">axlabel_woy2months</code><span class="sig-paren">(</span><em class="sig-param">ax</em>, <em class="sig-param">align='center'</em>, <em class="sig-param">ycoord=-10</em>, <em class="sig-param">ltype='abbr'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.axlabel_woy2months" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change x axis labels of ax to show month abbreviations
+instead of week of year.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.colorbar">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">colorbar</code><span class="sig-paren">(</span><em class="sig-param">axes: matplotlib axes or subplot</em>, <em class="sig-param">mappable: color field to quantify</em>, <em class="sig-param">label: colorbar label = None</em>, <em class="sig-param">pad_size: pad width</em>, <em class="sig-param">fraction of axes width = 0.05</em>, <em class="sig-param">cbar_size: cb width</em>, <em class="sig-param">fraction of axes width = 0.05</em>, <em class="sig-param">**cbar_kw</em><span class="sig-paren">)</span> &#x2192; colorbar object, colorbar axes<a class="headerlink" href="#mxtoolbox.plot.colorbar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around matplotlib.pyplot.colorbar</p>
+<p>Its purpose is to:</p>
+<p>1- add colorbars without changing axes position
+2- consolidate colorbar labeling into the same call</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.colorline">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">colorline</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">z=None</em>, <em class="sig-param">cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em class="sig-param">norm=&lt;matplotlib.colors.Normalize object&gt;</em>, <em class="sig-param">linewidth=3</em>, <em class="sig-param">alpha=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.colorline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a colored line with coordinates x and y
+Optionally specify colors in the array z
+Optionally specify a colormap, a norm function and a line width</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.labeled_colorbar">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">labeled_colorbar</code><span class="sig-paren">(</span><em class="sig-param">position</em>, <em class="sig-param">col_arr</em>, <em class="sig-param">lab_array</em>, <em class="sig-param">fig</em>, <em class="sig-param">txt_w=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.labeled_colorbar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a discrete colorbar with labels on the colors.</p>
+<p>position:    tuple size 4, (left, bottom, width, height)
+col_arr:     array of RGB or RGBA lists
+lab_array:   array of labels to assign colors
+fig:         pyplot.Figure, where to add the colorbar
+txt_w:       boolean array, labels to print in white</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.move_axes">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">move_axes</code><span class="sig-paren">(</span><em class="sig-param">axes: matplotlib axes or subplot</em>, <em class="sig-param">ud: move panel up by = 0</em>, <em class="sig-param">rl: move panel right by = 0</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#mxtoolbox.plot.move_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moves axes ud upwards and rl right-wards. Handy when
+plt.subplots gets you 99% to what you want but needs a
+final nudge here and there.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.ts_diagram">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">ts_diagram</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">t_min=-2</em>, <em class="sig-param">t_max=20</em>, <em class="sig-param">s_min=32</em>, <em class="sig-param">s_max=37</em>, <em class="sig-param">lab_curve_exp=1</em>, <em class="sig-param">levels=array([ 5</em>, <em class="sig-param">6</em>, <em class="sig-param">7</em>, <em class="sig-param">8</em>, <em class="sig-param">9</em>, <em class="sig-param">10</em>, <em class="sig-param">11</em>, <em class="sig-param">12</em>, <em class="sig-param">13</em>, <em class="sig-param">14</em>, <em class="sig-param">15</em>, <em class="sig-param">16</em>, <em class="sig-param">17</em>, <em class="sig-param">18</em>, <em class="sig-param">19</em>, <em class="sig-param">20</em>, <em class="sig-param">21</em>, <em class="sig-param">22</em>, <em class="sig-param">23</em>, <em class="sig-param">24</em>, <em class="sig-param">25</em>, <em class="sig-param">26</em>, <em class="sig-param">27</em>, <em class="sig-param">28</em>, <em class="sig-param">29</em>, <em class="sig-param">30</em>, <em class="sig-param">31</em>, <em class="sig-param">32</em>, <em class="sig-param">33</em>, <em class="sig-param">34</em>, <em class="sig-param">35])</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.ts_diagram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw density contours as background of a TS plot.</p>
+<p>Mandatory input:</p>
+<p>axes:            [matplotlib.pyplot.axes]: where to draw</p>
+<p>Optional inputs:</p>
+<p>t_min:           [float]: minimum temperature to display
+t_max:           [float]: maximum temperature to display
+s_min:           [float]: minimum salinity to display
+s_max:           [float]: maximum salinity to display
+lab_curve_exp:   [float]: exponent of the curve on which</p>
+<blockquote>
+<div><p>to draw density labels. 1 will
+draw them straight from (t_max,s_min)
+to (t_min,s_max). Raising its value
+pushes labels towards (t_max,s_max) and
+lowering it pushes labels towards
+(t_min,s_min)</p>
+</div></blockquote>
+<p>levels:          [numpy array]: density contours to draw</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.scorecard">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">scorecard</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">field</em>, <em class="sig-param">ax</em>, <em class="sig-param">side_label=''</em>, <em class="sig-param">color_displays='anomaly'</em>, <em class="sig-param">value_displays='value'</em>, <em class="sig-param">anomaly_color_levels=4</em>, <em class="sig-param">units_label=''</em>, <em class="sig-param">cbar_label=''</em>, <em class="sig-param">averages=False</em>, <em class="sig-param">colorbar=False</em>, <em class="sig-param">hide_xlabels=False</em>, <em class="sig-param">sub_na=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.scorecard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function scorecard:</p>
+<p>Takes as input a pandas dataframe with one of the columns named
+time and expected to be type numpy datetime64[ns]. Makes a monthly
+scorecard plot modelled on Peter Galbraith’s AZMP figures for the
+column field of the dataframe and places it in axes ax.</p>
+<p>Options:</p>
+<p>side_label: Label on the left of the plot</p>
+<p>color_displays: choose from ‘anomaly’, ‘normalized’, or ‘value’ to
+make the color of the boxes reflect anomaly to the mean, value normalized
+by standard deviation of the whole time series, or the actual value.</p>
+<p>value_displays: choose between ‘anomaly’ and ‘value’ to set the number to
+be displayed in the box.</p>
+<p>anomaly_color_levels: choose how many color steps to have in both
+directions with respect to zero.</p>
+<p>units_label: units of the average values displayed on the right.</p>
+<p>averages: boolean, display averages by month throughout all years.</p>
+<p>colorbar: boolean, display colorbar if averages is false.</p>
+<p>hide_xlabels: boolean, usefull for stacked plots.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.scorecard_bottom_monthly">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">scorecard_bottom_monthly</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em>, <em class="sig-param">ax</em>, <em class="sig-param">value_displays='anomaly'</em>, <em class="sig-param">xlimits=False</em>, <em class="sig-param">xlabels=True</em>, <em class="sig-param">ylabel=False</em>, <em class="sig-param">year_labels=False</em>, <em class="sig-param">y0_adjust=0</em>, <em class="sig-param">minor_ticks=False</em>, <em class="sig-param">major_ticks=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.scorecard_bottom_monthly" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.xr_plot_pm_patch">
+<code class="sig-prename descclassname">mxtoolbox.plot.</code><code class="sig-name descname">xr_plot_pm_patch</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">xcoord</em>, <em class="sig-param">base</em>, <em class="sig-param">interval</em>, <em class="sig-param">ax</em>, <em class="sig-param">color='lightskyblue'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.xr_plot_pm_patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a patch at ds field base plus or minus ds field interval along
+the whole ds coordinate xcoord. Useful for making climatologies form
+example.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">mxtoolbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="convert.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.convert</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.plot</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.process</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="read.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.read</span></code></a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="convert.html" title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.convert</span></code></a></li>
+      <li>Next: <a href="process.html" title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mxtoolbox.process</span></code></a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Jean-Luc Shaw.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/plot.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

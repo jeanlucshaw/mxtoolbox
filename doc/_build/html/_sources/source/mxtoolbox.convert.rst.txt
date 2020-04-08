@@ -1,8 +1,5 @@
-mxtoolbox.convert package
-=========================
-
-Module contents
----------------
+convert
+=======
 
 .. automodule:: mxtoolbox.convert
    :members:

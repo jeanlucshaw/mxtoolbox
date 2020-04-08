@@ -1,0 +1,5 @@
+:mod:`mxtoolbox.plot`
+========================
+
+.. automodule:: mxtoolbox.plot
+   :members:
