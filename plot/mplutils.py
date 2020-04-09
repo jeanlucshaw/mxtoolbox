@@ -18,21 +18,31 @@ __all__ = ['axlabel_doy2months',
            'move_axes']
 
 
-def axlabel_doy2months(ax):
+def axlabel_doy2months(axes):
     """
-    Change x axis labels of x to show month abbreviation
-    instead of day of year.
+    Change x axis labels from day of year to month abbreviation.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Matplotlib axes on which to operate.
+
     """
     mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     days = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-    ax.set(xticks=days, xticklabels=mons, xlabel=None)
-    ax.tick_params(axis='x', which='minor', top=False, bottom=False)
+    axes.set(xticks=days, xticklabels=mons, xlabel=None)
+    axes.tick_params(axis='x', which='minor', top=False, bottom=False)
 
 
-def axlabel_woy2months(ax, align='center', ycoord=-10, ltype='abbr'):
+def axlabel_woy2months(axes, align='center', ycoord=-10, ltype='abbr'):
     """
-    Change x axis labels of ax to show month abbreviations
-    instead of week of year.
+    Change x axis labels from week of year to month abbreviation.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Matplotlib axes on which to operate.
+
     """
     days = np.array([1,32,60,91,121,152,182,213,244,274,305,335, 365])
     if ltype == 'abbr':
@@ -41,27 +51,56 @@ def axlabel_woy2months(ax, align='center', ycoord=-10, ltype='abbr'):
         mons = ['J','F','M','A','M','J','J','A','S','O','N','D', '']
     weeks = days/7 + 1
     weeks[0] = 1
-    ax.set(xticks=weeks, xticklabels=[], xlabel=None)
+    axes.set(xticks=weeks, xticklabels=[], xlabel=None)
     for (week, mon, delta) in zip(weeks[:-1], mons[:-1], np.diff(weeks)):
-        ax.text(week + delta/2, ycoord, mon, ha=align)
-    # ax.set_xticklabels(mons, ha=align)
-    ax.tick_params(axis='x', which='minor', top=False, bottom=False)
+        axes.text(week + delta/2, ycoord, mon, ha=align)
+    # axes.set_xticklabels(mons, ha=align)
+    axes.tick_params(axis='x', which='minor', top=False, bottom=False)
 
 
-def colorbar(axes: 'matplotlib axes or subplot',
-             mappable: 'color field to quantify',
-             label: 'colorbar label' = None,
-             pad_size: 'pad width, fraction of axes width' = 0.05,
-             cbar_size: 'cb width, fraction of axes width' = 0.05,
-             # **cbar_kw: 'arguments passed to pyplot.colorbar') -> 'colorbar object, colorbar axes':
-             **cbar_kw) -> 'colorbar object, colorbar axes':
+def colorbar(axes,
+             mappable,
+             label=None,
+             pad_size=0.05,
+             cbar_size=0.05,
+             **cbar_kw):
     """
-    Wrapper around matplotlib.pyplot.colorbar
+    Add colorbar to axes.
 
-    Its purpose is to:
+    Out of the box, pyplot's colorbar presents two inconvenients,
 
-    1- add colorbars without changing axes position
-    2- consolidate colorbar labeling into the same call
+    * It changes the axes size to accomodate the colorbar
+    * It requires a second call and a new variable for labeling
+
+    This routine's purpose is to hide often used workarounds from
+    the main code. It also takes arrays of two axes as input to
+    produce colorbars spanning multiple panels. If `cbar_kw`
+    sets the `orientation` parameter to 'vertical', axes[0] should
+    be the top axes. If it is set to 'horizontal, axes[0] should
+    be the left axes.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Add colorbar to this (these) axes.
+    mappable : matplotlib.artist
+        Colored object to match.
+    label : str
+        Text label of colorbar.
+    pad_size : float
+        Pad width in fraction of axes width.
+    cbar_size : float
+        Colorbar width in fraction of axes width.
+    **cbar_kw : keyword arguments
+        Passed on to pyplot.colorbar.
+
+    Returns
+    -------
+    cbar : pyplot.colorbar
+        Reference to created colorbar object.
+    cax : matplotlib.axes
+        Axes in which the colorbar is drawn.
+
     """
     # Orientation is vertical if otherwise not specified
     cbar_kw = {**dict(orientation='vertical'), **cbar_kw}
@@ -137,11 +176,19 @@ def labeled_colorbar(position, col_arr, lab_array, fig, txt_w=None):
     """
     Add a discrete colorbar with labels on the colors.
 
-    position:    tuple size 4, (left, bottom, width, height)
-    col_arr:     array of RGB or RGBA lists
-    lab_array:   array of labels to assign colors
-    fig:         pyplot.Figure, where to add the colorbar
-    txt_w:       boolean array, labels to print in white
+    Parameters
+    ----------
+    position : tuple size 4
+        (left, bottom, width, height).
+    col_arr : array
+        RGB or RGBA lists.
+    lab_array: str array
+        Labels to assign colors.
+    fig : pyplot.Figure
+        Where to add the colorbar.
+    txt_w : boolean array
+        Labels to print in white (black is default).
+
     """
     cbar_ax = fig.add_axes(position)
     steps = len(lab_array)
@@ -181,13 +228,22 @@ def make_segments(x, y):
     return segments
 
 
-def move_axes(axes: 'matplotlib axes or subplot',
-               ud: 'move panel up by' = 0,
-               rl: 'move panel right by' = 0) -> 'None':
+def move_axes(axes, ud=0, rl=0):
     """
-    Moves axes ud upwards and rl right-wards. Handy when
-    plt.subplots gets you 99% to what you want but needs a
-    final nudge here and there.
+    Moves axes ud upwards and rl right-wards.
+
+    Handy when plt.subplots gets you 99% to what you want but
+    needs a final nudge here and there.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Axes to operate on.
+    ud : float
+        Move panel up by `ud` in axes units (0-1).
+    rl : float
+        Move panel right by `rl` in axes units (0-1).
+
     """
     box = axes.get_position()
     box.x0 += rl

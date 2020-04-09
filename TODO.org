@@ -1,0 +1,34 @@
+* Test/reform
+** TODO process.signal.xr_flt
+** TODO process.signal.xr_peaks
+** TODO process.analyses.xr_t_aht
+** TODO plot.mplutils.colorline
+** TODO plot.mplutils.make_segments
+* Migrate from libmx
+** TODO shp2dex
+** TODO scripts
+** TODO PCA
+** TODO cluster
+* Documentation
+** TODO Reformat docstrings to numpy style
+*** TODO process.analyses
+**** TODO add pca
+**** TODO add cluster
+**** TODO reform xr_t_aht
+*** DONE process.convert
+*** DONE process.math
+*** TODO process.signal
+**** TODO reform xr_flt
+**** TODO reform xr_peaks
+*** DONE read.text
+*** DONE read.wod
+*** TODO plot.cputils
+*** TODO plot.mplutils
+**** TODO reform colorline
+**** TODO reform make_segments
+*** TODO plot.plots
+*** TODO process.cisdex
+*** DONE Change titles of module rst for better navigation
+** TODO Hosting
+*** TODO Make visible on intranet
+*** TODO Make visible on readthedocs

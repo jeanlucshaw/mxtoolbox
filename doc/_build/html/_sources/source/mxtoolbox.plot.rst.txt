@@ -1,16 +1,16 @@
-plot
-=====
+plot subpackage
+===============
 
-mxtoolbox.plot.mplutils module
-------------------------------
+mplutils module
+---------------
 
 .. automodule:: mxtoolbox.plot.mplutils
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.plot.plots module
----------------------------
+plots module
+------------
 
 .. automodule:: mxtoolbox.plot.plots
    :members:

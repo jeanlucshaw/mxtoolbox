@@ -10,6 +10,8 @@ from scipy.interpolate import interp1d
 __all__ = ['broadcastable',
            'circular_distance',
            'distance_along_bearing',
+           'f_gaussian',
+           'f_sine',
            'haversine',
            'increase_resolution',
            'in_polygon',
@@ -185,6 +187,30 @@ def distance_along_bearing(xpts,
     distance[yprj < y0] = -distance[yprj < y0]
 
     return distance
+
+
+def f_gaussian(x, a_1, a_2, a_3, a_4):
+    """
+    Calculates,
+
+    .. math::
+
+       y = a_1 \\exp\\left(-\\frac{(x - a_2)^2}{a_3}\\right) + a_4
+
+    """
+    return a_1 * np.exp(-(x - a_2) **2 / a_3) + a_4
+
+
+def f_sine(x, a_1, a_2, a_3, a_4):
+    """
+    Calculates,
+
+    .. math::
+
+       y = a_1 \\sin\\left((x - a_2)a_3\\right) + a_4
+
+    """
+    return a_1 * np.sin((x - a_2) * a_3) + a_4
 
 
 def get_contour_xy(contour):

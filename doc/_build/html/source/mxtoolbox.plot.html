@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>plot &#8212; mxtoolbox April 2020 documentation</title>
+    <title>plot subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -12,10 +12,11 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="process" href="mxtoolbox.process.html" />
-    <link rel="prev" title="convert" href="mxtoolbox.convert.html" />
+    <link rel="next" title="process subpackage" href="mxtoolbox.process.html" />
+    <link rel="prev" title="Package documentation" href="../index.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -32,32 +33,67 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="plot">
-<h1>plot<a class="headerlink" href="#plot" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="plot-subpackage">
+<h1>plot subpackage<a class="headerlink" href="#plot-subpackage" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-mxtoolbox.plot.mplutils">
-<span id="mxtoolbox-plot-mplutils-module"></span><h2>mxtoolbox.plot.mplutils module<a class="headerlink" href="#module-mxtoolbox.plot.mplutils" title="Permalink to this headline">¶</a></h2>
+<span id="mplutils-module"></span><h2>mplutils module<a class="headerlink" href="#module-mxtoolbox.plot.mplutils" title="Permalink to this headline">¶</a></h2>
 <p>Tweak details of matplotlib.</p>
 <dl class="function">
 <dt id="mxtoolbox.plot.mplutils.axlabel_doy2months">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_doy2months</code><span class="sig-paren">(</span><em class="sig-param">ax</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_doy2months" title="Permalink to this definition">¶</a></dt>
-<dd><p>Change x axis labels of x to show month abbreviation
-instead of day of year.</p>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_doy2months</code><span class="sig-paren">(</span><em class="sig-param">axes</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_doy2months" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change x axis labels from day of year to month abbreviation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Matplotlib axes on which to operate.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.plot.mplutils.axlabel_woy2months">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_woy2months</code><span class="sig-paren">(</span><em class="sig-param">ax</em>, <em class="sig-param">align='center'</em>, <em class="sig-param">ycoord=-10</em>, <em class="sig-param">ltype='abbr'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_woy2months" title="Permalink to this definition">¶</a></dt>
-<dd><p>Change x axis labels of ax to show month abbreviations
-instead of week of year.</p>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_woy2months</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">align='center'</em>, <em class="sig-param">ycoord=-10</em>, <em class="sig-param">ltype='abbr'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_woy2months" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change x axis labels from week of year to month abbreviation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Matplotlib axes on which to operate.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.plot.mplutils.colorbar">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">colorbar</code><span class="sig-paren">(</span><em class="sig-param">axes: matplotlib axes or subplot</em>, <em class="sig-param">mappable: color field to quantify</em>, <em class="sig-param">label: colorbar label = None</em>, <em class="sig-param">pad_size: pad width</em>, <em class="sig-param">fraction of axes width = 0.05</em>, <em class="sig-param">cbar_size: cb width</em>, <em class="sig-param">fraction of axes width = 0.05</em>, <em class="sig-param">**cbar_kw</em><span class="sig-paren">)</span> &#x2192; colorbar object, colorbar axes<a class="headerlink" href="#mxtoolbox.plot.mplutils.colorbar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper around matplotlib.pyplot.colorbar</p>
-<p>Its purpose is to:</p>
-<p>1- add colorbars without changing axes position
-2- consolidate colorbar labeling into the same call</p>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">colorbar</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">mappable</em>, <em class="sig-param">label=None</em>, <em class="sig-param">pad_size=0.05</em>, <em class="sig-param">cbar_size=0.05</em>, <em class="sig-param">**cbar_kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.colorbar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add colorbar to axes.</p>
+<p>Out of the box, pyplot’s colorbar presents two inconvenients,</p>
+<ul class="simple">
+<li><p>It changes the axes size to accomodate the colorbar</p></li>
+<li><p>It requires a second call and a new variable for labeling</p></li>
+</ul>
+<p>This routine’s purpose is to hide often used workarounds from
+the main code. It also takes arrays of two axes as input to
+produce colorbars spanning multiple panels. If <cite>cbar_kw</cite>
+sets the <cite>orientation</cite> parameter to ‘vertical’, axes[0] should
+be the top axes. If it is set to ‘horizontal, axes[0] should
+be the left axes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Add colorbar to this (these) axes.</p></li>
+<li><p><strong>mappable</strong> (<em>matplotlib.artist</em>) – Colored object to match.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Text label of colorbar.</p></li>
+<li><p><strong>pad_size</strong> (<em>float</em>) – Pad width in fraction of axes width.</p></li>
+<li><p><strong>cbar_size</strong> (<em>float</em>) – Colorbar width in fraction of axes width.</p></li>
+<li><p><strong>**cbar_kw</strong> (<em>keyword arguments</em>) – Passed on to pyplot.colorbar.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cbar</strong> (<em>pyplot.colorbar</em>) – Reference to created colorbar object.</p></li>
+<li><p><strong>cax</strong> (<em>matplotlib.axes</em>) – Axes in which the colorbar is drawn.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -72,24 +108,39 @@ Optionally specify a colormap, a norm function and a line width</p>
 <dt id="mxtoolbox.plot.mplutils.labeled_colorbar">
 <code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">labeled_colorbar</code><span class="sig-paren">(</span><em class="sig-param">position</em>, <em class="sig-param">col_arr</em>, <em class="sig-param">lab_array</em>, <em class="sig-param">fig</em>, <em class="sig-param">txt_w=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.labeled_colorbar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a discrete colorbar with labels on the colors.</p>
-<p>position:    tuple size 4, (left, bottom, width, height)
-col_arr:     array of RGB or RGBA lists
-lab_array:   array of labels to assign colors
-fig:         pyplot.Figure, where to add the colorbar
-txt_w:       boolean array, labels to print in white</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>position</strong> (<em>tuple size 4</em>) – (left, bottom, width, height).</p></li>
+<li><p><strong>col_arr</strong> (<em>array</em>) – RGB or RGBA lists.</p></li>
+<li><p><strong>lab_array</strong> (<em>str array</em>) – Labels to assign colors.</p></li>
+<li><p><strong>fig</strong> (<em>pyplot.Figure</em>) – Where to add the colorbar.</p></li>
+<li><p><strong>txt_w</strong> (<em>boolean array</em>) – Labels to print in white (black is default).</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.plot.mplutils.move_axes">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">move_axes</code><span class="sig-paren">(</span><em class="sig-param">axes: matplotlib axes or subplot</em>, <em class="sig-param">ud: move panel up by = 0</em>, <em class="sig-param">rl: move panel right by = 0</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#mxtoolbox.plot.mplutils.move_axes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Moves axes ud upwards and rl right-wards. Handy when
-plt.subplots gets you 99% to what you want but needs a
-final nudge here and there.</p>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">move_axes</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">ud=0</em>, <em class="sig-param">rl=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.move_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moves axes ud upwards and rl right-wards.</p>
+<p>Handy when plt.subplots gets you 99% to what you want but
+needs a final nudge here and there.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Axes to operate on.</p></li>
+<li><p><strong>ud</strong> (<em>float</em>) – Move panel up by <cite>ud</cite> in axes units (0-1).</p></li>
+<li><p><strong>rl</strong> (<em>float</em>) – Move panel right by <cite>rl</cite> in axes units (0-1).</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
 <div class="section" id="module-mxtoolbox.plot.plots">
-<span id="mxtoolbox-plot-plots-module"></span><h2>mxtoolbox.plot.plots module<a class="headerlink" href="#module-mxtoolbox.plot.plots" title="Permalink to this headline">¶</a></h2>
+<span id="plots-module"></span><h2>plots module<a class="headerlink" href="#module-mxtoolbox.plot.plots" title="Permalink to this headline">¶</a></h2>
 <p>Streamline making typical plots for time series analysis, and
 physical oceanography.</p>
 <dl class="function">
@@ -173,22 +224,21 @@ example.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.convert.html">convert</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">plot</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.plot.mplutils">mxtoolbox.plot.mplutils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.plot.plots">mxtoolbox.plot.plots module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">plot subpackage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.plot.mplutils">mplutils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.plot.plots">plots module</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.process.html">process</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.process.html">process subpackage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read subpackage</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="mxtoolbox.convert.html" title="previous chapter">convert</a></li>
-      <li>Next: <a href="mxtoolbox.process.html" title="next chapter">process</a></li>
+      <li>Previous: <a href="../index.html" title="previous chapter">Package documentation</a></li>
+      <li>Next: <a href="mxtoolbox.process.html" title="next chapter">process subpackage</a></li>
   </ul></li>
 </ul>
 </div>

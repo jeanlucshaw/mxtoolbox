@@ -1,32 +1,32 @@
-process
-=======
+process subpackage
+==================
 
-mxtoolbox.process.analyses module
----------------------------------
+analyses module
+---------------
 
 .. automodule:: mxtoolbox.process.analyses
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.convert module
---------------------------------
+convert module
+--------------
 
 .. automodule:: mxtoolbox.process.convert
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.math module
------------------------------
+math module
+-----------
 
 .. automodule:: mxtoolbox.process.math
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.signal module
--------------------------------
+signal module
+-------------
 
 .. automodule:: mxtoolbox.process.signal
    :members:

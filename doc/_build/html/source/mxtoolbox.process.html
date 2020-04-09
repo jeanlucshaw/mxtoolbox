@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>process &#8212; mxtoolbox April 2020 documentation</title>
+    <title>process subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -15,8 +15,8 @@
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="read" href="mxtoolbox.read.html" />
-    <link rel="prev" title="plot" href="mxtoolbox.plot.html" />
+    <link rel="next" title="read subpackage" href="mxtoolbox.read.html" />
+    <link rel="prev" title="plot subpackage" href="mxtoolbox.plot.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -33,58 +33,136 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="process">
-<h1>process<a class="headerlink" href="#process" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="process-subpackage">
+<h1>process subpackage<a class="headerlink" href="#process-subpackage" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-mxtoolbox.process.analyses">
-<span id="mxtoolbox-process-analyses-module"></span><h2>mxtoolbox.process.analyses module<a class="headerlink" href="#module-mxtoolbox.process.analyses" title="Permalink to this headline">¶</a></h2>
+<span id="analyses-module"></span><h2>analyses module<a class="headerlink" href="#module-mxtoolbox.process.analyses" title="Permalink to this headline">¶</a></h2>
 <p>Complex analyses transforming data into other data.</p>
 <dl class="function">
-<dt id="mxtoolbox.process.analyses.eigenvalues">
-<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">eigenvalues</code><span class="sig-paren">(</span><em class="sig-param">args</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.eigenvalues" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function eigDec summary:</p>
-<blockquote>
-<div><p>Find the principal directions of variation of an ND
-data scatter and return the basis change matrix.</p>
-</div></blockquote>
-<p>Usage:</p>
-<blockquote>
-<div><p>vals,vecs,B =   eigDec(args)</p>
-</div></blockquote>
-<p>Input:</p>
-<blockquote>
-<div><p>args:   tuple of same length vectors to decompose</p>
-</div></blockquote>
-<p>Output:</p>
-<blockquote>
-<div><p>vals:   sorted eigenvalues of the covariance matrix</p>
-<p>vecs:   sorted eigenvectors (columns)</p>
-<dl class="simple">
-<dt>B<span class="classifier">basis change matrix from prior to principal</span></dt><dd><p>directions of variation.</p>
+<dt id="mxtoolbox.process.analyses.principal_modes">
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">principal_modes</code><span class="sig-paren">(</span><em class="sig-param">args</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.principal_modes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform eigenvalue decomposition using numpy.</p>
+<p>Given a dataset described by <cite>n</cite> vectors of length
+<cite>m</cite>, the principal modes of variation can be extracted
+using eigenvalue decomposition. The <cite>n</cite> vectors are
+first detrended by subtracting the mean. A covariance
+matrix <cite>R</cite> is then calculated as,</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{R} = \mathbf{F}\cdot\mathbf{F'}\]</div>
+<p>where <span class="math notranslate nohighlight">\(F\)</span> is a matrix whose columns are formed from
+the <cite>n</cite> detrended input vectors. This matrix is then
+passed to <cite>numpy.linalg.eig</cite> whose outputs <cite>w</cite> and <cite>v</cite>
+are returned.</p>
+<p>In addition, the matrix <span class="math notranslate nohighlight">\(\mathbf{v}\)</span> is
+inverted and returned as <span class="math notranslate nohighlight">\(\mathbf{B}\)</span> to provide
+a basis change matrix into principal mode space. The
+orginal coordinates may then be rotated into principal
+mode space by arranging them into the <cite>n</cite> by <cite>m</cite> matrix
+<span class="math notranslate nohighlight">\(O\)</span> by multiplication,</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{C} = \mathbf{B}\cdot\mathbf{O}\]</div>
+<p>we get the matrix <cite>n</cite> by <cite>m</cite> matrix <span class="math notranslate nohighlight">\(c\)</span> whose rows
+are the rotated vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>args</strong> (<em>tuple</em>) – Vectors of length m.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>vals</strong> (<em>array (n)</em>) – Eigenvalues of the covariance matrix.</p></li>
+<li><p><strong>vecs</strong> (<em>ndarray (n by n)</em>) – Eigenvectors (columns).</p></li>
+<li><p><strong>B</strong> (<em>ndarray (n by n)</em>) – Basis change matrix.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.analyses.gaussian_smoothing">
-<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">gaussian_smoothing</code><span class="sig-paren">(</span><em class="sig-param">xs</em>, <em class="sig-param">ys</em>, <em class="sig-param">zs</em>, <em class="sig-param">xg</em>, <em class="sig-param">yg</em>, <em class="sig-param">XR=1</em>, <em class="sig-param">YR=1</em>, <em class="sig-param">ITERS=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.gaussian_smoothing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gaussian smoothing filter of scattered data onto
-gridded coordinates. Simplified version of the
-Barnes smoothing algorithm.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">gaussian_smoothing</code><span class="sig-paren">(</span><em class="sig-param">xs</em>, <em class="sig-param">ys</em>, <em class="sig-param">zs</em>, <em class="sig-param">xg</em>, <em class="sig-param">yg</em>, <em class="sig-param">XR=1.0</em>, <em class="sig-param">YR=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.gaussian_smoothing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolates scattered data to grid via Gaussian smoothing.</p>
+<p>Simplified version of the Barnes smoothing algorithm. This
+routine computes a value for each grid point by averaging
+all scattered data are weighted by their distance to the grid
+point. The weighing function for scatter point <cite>i</cite> is,</p>
+<div class="math notranslate nohighlight">
+\[w_i = \text{exp}\left[-\left(\frac{xg-xs_i}{XR}\right)^2 +
+                 \left(\frac{yg-ys_i}{YR}\right)^2\right]\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xs, ys</strong> (<em>1D array</em>) – Coordinates of the scattered data.</p></li>
+<li><p><strong>zs</strong> (<em>1D array</em>) – Values of the scattered data.</p></li>
+<li><p><strong>xg, yg</strong> (<em>2D array</em>) – Grid coordinates.</p></li>
+<li><p><strong>XR, YR</strong> (<em>float</em>) – Horizontal and vertical search radius.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>zg</strong> – Scattered data interpolated to grid.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D array</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.analyses.fit_lsq">
-<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">fit_lsq</code><span class="sig-paren">(</span><em class="sig-param">function</em>, <em class="sig-param">parameters</em>, <em class="sig-param">y</em>, <em class="sig-param">x=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.fit_lsq" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="mxtoolbox.process.analyses.lsq_curve_fit">
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">lsq_curve_fit</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">*parameters</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.lsq_curve_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Least squares fitting using scipy.optimize.</p>
+<p>Formatting input for scipy.optimize.leastsq can
+be confusing. This wrapper serves the purpose of
+not having to remember how it works.</p>
+<p>Let <span class="math notranslate nohighlight">\(y=f(x)\)</span> and <cite>g</cite> be a model for <cite>f</cite>
+dependent on a variable number of parameters
+<span class="math notranslate nohighlight">\(\mathbf{a}\)</span>. Then this routine requires
+requires <cite>model</cite> to be a function object taking
+as arguments <cite>x</cite>, <span class="math notranslate nohighlight">\(a_1, a_2, ..., a_n\)</span> in this
+order, and <cite>*parameters</cite> to be ordered initial guesses
+for <span class="math notranslate nohighlight">\(\mathbf{a}\)</span>.</p>
+<p>The following predefined models can serve as examples
+and can be called by setting <cite>model</cite> to the function
+name.</p>
+<ul class="simple">
+<li><p>mxtoolbox.process.math.f_gaussian</p></li>
+<li><p>mxtoolbox.process.math.f_sine</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>function object or str</em>) – Must be of form <cite>y = model(x, a_1, a_2, …)</cite></p></li>
+<li><p><strong>x, y</strong> (<em>1D array</em>) – Dependent and independent variables.</p></li>
+<li><p><strong>parameters</strong> (<em>tuple of floats</em>) – Ordered initial guesses for <span class="math notranslate nohighlight">\(\mathbf{a}\)</span></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fit_values</strong> (<em>1D array</em>) – model(<cite>x</cite>, a_1, a_2, …) using optimized parameters.</p></li>
+<li><p><strong>fit_parameters</strong> (<em>1D array</em>) – Optimized model parameters.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.analyses.pd_regression_statistics">
 <code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">pd_regression_statistics</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">xname</em>, <em class="sig-param">yname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.pd_regression_statistics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print analysis of variance (ANOVA) table for a linear regression
+<dd><p>Print analysis of variance on linear regression.</p>
+<p>Print analysis of variance (ANOVA) table for a linear regression
 drawn for yname from xname, two columns of dataframe. The independent
 variable is considered to be xname.</p>
-<p>This is based on an example from:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.Dataframe</em>) – The dataframe to operate on.</p></li>
+<li><p><strong>xname</strong> (<em>str</em>) – Column name of the independent variable.</p></li>
+<li><p><strong>yname</strong> (<em>str</em>) – Column name of the dependent variable.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
 <p>Van Emden, Helmut (2008)
 Statistics for terrified biologists,
 Blackwell publishing
@@ -93,20 +171,27 @@ p. 262</p>
 
 <dl class="function">
 <dt id="mxtoolbox.process.analyses.xr_cross_correlate">
-<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">xr_cross_correlate</code><span class="sig-paren">(</span><em class="sig-param">da_a</em>, <em class="sig-param">da_b</em>, <em class="sig-param">coord='time'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.xr_cross_correlate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cross correlation between dataarrays da_a and da_b. The
-two input arrays can contain NaN values and be of different
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">xr_cross_correlate</code><span class="sig-paren">(</span><em class="sig-param">dataarray_a</em>, <em class="sig-param">dataarray_b</em>, <em class="sig-param">coord='time'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.xr_cross_correlate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute cross correlation between DataArrays dataarray_a and dataarray_b.</p>
+<p>The two input arrays can contain NaN values and be of different
 lengths but they must have the same coordinate resolution
 and coordinates must match on overlap. Resample prior to
 using if necessary.</p>
-<dl>
-<dt>Outputs</dt><dd><dl class="simple">
-<dt>tau: by how much da_a must be shifted forward</dt><dd><p>to match da_b.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataarray_a, dataarray_b</strong> (<em>xarray.DataArray</em>) – Arrays to correlate.</p></li>
+<li><p><strong>coord</strong> (<em>str</em>) – Name of dimension along which to operate.</p></li>
+</ul>
 </dd>
-</dl>
-<p>r2: variance explained at maximum cross correlation</p>
-<p>da_c: da_b shifted to max correlation</p>
-<p>cc: cross correlation vector</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>tau</strong> (<em>float</em>) – dataarray_a shifted forward by <cite>tau</cite> matches dataarray_b</p></li>
+<li><p><strong>r2</strong> (<em>float</em>) – Variance explained at maximum cross correlation.</p></li>
+<li><p><strong>dataarray_c</strong> (<em>xarray.DataArray</em>) – dataarray_b shifted to maximum correlation.</p></li>
+<li><p><strong>cc</strong> (<em>1D array</em>) – Cross correlation vector.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -129,7 +214,7 @@ frequency.</p>
 
 </div>
 <div class="section" id="module-mxtoolbox.process.convert">
-<span id="mxtoolbox-process-convert-module"></span><h2>mxtoolbox.process.convert module<a class="headerlink" href="#module-mxtoolbox.process.convert" title="Permalink to this headline">¶</a></h2>
+<span id="convert-module"></span><h2>convert module<a class="headerlink" href="#module-mxtoolbox.process.convert" title="Permalink to this headline">¶</a></h2>
 <p>Simple data conversions. Includes unit conversions and thermodynamic property
 conversions.</p>
 <dl class="function">
@@ -232,7 +317,7 @@ columns as calculated by the Gibbs Seawater package gsw.</p>
 
 </div>
 <div class="section" id="module-mxtoolbox.process.math">
-<span id="mxtoolbox-process-math-module"></span><h2>mxtoolbox.process.math module<a class="headerlink" href="#module-mxtoolbox.process.math" title="Permalink to this headline">¶</a></h2>
+<span id="math-module"></span><h2>math module<a class="headerlink" href="#module-mxtoolbox.process.math" title="Permalink to this headline">¶</a></h2>
 <p>Mathematical, geometrical and simple matrix operations.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.math.broadcastable">
@@ -317,6 +402,22 @@ be of the form,</p>
 <dd class="field-odd"><p>array_like</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math.f_gaussian">
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">f_gaussian</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.f_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates,</p>
+<div class="math notranslate nohighlight">
+\[y = a_1 \exp\left(-\frac{(x - a_2)^2}{a_3}\right) + a_4\]</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math.f_sine">
+<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">f_sine</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.f_sine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates,</p>
+<div class="math notranslate nohighlight">
+\[y = a_1 \sin\left((x - a_2)a_3\right) + a_4\]</div>
 </dd></dl>
 
 <dl class="function">
@@ -585,7 +686,7 @@ of as rotating the frame of reference anti-clockwise by
 
 </div>
 <div class="section" id="module-mxtoolbox.process.signal">
-<span id="mxtoolbox-process-signal-module"></span><h2>mxtoolbox.process.signal module<a class="headerlink" href="#module-mxtoolbox.process.signal" title="Permalink to this headline">¶</a></h2>
+<span id="signal-module"></span><h2>signal module<a class="headerlink" href="#module-mxtoolbox.process.signal" title="Permalink to this headline">¶</a></h2>
 <p>Analyses of 1D signal type datasets or multidimensional
 arrays processed along one dimension. This includes
 filtering and binning functions.</p>
@@ -708,24 +809,23 @@ index of peaks in original array.</p>
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.convert.html">convert</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.plot.html">plot</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">process</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.analyses">mxtoolbox.process.analyses module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.convert">mxtoolbox.process.convert module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math">mxtoolbox.process.math module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal">mxtoolbox.process.signal module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.plot.html">plot subpackage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">process subpackage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.analyses">analyses module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.convert">convert module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math">math module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal">signal module</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read subpackage</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="mxtoolbox.plot.html" title="previous chapter">plot</a></li>
-      <li>Next: <a href="mxtoolbox.read.html" title="next chapter">read</a></li>
+      <li>Previous: <a href="mxtoolbox.plot.html" title="previous chapter">plot subpackage</a></li>
+      <li>Next: <a href="mxtoolbox.read.html" title="next chapter">read subpackage</a></li>
   </ul></li>
 </ul>
 </div>
