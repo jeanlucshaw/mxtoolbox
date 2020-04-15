@@ -3,9 +3,12 @@ Mathematical, geometrical and simple matrix operations.
 """
 import numpy as np
 # from math import radians, cos, sin, asin, sqrt
+import shapely.speedups
 from mpl_toolkits.basemap import Basemap
 from shapely.geometry import Point, Polygon
 from scipy.interpolate import interp1d
+import matplotlib.path as mpltPath
+shapely.speedups.enable()
 
 __all__ = ['broadcastable',
            'circular_distance',
@@ -277,13 +280,15 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
-def in_polygon(xpts, ypts, x_poly, y_poly):
+def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
     """
     Find points inside an arbitraty polygon.
 
-    Given coordinates of 2D space (`xpts`, `ypts`), returns a boolean array
-    of the same size as `xpts` and `ypts` where True values indicate
-    coordinates inside the polygon defined by (`x_poly`, `y_poly`).
+    Given coordinates of 2D space (`xpts`, `ypts`), returns a
+    boolean array of the same size as `xpts` and `ypts` where
+    True values indicate coordinates inside the polygon
+    defined by (`x_poly`, `y_poly`). Setting the `lib` parameter
+    chooses to use tools from matplotlib.path or shapely.
 
     Parameters
     ----------
@@ -291,6 +296,8 @@ def in_polygon(xpts, ypts, x_poly, y_poly):
         Input coordinates.
     x_poly, y_poly: array_like
         Polygon coordinates.
+    lib : str
+        Library to use ('mpl' or 'shp')
 
     Returns
     -------
@@ -298,13 +305,23 @@ def in_polygon(xpts, ypts, x_poly, y_poly):
         True for points inside polygon.
 
     """
-    # Polygon border
-    poly = Polygon([(xp, yp) for (xp, yp) in zip(x_poly, y_poly)])
+    if lib == 'shp':
+        # Polygon border
+        poly = Polygon([(xp, yp) for (xp, yp) in zip(x_poly, y_poly)])
 
-    # Bool vector
-    return [poly.contains(Point(x_pt, y_pt))
-            for (x_pt, y_pt)
-            in zip(xpts, ypts)]
+        # Bool vector
+        boolean = [poly.contains(Point(x_pt, y_pt))
+                   for (x_pt, y_pt)
+                   in zip(xpts, ypts)]
+    else:
+        # Set up input
+        pts = np.array([xpts, ypts]).T
+        poly = mpltPath.Path([[xp, yp] for (xp, yp) in zip(x_poly, y_poly)])
+
+        # Bool vector
+        boolean =  poly.contains_points(pts)
+
+    return boolean
 
 
 def increase_resolution(xpts, ypts, N, offset_idx=0):
