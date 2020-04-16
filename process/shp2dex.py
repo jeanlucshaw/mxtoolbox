@@ -10,8 +10,8 @@ collected every day on mixing and processed to provide information such as,
 * Comparisons to climatology.
 
 These analyses are performed by a combination of Perl/awk routines and are
-facilitated by first transforming the shapefiles to ascii plain text in a
-format called dex, containing geographical coordinates and egg code data.
+facilitated by first transforming the shapefiles to gridded ascii plain text
+in a format called dex, containing geographical coordinates and egg code data.
 Time information is carried by the file name (YYYYMMDD) and the columns in
 the file are ordered as follows,
 
@@ -31,6 +31,7 @@ the file are ordered as follows,
 This module performs the conversion and is meant to be called from command
 line. The options are the following,
 """
+import argparse, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -39,8 +40,8 @@ import shapefile
 from warnings import warn
 from mpl_toolkits.basemap import Basemap
 from os.path import exists
-from .math import in_polygon
-from libmx.geo.pipo import Polygon
+from mxtoolbox.process.math import in_polygon
+
 
 __all__ = ['load_cis_shp',
            '_shp2dex',
@@ -111,60 +112,60 @@ def _manage_shapefile_types(dataframe):
 
         * Type A:
 
-        Legend string = A_LEGEND
-        Legend strings = ['Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
-        Old egg code = E_*
-        Area string = AREA
-        Missing concentration = ['']
-        Missing form = ['', 'X']
-        Missing stage = ['']
-        Example = "data/GEC_H_19740102.shp"
+           | Legend string = A_LEGEND
+           | Legend strings = ['Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
+           | Old egg code = E_*
+           | Area string = AREA
+           | Missing concentration = ['']
+           | Missing form = ['', 'X']
+           | Missing stage = ['']
+           | Example = "data/GEC_H_19740102.shp"
 
         * Type B:
 
-        Legend string = POLY_TYPE
-        Legend strings = ['I', 'L', 'N', 'W']
-        New egg code = *
-        Area string = AREA
-        Missing concentration = ['', '-9', '99']
-        Missing form = ['', '-9', '99']
-        Missing stage = ['', '-9', '99']
-        Example = "data/GEC_D_20150108.shp"
+           | Legend string = POLY_TYPE
+           | Legend strings = ['I', 'L', 'N', 'W']
+           | New egg code = *
+           | Area string = AREA
+           | Missing concentration = ['', '-9', '99']
+           | Missing form = ['', '-9', '99']
+           | Missing stage = ['', '-9', '99']
+           | Example = "data/GEC_D_20150108.shp"
 
         * Type C:
 
-        Legend string = SGD_POLY_T
-        Legend strings = ['I', 'L', 'W']
-        New egg code = SGD_*
-        Old egg code = E_*
-        Area string = AREA
-        Missing concentration = ['']
-        Missing form = ['', 'X']
-        Missing stage = ['']
-        Example = "data/GEC_H_20200120.shp"
+           | Legend string = SGD_POLY_T
+           | Legend strings = ['I', 'L', 'W']
+           | New egg code = SGD_*
+           | Old egg code = E_*
+           | Area string = AREA
+           | Missing concentration = ['']
+           | Missing form = ['', 'X']
+           | Missing stage = ['']
+           | Example = "data/GEC_H_20200120.shp"
 
         * Type D:
 
-        Legend string = POLY_TYPE
-        Legend strings = ['I', 'L', 'W']
-        New egg code = *
-        Old egg code = E_*
-        Area string = AREA
-        Missing concentration = ['']
-        Missing form = ['', 'X']
-        Missing stage = ['']
-        Example = "data/GEC_H_20200309.shp"
+           | Legend string = POLY_TYPE
+           | Legend strings = ['I', 'L', 'W']
+           | New egg code = *
+           | Old egg code = E_*
+           | Area string = AREA
+           | Missing concentration = ['']
+           | Missing form = ['', 'X']
+           | Missing stage = ['']
+           | Example = "data/GEC_H_20200309.shp"
 
         * Type Z:
 
-        Legend string = LEGEND
-        Legend strings = ['Ice', 'Fast-ice', 'Land', 'IF', 'missing']
-        Old egg code = E_*
-        Area string = AREA
-        Missing concentration = ['X']
-        Missing form = ['X']
-        Missing stage = ['X']
-        Example = None
+           | Legend string = LEGEND
+           | Legend strings = ['Ice', 'Fast-ice', 'Land', 'IF', 'missing']
+           | Old egg code = E_*
+           | Area string = AREA
+           | Missing concentration = ['X']
+           | Missing form = ['X']
+           | Missing stage = ['X']
+           | Example = None
 
     Parameters
     ----------
@@ -258,7 +259,7 @@ def _manage_shapefile_types(dataframe):
     return dataframe[['AREA', *fields, 'LEGEND', 'shapes']]
 
 
-def _newegg_2_oldegg(out, sname, jj):
+def _newegg_2_oldegg(egg_dict, sname, i):
     """
     Convert new more precise egg code to older more general values.
 
@@ -270,7 +271,17 @@ def _newegg_2_oldegg(out, sname, jj):
 
     Parameters
     ----------
-    
+    egg_dict : dict
+        New egg code keys and values.
+    sname : str
+        Shapefile name.
+    jj : int
+        Polygon index.
+
+    Returns
+    -------
+    translated : dict
+        Input translated to old egg code.
     """
     dcon = {'X': 'X',
             '00': 'X',
@@ -407,19 +418,19 @@ def _newegg_2_oldegg(out, sname, jj):
             '10': '10'}  #  Kept from SIGRID-3, leads to icebergs exception
 
     # Translate
-    for key in out.keys():
+    for key in egg_dict.keys():
         try:
             if key in ['E_CT', 'E_CA', 'E_CB', 'E_CC']:
-                out[key] = dcon[out[key]]
+                egg_dict[key] = dcon[egg_dict[key]]
             elif key in ['E_SA', 'E_SB', 'E_SC']:
-                out[key] = dsta[out[key]]
+                egg_dict[key] = dsta[egg_dict[key]]
             elif key in ['E_FA', 'E_FB', 'E_FC']:
-                out[key] = dfor[out[key]]
+                egg_dict[key] = dfor[egg_dict[key]]
         except KeyError as e:
-            print("KeyError : %s for key %s, file: %s, polygon number %d" % (e, key, sname, jj))
-            out[key] = 'X'
+            print("KeyError : %s for key %s, file: %s, polygon number %d" % (e, key, sname, i))
+            egg_dict[key] = 'X'
 
-    return out
+    return egg_dict
 
 def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
 #     """
@@ -733,7 +744,7 @@ def _shp2dex(sname,
 
     Conversion from map coordinates to decimal degrees
     is carried out by Basemap. Point in polygon querying
-    is done using the shapefile library.
+    is done using the shapely or matplotlib libraries.
 
     Parameters
     ----------
@@ -790,13 +801,13 @@ def _shp2dex(sname,
 
     # Parameters
     egg_strs = ['E_CT',
-           'E_CA', 'E_SA', 'E_FA',
-           'E_CB', 'E_SB', 'E_FB',
-           'E_CC', 'E_SC', 'E_FC']
+                'E_CA', 'E_SA', 'E_FA',
+                'E_CB', 'E_SB', 'E_FB',
+                'E_CC', 'E_SC', 'E_FC']
 
     # Initialize output
     columns = ['lon', 'lat', 'LEGEND', *egg_strs, 'assigned']
-    df_output = pd.read_csv('data/CIS_test_grid.csv', names=columns, na_filter=False)
+    df_output = pd.read_csv(gname, names=columns, na_filter=False)
     df_output['assigned'] = False
 
     # Read projection file
@@ -924,3 +935,115 @@ def _shp2dex(sname,
     return df_output[['lon', 'lat', 'LEGEND', *egg_strs]]
 
 
+# Command line interface
+if __name__ == '__main__':
+    from time import perf_counter
+
+    # Set up parser
+    parser  = argparse.ArgumentParser(usage=__doc__)
+
+    # Define arguments
+    parser.add_argument('shapefiles',
+                        metavar='',
+                        help='Name and path of shapefile, or * expression',
+                        nargs='+')
+    parser.add_argument('-g',
+                        '--gridfile',
+                        metavar='',
+                        help='Name and path of grid file')
+    parser.add_argument('-l',
+                        '--urlat',
+                        metavar='',
+                        help='Latitude of upper right projection corner')
+    parser.add_argument('-L',
+                        '--urlon',
+                        metavar='',
+                        help='Longitude of upper right projection corner')
+    parser.add_argument('-w',
+                        '--lwest',
+                        action='store_true',
+                        help='Make longitude positive towards the west')
+    parser.add_argument('-e','--earth',
+                        action='store_true',
+                        help='Check land polygons for grid points')
+    args    = parser.parse_args()
+
+    # Parameters
+    fields = ['E_CT',
+              'E_CA', 'E_SA', 'E_FA',
+              'E_CB', 'E_SB', 'E_FB',
+              'E_CC', 'E_SC', 'E_FC']
+    
+    # Option switches
+    if args.gridfile    !=None :
+        grid   = args.gridfile
+    else:
+        grid   = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
+
+    kwargs  = {}
+    if args.urlon       !=None : kwargs['urlon']    = args.urlon
+    if args.urlat       !=None : kwargs['urlat']    = args.urlat
+    if args.lwest              : kwargs['lwest']    = True
+    if args.earth              : kwargs['skipland'] = False
+
+    # Convert and write to file
+    for shp in args.shapefiles:
+        start = perf_counter()
+        # Perform conversion
+        df_dex = _shp2dex(shp, grid, **kwargs)
+        end = perf_counter()
+        print("shp2dex call: %.2f seconds" % (end-start))
+
+        start = perf_counter()
+        # # Write to file
+        # with open('%s.dex2' % shp[0:-4], 'w') as of:
+
+        #     # Loop over grid points
+        #     for i in df_dex.index.values:
+
+        #         # Initialize
+        #         r = df_dex.iloc[i]
+ 
+        #         # No egg data, write legend instead
+        #         # if r.LEGEND in ['missing', 'Fast-ice', 'IF', 'Land']:
+        #         if r.LEGEND[0] in ['m', 'F', 'I', 'L']:
+        #             fmt = "%07.3f %5.2f %s\n"
+        #             # of.write(fmt % (r.lon, r.lat, r.LEGEND))
+
+        #         # Write egg data
+        #         else:
+        #             # Third thickest ice class undefined
+        #             if r.E_CC == r.E_SC == r.E_FC == 'X':
+
+        #                 # Second thickest ice class undefined
+        #                 if r.E_CB == r.E_SB == r.E_FB == 'X':
+        #                     fmt = "%07.3f %5.2f " + 3 * '%s '  + "%s\n"
+        #                     egg = tuple(r[e] for e in fields[:4])
+
+        #                 # First and second thickest ice classes defined
+        #                 else:
+        #                     fmt = "%07.3f %5.2f " + 6 * '%s '  + "%s\n"
+        #                     egg = tuple(r[e] for e in fields[:7])
+
+        #             # All three ice classes defined
+        #             else:
+        #                 fmt = "%07.3f %5.2f " + 9 * '%s '  + "%s\n"
+        #                 egg = tuple(r[e] for e in fields)
+
+        #             # Write
+        #             # of.write(fmt % (r.lon, r.lat, *egg))
+
+        df_dex.at[(df_dex.E_CC == 'X') &
+                  (df_dex.E_SC == 'X') &
+                  (df_dex.E_FC == 'X'), ['E_CC', 'E_FC', 'E_SC']] = ''
+        df_dex.at[(df_dex.E_CB == 'X') &
+                  (df_dex.E_SB == 'X') &
+                  (df_dex.E_FB == 'X'), ['E_CB', 'E_FB', 'E_SB']] = ''
+        df_dex.at[(df_dex.E_CA == 'X') &
+                  (df_dex.E_SA == 'X') &
+                  (df_dex.E_FA == 'X'), ['E_CA', 'E_FA', 'E_SA', 'E_CT']] = ''
+        df_dex.at[(df_dex.LEGEND == 'Egg'), 'LEGEND'] = ''
+        df_dex.to_csv('%s.dex2' % shp[0:-4], sep=' ', header=False, index=False)
+        
+        end = perf_counter()
+        print("Writing to file: %.2f seconds" % (end-start))

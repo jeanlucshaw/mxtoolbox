@@ -140,9 +140,6 @@ def distance_along_bearing(xpts,
     """
     Return distance from (`x0`, `y0`) in an arbitrary direction.
 
-    Summary
-    -------
-
     Project coordinates defined by (`xpts`, `ypts`) to the nearest point
     on a line passing through (`x0`, `y0`) and who's angle to the x axis
     is given by `bearing`. Then use `dfunc` to calculate distance of them
