@@ -31,15 +31,12 @@ the file are ordered as follows,
 This module performs the conversion and is meant to be called from command
 line. The options are the following,
 """
-import argparse, sys
-import numpy as np
+import argparse, csv, os, shapefile, sys, re
+import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import re
-import shapefile
 from warnings import warn
-from mpl_toolkits.basemap import Basemap
-from os.path import exists
 from mxtoolbox.process.math import in_polygon
 
 
@@ -731,19 +728,19 @@ def _show_cis_summary(fname):
         except:
             pass
 
+
 def _shp2dex(sname,
              gname,
              urlon=-38,
              urlat=52,
              lwest=True,
-             skipland=True,
-             pip='mpl'):
+             skipland=True):
     """
     Extract egg code data from CIS ESRI shapefiles.
 
     Conversion from map coordinates to decimal degrees
-    is carried out by Basemap. Point in polygon querying
-    is done using the shapely or matplotlib libraries.
+    is carried out by cartopy. Point in polygon querying
+    is done using the matplotlib library.
 
     Parameters
     ----------
@@ -810,24 +807,36 @@ def _shp2dex(sname,
     df_output['assigned'] = False
 
     # Read projection file
-    if exists(sname[0:-4]+".prj"):
+    if os.path.exists(sname[0:-4]+".prj"):
         proj, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
 
         # Datum
         b = a * (ifp - 1) / ifp
 
-        # Basemap
-        m = Basemap(urcrnrlon=urlon,
-                    urcrnrlat=urlat,
-                    llcrnrlon=lon0,
-                    llcrnrlat=lat0,
-                    projection=proj,
-                    rsphere=(a, b),
-                    resolution='l',
-                    lat_1=std1,
-                    lat_2=std2,
-                    lon_0=lon0,
-                    lat_0=lat0)
+        # if geo == 'basemap':
+        #     # Basemap
+        #     m = Basemap(urcrnrlon=urlon,
+        #                 urcrnrlat=urlat,
+        #                 llcrnrlon=lon0,
+        #                 llcrnrlat=lat0,
+        #                 projection=proj,
+        #                 rsphere=(a, b),
+        #                 resolution='l',
+        #                 lat_1=std1,
+        #                 lat_2=std2,
+        #                 lon_0=lon0,
+        #                 lat_0=lat0)
+        #     def to_lon_lat(x, y):
+        #         return m(x, y, inverse=True)
+        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
+        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
+                                    globe=globe,
+                                    central_latitude=lat0,
+                                    central_longitude=lon0)
+        def to_lon_lat(x, y):
+            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
+            return transformed[:, 0], transformed[:, 1]
+
         prjfile = True
     else:
         prjfile = False
@@ -852,7 +861,7 @@ def _shp2dex(sname,
                 # Get polygon coordinates
                 x, y = np.split(np.array(shape.points), 2, axis=1)
                 if prjfile:
-                    lon, lat = m(x.flatten(), y.flatten(), inverse=True)
+                    lon, lat = to_lon_lat(x.flatten(), y.flatten())
                 else:
                     lon, lat = x.flatten(), y.flatten()
 
@@ -870,19 +879,19 @@ def _shp2dex(sname,
                                                        lat.max())) 
 
                 # Find pip with Sloan Algorithm
-                if pip == 'sloan':
-                    Po = Polygon(lon, lat)
+                # if pip == 'sloan':
+                #     Po = Polygon(lon, lat)
 
-                    # Find grid points in polygon
-                    mindst = Po.is_inside(df_candidates.lon.values,
-                                          df_candidates.lat.values)
-                    target_index = df_candidates.loc[mindst >= 0].index.values
-                else:
-                    inside = in_polygon(df_candidates.lon.values,
-                                        df_candidates.lat.values,
-                                        lon,
-                                        lat)
-                    target_index = df_candidates.loc[inside].index.values
+                #     # Find grid points in polygon
+                #     mindst = Po.is_inside(df_candidates.lon.values,
+                #                           df_candidates.lat.values)
+                #     target_index = df_candidates.loc[mindst >= 0].index.values
+                # else:
+                inside = in_polygon(df_candidates.lon.values,
+                                    df_candidates.lat.values,
+                                    lon,
+                                    lat)
+                target_index = df_candidates.loc[inside].index.values
                 
                 # Index of points to write in egg
                 if target_index.size > 0:
@@ -992,8 +1001,12 @@ if __name__ == '__main__':
     # Convert and write to file
     for shp in args.shapefiles:
         # Perform conversion
+        start = perf_counter()
         df_dex = _shp2dex(shp, grid, **kwargs)
+        end = perf_counter()
+        print('shp2dex call: %.2f seconds' % (end - start))
 
+        start = perf_counter()
         # Format to match required character lengths, spacing and
         df_dex['printable'] = (df_dex['lon'].apply(lambda x : '%07.3f' % x) + " " +
                                df_dex['lat'].apply(lambda x : '%05.2f' % x) + " " +
@@ -1013,3 +1026,5 @@ if __name__ == '__main__':
 
         # Write to output
         df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
+        end = perf_counter()
+        print('shp2dex call: %.2f seconds' % (end - start))
