@@ -316,12 +316,12 @@ columns as calculated by the Gibbs Seawater package gsw.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-mxtoolbox.process.math">
-<span id="math-module"></span><h2>math module<a class="headerlink" href="#module-mxtoolbox.process.math" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-mxtoolbox.process.math_">
+<span id="math-module"></span><h2>math_ module<a class="headerlink" href="#module-mxtoolbox.process.math_" title="Permalink to this headline">¶</a></h2>
 <p>Mathematical, geometrical and simple matrix operations.</p>
 <dl class="function">
-<dt id="mxtoolbox.process.math.broadcastable">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">broadcastable</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.broadcastable" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.broadcastable">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">broadcastable</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.broadcastable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return shape in which b could be broadcasted with a.</p>
 <p>If arrays can not be broadcast None is returned, therefore this
 function can also serve as a boolean test answering if b be broadcast
@@ -344,8 +344,8 @@ arrays can not be broadcast.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.circular_distance">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">circular_distance</code><span class="sig-paren">(</span><em class="sig-param">a1</em>, <em class="sig-param">a2</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.circular_distance" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.circular_distance">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">circular_distance</code><span class="sig-paren">(</span><em class="sig-param">a1</em>, <em class="sig-param">a2</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.circular_distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function circdist usage:</p>
 <blockquote>
 <div><p>d   =   circdist(a1,a2,units=’rad’)</p>
@@ -370,8 +370,8 @@ is specified to ‘deg’.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.distance_along_bearing">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">distance_along_bearing</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">bearing</em>, <em class="sig-param">x0=0</em>, <em class="sig-param">y0=0</em>, <em class="sig-param">dfunc=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.distance_along_bearing" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.distance_along_bearing">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">distance_along_bearing</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">bearing</em>, <em class="sig-param">x0=0</em>, <em class="sig-param">y0=0</em>, <em class="sig-param">dfunc=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.distance_along_bearing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return distance from (<cite>x0</cite>, <cite>y0</cite>) in an arbitrary direction.</p>
 <p>Project coordinates defined by (<cite>xpts</cite>, <cite>ypts</cite>) to the nearest point
 on a line passing through (<cite>x0</cite>, <cite>y0</cite>) and who’s angle to the x axis
@@ -405,24 +405,24 @@ be of the form,</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.f_gaussian">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">f_gaussian</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.f_gaussian" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.f_gaussian">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">f_gaussian</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.f_gaussian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates,</p>
 <div class="math notranslate nohighlight">
 \[y = a_1 \exp\left(-\frac{(x - a_2)^2}{a_3}\right) + a_4\]</div>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.f_sine">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">f_sine</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.f_sine" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.f_sine">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">f_sine</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a_1</em>, <em class="sig-param">a_2</em>, <em class="sig-param">a_3</em>, <em class="sig-param">a_4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.f_sine" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates,</p>
 <div class="math notranslate nohighlight">
 \[y = a_1 \sin\left((x - a_2)a_3\right) + a_4\]</div>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.haversine">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">haversine</code><span class="sig-paren">(</span><em class="sig-param">lon1</em>, <em class="sig-param">lat1</em>, <em class="sig-param">lon2</em>, <em class="sig-param">lat2</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.haversine" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.haversine">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">haversine</code><span class="sig-paren">(</span><em class="sig-param">lon1</em>, <em class="sig-param">lat1</em>, <em class="sig-param">lon2</em>, <em class="sig-param">lat2</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.haversine" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the great circle distance between two points.</p>
 <p>Used to calculate the distance between points defined in decimal
 degrees. Uses the equation,</p>
@@ -449,8 +449,8 @@ degrees. Uses the equation,</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.increase_resolution">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">increase_resolution</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">N</em>, <em class="sig-param">offset_idx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.increase_resolution" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.increase_resolution">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">increase_resolution</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">N</em>, <em class="sig-param">offset_idx=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.increase_resolution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get high resolution track from low resolution track.</p>
 <p>Create a higher resolution track described in 2D by xpts and
 ypts, 2 numpy 1D arrays, with N linearly equidistant points
@@ -478,17 +478,20 @@ km.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.in_polygon">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">in_polygon</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">x_poly</em>, <em class="sig-param">y_poly</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.in_polygon" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.in_polygon">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">in_polygon</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">x_poly</em>, <em class="sig-param">y_poly</em>, <em class="sig-param">lib='mpl'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.in_polygon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find points inside an arbitraty polygon.</p>
-<p>Given coordinates of 2D space (<cite>xpts</cite>, <cite>ypts</cite>), returns a boolean array
-of the same size as <cite>xpts</cite> and <cite>ypts</cite> where True values indicate
-coordinates inside the polygon defined by (<cite>x_poly</cite>, <cite>y_poly</cite>).</p>
+<p>Given coordinates of 2D space (<cite>xpts</cite>, <cite>ypts</cite>), returns a
+boolean array of the same size as <cite>xpts</cite> and <cite>ypts</cite> where
+True values indicate coordinates inside the polygon
+defined by (<cite>x_poly</cite>, <cite>y_poly</cite>). Setting the <cite>lib</cite> parameter
+chooses to use tools from matplotlib.path or shapely.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>xpts, ypts</strong> (<em>array_like</em>) – Input coordinates.</p></li>
 <li><p><strong>x_poly, y_poly</strong> (<em>array_like</em>) – Polygon coordinates.</p></li>
+<li><p><strong>lib</strong> (<em>str</em>) – Library to use (‘mpl’ or ‘shp’)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -501,8 +504,8 @@ coordinates inside the polygon defined by (<cite>x_poly</cite>, <cite>y_poly</ci
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.get_contour_xy">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">get_contour_xy</code><span class="sig-paren">(</span><em class="sig-param">contour</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.get_contour_xy" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.get_contour_xy">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">get_contour_xy</code><span class="sig-paren">(</span><em class="sig-param">contour</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.get_contour_xy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return (x, y) coordinates of contour line.</p>
 <p>Input is assumed to be a QuadContourSet object
 containing only one contour line.</p>
@@ -520,8 +523,8 @@ containing only one contour line.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.project_to_line">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">project_to_line</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">c</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.project_to_line" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.project_to_line">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">project_to_line</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">c</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.project_to_line" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find point on line nearest to coordinate.</p>
 <p>Given the points (<cite>xpts</cite>, <cite>ypts</cite>) and line <cite>d</cite> defined by,</p>
 <div class="math notranslate nohighlight">
@@ -549,8 +552,8 @@ containing only one contour line.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.proximity_group">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">proximity_group</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">distance</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.proximity_group" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.proximity_group">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">proximity_group</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">distance</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.proximity_group" title="Permalink to this definition">¶</a></dt>
 <dd><p>Group consecutive array values by proximity.</p>
 <p>Proximity grouping of values in an irregular but
 monotonously increasing <cite>array</cite>. Adjacent values
@@ -575,8 +578,8 @@ or equal to <cite>distance</cite>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.polygon_area">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.polygon_area" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.polygon_area">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.polygon_area" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute polygon area.</p>
 <p>Use Greene’s theorem to compute polygon area. Input vectors
 can be longitudes and latitudes if lonlat is specified. Otherwise
@@ -599,8 +602,8 @@ they are assumed coordinates of linear space.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.rotate_frame">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">rotate_frame</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">angle</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.rotate_frame" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.rotate_frame">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">rotate_frame</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">angle</em>, <em class="sig-param">units='rad'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.rotate_frame" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return 2D data in rotated frame of reference.</p>
 <p>Rotates values of 2D vectors whose component values
 are given by <cite>u</cite> and <cite>v</cite>. This function should be thought
@@ -624,8 +627,8 @@ of as rotating the frame of reference anti-clockwise by
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.xr_abs">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_abs</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_abs" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.xr_abs">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">xr_abs</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.xr_abs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return dataset dataset with field taken absolute.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -644,8 +647,8 @@ of as rotating the frame of reference anti-clockwise by
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.xr_time_step">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_time_step</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">tname</em>, <em class="sig-param">unit</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_time_step" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.xr_time_step">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">xr_time_step</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">tname</em>, <em class="sig-param">unit</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.xr_time_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get median step of the time axis in dataset.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -665,8 +668,8 @@ of as rotating the frame of reference anti-clockwise by
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.math.xr_unique">
-<code class="sig-prename descclassname">mxtoolbox.process.math.</code><code class="sig-name descname">xr_unique</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math.xr_unique" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.math_.xr_unique">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">xr_unique</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.xr_unique" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove duplicates along dimension <cite>dim</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -685,14 +688,293 @@ of as rotating the frame of reference anti-clockwise by
 </dd></dl>
 
 </div>
-<div class="section" id="module-mxtoolbox.process.signal">
-<span id="signal-module"></span><h2>signal module<a class="headerlink" href="#module-mxtoolbox.process.signal" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-mxtoolbox.process.shp2dex">
+<span id="shp2dex-module"></span><h2>shp2dex module<a class="headerlink" href="#module-mxtoolbox.process.shp2dex" title="Permalink to this headline">¶</a></h2>
+<p>Convert Canadian ice service (CIS) ESRI shapefiles to ascii format (dex).</p>
+<p>CIS daily ice analysis charts (dailys) and regional analysis charts (weeklys) are
+collected every day on mixing and processed to provide information such as,</p>
+<ul class="simple">
+<li><p>Ice thickness maps.</p></li>
+<li><p>First occurence maps.</p></li>
+<li><p>Total gulf, Newfoundland shelf and Scotian Shelf ice volumes.</p></li>
+<li><p>Comparisons to climatology.</p></li>
+</ul>
+<p>These analyses are performed by a combination of Perl/awk routines and are
+facilitated by first transforming the shapefiles to gridded ascii plain text
+in a format called dex, containing geographical coordinates and egg code data.
+Time information is carried by the file name (YYYYMMDD) and the columns in
+the file are ordered as follows,</p>
+<ul class="simple">
+<li><p>Longitude (west)</p></li>
+<li><p>Latitude</p></li>
+<li><p>Total ice concentration</p></li>
+<li><p>Partial ice concentration (thickest ice)</p></li>
+<li><p>Stage of developpment (thickest ice)</p></li>
+<li><p>Form of ice (thickest ice)</p></li>
+<li><p>Partial ice concentration (second thickest ice)</p></li>
+<li><p>Stage of developpment (second thickest ice)</p></li>
+<li><p>Form of ice (second thickest ice)</p></li>
+<li><p>Partial ice concentration (third thickest ice)</p></li>
+<li><p>Stage of developpment (third thickest ice)</p></li>
+<li><p>Form of ice (third thickest ice)</p></li>
+</ul>
+<p>This module performs the conversion and is meant to be called from command
+line. The options are the following,</p>
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex.load_cis_shp">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read CIS shapefile to dataframe and polygon list.</p>
+<p>Creates a pandas DataFrame with records from the <cite>.dbf</cite>
+companion file as rows and the field names as columns. The
+dataframe is also sorted by polygon area as this is needed
+further down the processing chain. For uniformity, empty
+strings in records are replaced by ‘X’. A reference to the
+shape object of each record is found in column <cite>shapes</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Path and name to input shapefile (.shp).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Shapefile record and field information.</p></li>
+<li><p><strong>empty</strong> (<em>bool</em>) – True if missing fields essential for processing.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex._shp2dex">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">urlon=-38</em>, <em class="sig-param">urlat=52</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
+<p>Conversion from map coordinates to decimal degrees
+is carried out by cartopy. Point in polygon querying
+is done using the matplotlib library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sname</strong> (<em>string</em>) – The shapefile (.shp) path and name.</p></li>
+<li><p><strong>gname</strong> (<em>string</em>) – Path and name of the text file containing
+the queried coordinates. This is expected to be
+a two column file containing [lon lat] points
+separated by spaces.</p></li>
+<li><p><strong>urlon</strong> (<em>float</em>) – Longitude of projection upper right corner.
+Default value of -38 works for shapefiles
+in Eastern Canada.</p></li>
+<li><p><strong>urlat</strong> (<em>float</em>) – Latitude of projection upper right corner.
+Default value of 52 works for
+shapefiles in Eastern Canada.</p></li>
+<li><p><strong>lwest</strong> (<em>bool</em>) – Return longitude as negative west, defaults
+to True.</p></li>
+<li><p><strong>skipland</strong> (<em>bool</em>) – Skip polygons marked as land if this is True.
+Defaults to True. Skipping land will be faster.
+If it is not known if the grid has points
+on land and you wish to mark land points, set
+to false.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A dataframe with columns,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Longitude (west)</p></li>
+<li><p>Latitude</p></li>
+<li><p>Legend</p></li>
+<li><p>Total ice concentration</p></li>
+<li><p>Partial ice concentration (thickest ice)</p></li>
+<li><p>Stage of developpment (thickest ice)</p></li>
+<li><p>Form of ice (thickest ice)</p></li>
+<li><p>Partial ice concentration (second thickest ice)</p></li>
+<li><p>Stage of developpment (second thickest ice)</p></li>
+<li><p>Form of ice (second thickest ice)</p></li>
+<li><p>Partial ice concentration (third thickest ice)</p></li>
+<li><p>Stage of developpment (third thickest ice)</p></li>
+<li><p>Form of ice (third thickest ice)</p></li>
+</ul>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.Dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex._parse_prj">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_parse_prj</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._parse_prj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse shapefile (.prj) for projection parameters.</p>
+<p>Geographical projection information for shapefile data is
+contained in a companion file with the extension <cite>.prj</cite>. The
+Basemap class instance needs this information to convert
+polygon coordinates from map units (m) to longitudes and
+latitudes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Name of the projection file.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>proj</strong> (<em>str</em>) – Projection name abbreviated for input to Basemap.</p></li>
+<li><p><strong>lat0</strong> (<em>float</em>) – Latitude of origin.</p></li>
+<li><p><strong>lon0</strong> (<em>float</em>) – Longitude of origin.</p></li>
+<li><p><strong>std1</strong> (<em>float</em>) – Standard parallel 1 used by LCC projection.</p></li>
+<li><p><strong>std2</strong> (<em>float</em>) – Standard parallel 2 used by LCC projection.</p></li>
+<li><p><strong>a</strong> (<em>float</em>) – Datum semi-major radius.</p></li>
+<li><p><strong>ifp</strong> (<em>float</em>) – Inverse flattening parameter. Used to obtain the Datum
+semi-minor radius.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the moment, only Lambert conformal conic projections
+are supported.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex._manage_shapefile_types">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_manage_shapefile_types</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._manage_shapefile_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Funnel shapefiles types to uniform labels.</p>
+<p>Labels of the information inside CIS shapefiles
+that this module processes have changed several times
+in the past. To avoid cluttered error handling in the
+main code from future new shapefile types, all files
+are converted to type Z before processing. Important
+label differences between types are summarized below.</p>
+<p>Shapefile types</p>
+<blockquote>
+<div><ul>
+<li><p>Type A:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = A_LEGEND</div>
+<div class="line">Legend strings = [‘Fast ice’, ‘Ice free’, ‘Land’, ‘Open water’, ‘Remote egg’]</div>
+<div class="line">Old egg code = E_*</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “data/GEC_H_19740102.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type B:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = POLY_TYPE</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘N’, ‘W’]</div>
+<div class="line">New egg code = *</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Missing form = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Missing stage = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Example = “data/GEC_D_20150108.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type C:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = SGD_POLY_T</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
+<div class="line">New egg code = SGD_*</div>
+<div class="line">Old egg code = E_*</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “data/GEC_H_20200120.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type D:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = POLY_TYPE</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
+<div class="line">New egg code = *</div>
+<div class="line">Old egg code = E_*</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “data/GEC_H_20200309.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type Z:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = LEGEND</div>
+<div class="line">Legend strings = [‘Ice’, ‘Fast-ice’, ‘Land’, ‘IF’, ‘missing’]</div>
+<div class="line">Old egg code = E_*</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘X’]</div>
+<div class="line">Missing form = [‘X’]</div>
+<div class="line">Missing stage = [‘X’]</div>
+<div class="line">Example = None</div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Output from load_cis_shp of type A, B, C or D.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dataframe</strong> – Type Z.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex._separate_wrapping_polygons">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_separate_wrapping_polygons</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">decimals=5</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._separate_wrapping_polygons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find wrapping points of polygon sequence stored in vectors <cite>x</cite> and <cite>y</cite>.</p>
+<p>The CIS shapefiles contain complex polygons with ‘holes’, which are often other
+polygons of the data set. The encompassing polygon is the first to be defined in
+vectors <cite>x</cite> and <cite>y</cite>, and it ‘wraps’ to its first coordinate before the start of
+the smaller polygon. This routine separates the these polygons by finding the
+wrapping points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x, y</strong> (<em>1D array</em>) – Coordinates of the polygon sequence.</p></li>
+<li><p><strong>decimals</strong> (<em>int</em>) – Number of decimals to keep in float comparison.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>polygons_x, polygons_y</strong> (<em>list of 1D arrays</em>) – Coordinates of the separated polygons.</p></li>
+<li><p><strong>wrap_index</strong> (<em>1D int array</em>) – Index value of the wrapping points.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex.plot_cis_shp">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">savepath=None</em>, <em class="sig-param">hl=None</em>, <em class="sig-param">lab=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-mxtoolbox.process.signal_">
+<span id="signal-module"></span><h2>signal_ module<a class="headerlink" href="#module-mxtoolbox.process.signal_" title="Permalink to this headline">¶</a></h2>
 <p>Analyses of 1D signal type datasets or multidimensional
 arrays processed along one dimension. This includes
 filtering and binning functions.</p>
 <dl class="function">
-<dt id="mxtoolbox.process.signal.pd_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">pd_bin</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.pd_bin" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.signal_.pd_bin">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">pd_bin</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.pd_bin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bin values in pandas dataframe.</p>
 <p>Wrapper around xr_bin to allow bin averaging in pandas
 dataframes.</p>
@@ -715,8 +997,8 @@ dataframes.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.signal.xr_bin">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_bin</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_bin" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.signal_.xr_bin">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_bin</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">func=&lt;function nanmean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_bin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bin dataset along <cite>dim</cite>.</p>
 <p>Convenience wrapper for the groupby_bins xarray method. Meant for
 simply binning xarray <cite>dataset</cite> to the values of dimension <cite>dim</cite>, and
@@ -740,8 +1022,8 @@ return values at bin centers <cite>binc</cite>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.signal.xr_filter">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_filter</code><span class="sig-paren">(</span><em class="sig-param">coord</em>, <em class="sig-param">val</em>, <em class="sig-param">fc</em>, <em class="sig-param">btype='high'</em>, <em class="sig-param">axis=-1</em>, <em class="sig-param">order=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_filter" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.signal_.xr_filter">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_filter</code><span class="sig-paren">(</span><em class="sig-param">coord</em>, <em class="sig-param">val</em>, <em class="sig-param">fc</em>, <em class="sig-param">btype='high'</em>, <em class="sig-param">axis=-1</em>, <em class="sig-param">order=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply zero phase shift butterworth filter to xarray.</p>
 <p>!!!This needs to be tested and the UI needs a rework!!!</p>
 <p>Wrapper of scipy.signal.filtfilt that takes for input a coordinate
@@ -751,8 +1033,8 @@ supplied in seconds -1.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.signal.xr_godin">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_godin</code><span class="sig-paren">(</span><em class="sig-param">dataarray</em>, <em class="sig-param">tname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_godin" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.signal_.xr_godin">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_godin</code><span class="sig-paren">(</span><em class="sig-param">dataarray</em>, <em class="sig-param">tname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_godin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply Godin filter to <cite>dataarray</cite> along time dimension.</p>
 <p>Godin filtering is meant to remove the semi-diurnal and
 diurnal components of tide. It consists of iteratively
@@ -775,8 +1057,8 @@ downsampling to the daily scale.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.signal.xr_peaks">
-<code class="sig-prename descclassname">mxtoolbox.process.signal.</code><code class="sig-name descname">xr_peaks</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">th_array</em>, <em class="sig-param">tname</em>, <em class="sig-param">two_sided=True</em>, <em class="sig-param">fp_kwargs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal.xr_peaks" title="Permalink to this definition">¶</a></dt>
+<dt id="mxtoolbox.process.signal_.xr_peaks">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_peaks</code><span class="sig-paren">(</span><em class="sig-param">array</em>, <em class="sig-param">th_array</em>, <em class="sig-param">tname</em>, <em class="sig-param">two_sided=True</em>, <em class="sig-param">fp_kwargs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_peaks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find peaks in xarray dataset.</p>
 <p>!!!The UI here needs to be reworked and tested!!!</p>
 <p>Wrapper of scipy.signal.find_peaks that takes as input the array in which
@@ -813,8 +1095,9 @@ index of peaks in original array.</p>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">process subpackage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.analyses">analyses module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.convert">convert module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math">math module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal">signal module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math_">math_ module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.shp2dex">shp2dex module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal_">signal_ module</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read subpackage</a></li>

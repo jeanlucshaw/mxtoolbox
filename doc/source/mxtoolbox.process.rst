@@ -17,18 +17,28 @@ convert module
    :undoc-members:
    :show-inheritance:
 
-math module
------------
-
-.. automodule:: mxtoolbox.process.math
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-signal module
+math\_ module
 -------------
 
-.. automodule:: mxtoolbox.process.signal
+.. automodule:: mxtoolbox.process.math_
    :members:
    :undoc-members:
    :show-inheritance:
+
+shp2dex module
+--------------
+
+.. automodule:: mxtoolbox.process.shp2dex
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:
+
+signal\_ module
+---------------
+
+.. automodule:: mxtoolbox.process.signal_
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

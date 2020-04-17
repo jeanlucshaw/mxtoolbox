@@ -1,46 +1,44 @@
-mxtoolbox.process package
-=========================
+process subpackage
+==================
 
-Submodules
-----------
-
-mxtoolbox.process.analyses module
----------------------------------
+analyses module
+---------------
 
 .. automodule:: mxtoolbox.process.analyses
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.convert module
---------------------------------
+convert module
+--------------
 
 .. automodule:: mxtoolbox.process.convert
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.math module
------------------------------
+math\_ module
+-----------
 
-.. automodule:: mxtoolbox.process.math
+.. automodule:: mxtoolbox.process.math_
    :members:
    :undoc-members:
    :show-inheritance:
 
-mxtoolbox.process.signal module
--------------------------------
+shp2dex module
+--------------
 
-.. automodule:: mxtoolbox.process.signal
+.. automodule:: mxtoolbox.process.shp2dex
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:
+
+signal\_ module
+-------------
+
+.. automodule:: mxtoolbox.process.signal_
    :members:
    :undoc-members:
    :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: mxtoolbox.process
-   :members:
-   :undoc-members:
-   :show-inheritance:
