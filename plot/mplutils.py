@@ -7,7 +7,7 @@ import matplotlib.patches as patches
 import numpy as np
 from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from ..process.math import xr_abs
+from ..process.math_ import xr_abs
 
 
 __all__ = ['axlabel_doy2months',

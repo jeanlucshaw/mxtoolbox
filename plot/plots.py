@@ -6,7 +6,7 @@ import gsw
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
-from ..process.math import xr_abs
+from ..process.math_ import xr_abs
 from ..read.text import list2cm
 from ..process.convert import anomaly2rgb
 
