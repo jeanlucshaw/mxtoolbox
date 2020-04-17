@@ -731,7 +731,6 @@ def _show_cis_summary(fname):
         except:
             pass
 
-
 def _shp2dex(sname,
              gname,
              urlon=-38,
@@ -765,7 +764,7 @@ def _shp2dex(sname,
         shapefiles in Eastern Canada.
     lwest : bool
         Return longitude as negative west, defaults
-        to False.
+        to True.
     skipland : bool
         Skip polygons marked as land if this is True.
         Defaults to True. Skipping land will be faster.
@@ -795,9 +794,9 @@ def _shp2dex(sname,
     """
     # Option management
     if lwest:
-        sign = 1
-    else:
         sign = -1
+    else:
+        sign = 1
 
     # Parameters
     egg_strs = ['E_CT',
@@ -959,10 +958,10 @@ if __name__ == '__main__':
                         '--urlon',
                         metavar='',
                         help='Longitude of upper right projection corner')
-    parser.add_argument('-w',
-                        '--lwest',
+    parser.add_argument('-E',
+                        '--least',
                         action='store_true',
-                        help='Make longitude positive towards the west')
+                        help='Make longitude positive towards the east')
     parser.add_argument('-e','--earth',
                         action='store_true',
                         help='Check land polygons for grid points')
@@ -975,75 +974,42 @@ if __name__ == '__main__':
               'E_CC', 'E_SC', 'E_FC']
     
     # Option switches
-    if args.gridfile    !=None :
-        grid   = args.gridfile
+    if args.gridfile != None:
+        grid = args.gridfile
     else:
-        grid   = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
+        grid = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
 
     kwargs  = {}
-    if args.urlon       !=None : kwargs['urlon']    = args.urlon
-    if args.urlat       !=None : kwargs['urlat']    = args.urlat
-    if args.lwest              : kwargs['lwest']    = True
-    if args.earth              : kwargs['skipland'] = False
+    if args.urlon:
+        kwargs['urlon'] = args.urlon
+    if args.urlat:
+        kwargs['urlat'] = args.urlat
+    if args.least:
+        kwargs['lwest'] = False
+    if args.earth:
+        kwargs['skipland'] = False
 
     # Convert and write to file
     for shp in args.shapefiles:
-        start = perf_counter()
         # Perform conversion
         df_dex = _shp2dex(shp, grid, **kwargs)
-        end = perf_counter()
-        print("shp2dex call: %.2f seconds" % (end-start))
 
-        start = perf_counter()
-        # # Write to file
-        # with open('%s.dex2' % shp[0:-4], 'w') as of:
+        # Format to match required character lengths, spacing and
+        df_dex['printable'] = (df_dex['lon'].apply(lambda x : '%07.3f' % x) + " " +
+                               df_dex['lat'].apply(lambda x : '%05.2f' % x) + " " +
+                               df_dex['E_CT'].apply(lambda x : x.rjust(2)) + "  " +
+                               df_dex['E_CA'] + " " +
+                               df_dex['E_SA'] + " " +
+                               df_dex['E_FA'] + "  " +
+                               df_dex['E_CB'] + " " +
+                               df_dex['E_SB'] + " " +
+                               df_dex['E_FB'] + "  " +
+                               df_dex['E_CC'] + " " +
+                               df_dex['E_SC'] + " " +
+                               df_dex['E_FC'])
+        df_dex.at[df_dex.E_CC == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:30])
+        df_dex.at[df_dex.E_CB == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:23])
+        df_dex.at[df_dex.E_CA == 'X', 'printable'] = df_dex.LEGEND
 
-        #     # Loop over grid points
-        #     for i in df_dex.index.values:
-
-        #         # Initialize
-        #         r = df_dex.iloc[i]
- 
-        #         # No egg data, write legend instead
-        #         # if r.LEGEND in ['missing', 'Fast-ice', 'IF', 'Land']:
-        #         if r.LEGEND[0] in ['m', 'F', 'I', 'L']:
-        #             fmt = "%07.3f %5.2f %s\n"
-        #             # of.write(fmt % (r.lon, r.lat, r.LEGEND))
-
-        #         # Write egg data
-        #         else:
-        #             # Third thickest ice class undefined
-        #             if r.E_CC == r.E_SC == r.E_FC == 'X':
-
-        #                 # Second thickest ice class undefined
-        #                 if r.E_CB == r.E_SB == r.E_FB == 'X':
-        #                     fmt = "%07.3f %5.2f " + 3 * '%s '  + "%s\n"
-        #                     egg = tuple(r[e] for e in fields[:4])
-
-        #                 # First and second thickest ice classes defined
-        #                 else:
-        #                     fmt = "%07.3f %5.2f " + 6 * '%s '  + "%s\n"
-        #                     egg = tuple(r[e] for e in fields[:7])
-
-        #             # All three ice classes defined
-        #             else:
-        #                 fmt = "%07.3f %5.2f " + 9 * '%s '  + "%s\n"
-        #                 egg = tuple(r[e] for e in fields)
-
-        #             # Write
-        #             # of.write(fmt % (r.lon, r.lat, *egg))
-
-        df_dex.at[(df_dex.E_CC == 'X') &
-                  (df_dex.E_SC == 'X') &
-                  (df_dex.E_FC == 'X'), ['E_CC', 'E_FC', 'E_SC']] = ''
-        df_dex.at[(df_dex.E_CB == 'X') &
-                  (df_dex.E_SB == 'X') &
-                  (df_dex.E_FB == 'X'), ['E_CB', 'E_FB', 'E_SB']] = ''
-        df_dex.at[(df_dex.E_CA == 'X') &
-                  (df_dex.E_SA == 'X') &
-                  (df_dex.E_FA == 'X'), ['E_CA', 'E_FA', 'E_SA', 'E_CT']] = ''
-        df_dex.at[(df_dex.LEGEND == 'Egg'), 'LEGEND'] = ''
-        df_dex.to_csv('%s.dex2' % shp[0:-4], sep=' ', header=False, index=False)
-        
-        end = perf_counter()
-        print("Writing to file: %.2f seconds" % (end-start))
+        # Write to output
+        df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
