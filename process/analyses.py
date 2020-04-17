@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from scipy.optimize import leastsq
-from .math import f_gaussian, f_sine, xr_time_step, xr_unique
+from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
 
 __all__ = ['principal_modes',
            'gaussian_smoothing',

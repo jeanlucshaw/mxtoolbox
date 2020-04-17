@@ -5,7 +5,7 @@ conversions.
 import gsw
 import numpy as np
 import pandas as pd
-from .math import broadcastable, rotate_frame
+from .math_ import broadcastable, rotate_frame
 
 __all__ = ['anomaly2rgb',
            'binc2edge',

@@ -6,7 +6,7 @@ filtering and binning functions.
 import numpy as np
 import xarray as xr
 import scipy.signal as signal
-from .math import xr_time_step
+from .math_ import xr_time_step
 from .convert import binc2edge
 
 __all__ = ['pd_bin',

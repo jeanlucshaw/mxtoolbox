@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from warnings import warn
-from mxtoolbox.process.math import in_polygon
+from mxtoolbox.process.math_ import in_polygon
 
 
 __all__ = ['load_cis_shp',
