@@ -1022,7 +1022,8 @@ if __name__ == '__main__':
                                df_dex['E_FC'])
         df_dex.at[df_dex.E_CC == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:30])
         df_dex.at[df_dex.E_CB == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:23])
-        df_dex.at[df_dex.E_CA == 'X', 'printable'] = df_dex.LEGEND
+        df_dex.at[df_dex.E_CA == 'X', 'printable'] = (df_dex['printable'].apply(lambda x : x[:14]) +
+                                                      df_dex.LEGEND)
 
         # Write to output
         df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)

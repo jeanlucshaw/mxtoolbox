@@ -1,0 +1,13 @@
+name: mxtoolbox 
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pandas=1.0.2
+  - cartopy
+  - xarray
+  - basemap
+  - gsw
+prefix: /home/jls/Software/anaconda3/envs/shp2dex
+
