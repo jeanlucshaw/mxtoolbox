@@ -15,18 +15,18 @@ in a format called dex, containing geographical coordinates and egg code data.
 Time information is carried by the file name (YYYYMMDD) and the columns in
 the file are ordered as follows,
 
-   1 - Longitude (west)
-   2 - Latitude
-   3 - Total ice concentration
-   4 - Partial ice concentration (thickest ice)
-   5 - Stage of developpment (thickest ice)
-   6 - Form of ice (thickest ice)
-   7 - Partial ice concentration (second thickest ice)
-   8 - Stage of developpment (second thickest ice)
-   9 - Form of ice (second thickest ice)
-   10 - Partial ice concentration (third thickest ice)
-   11 - Stage of developpment (third thickest ice)
-   12 - Form of ice (third thickest ice)
+   1. Longitude (west)
+   2. Latitude
+   3. Total ice concentration
+   4. Partial ice concentration (thickest ice)
+   5. Stage of developpment (thickest ice)
+   6. Form of ice (thickest ice)
+   7. Partial ice concentration (second thickest ice)
+   8. Stage of developpment (second thickest ice)
+   9. Form of ice (second thickest ice)
+   10. Partial ice concentration (third thickest ice)
+   11. Stage of developpment (third thickest ice)
+   12. Form of ice (third thickest ice)
 
 This module performs the conversion and is meant to be called from command
 line. Command line interface description can be shown by entering,
@@ -235,7 +235,7 @@ def _manage_shapefile_types(dataframe):
         dataframe = dataframe.rename(mapper, axis=1)
 
     # Type D
-    elif all([key in DF2.keys() for key in ['POLY_TYPE', 'CT', 'E_CT']]):
+    elif all([key in dataframe.keys() for key in ['POLY_TYPE', 'CT', 'E_CT']]):
     # Rename columns
         mapper = {'POLY_TYPE': 'LEGEND'}
         dataframe = dataframe.rename(mapper, axis=1)
@@ -776,6 +776,10 @@ def _shp2dex(sname,
             * Form of ice (third thickest ice)
             * Printable dex strings
 
+    See Also
+    --------
+    math_.in_polygon : Point in polygon querying.
+
     """
     # Option management
     if lwest:
@@ -874,7 +878,7 @@ def _shp2dex(sname,
                             df_output.at[target_index, 'LEGEND'] = 'Land'
                         df_output.at[target_index, 'printable'] = 'Land'
                     # Missing data
-                    elif r.LEGEND == 'm':
+                    elif r.LEGEND == 'N':
                         if fill_dataframe:
                             df_output.at[target_index, 'LEGEND'] = 'missing'
                         df_output.at[target_index, 'printable'] = 'missing'
@@ -891,6 +895,10 @@ def _shp2dex(sname,
 
                     # Ice
                     else:
+                        # Partial concentration A is set to CT in this case
+                        if r.E_CT != 'X' and r.E_CA == 'X':
+                            r.at['E_CA'] = r['E_CT']
+
                         # Create egg code string in dex format
                         format_egg = '%s  %s %s %s' % (r.E_CT.rjust(2),
                                                        r.E_CA,
@@ -978,24 +986,24 @@ if __name__ == '__main__':
                         '--least',
                         action='store_true',
                         help='Make longitude positive towards the east')
-    parser.add_argument('-e','--earth',
+    parser.add_argument('-e', '--earth',
                         action='store_true',
                         help='Check land polygons for grid points')
-    args    = parser.parse_args()
+    args = parser.parse_args()
 
     # Parameters
     fields = ['E_CT',
               'E_CA', 'E_SA', 'E_FA',
               'E_CB', 'E_SB', 'E_FB',
               'E_CC', 'E_SC', 'E_FC']
-    
+
     # Option switches
     if args.gridfile != None:
         grid = args.gridfile
     else:
         grid = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
 
-    kwargs  = {}
+    kwargs = {}
     if args.urlon:
         kwargs['urlon'] = args.urlon
     if args.urlat:
