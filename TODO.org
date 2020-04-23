@@ -5,7 +5,7 @@
 ** TODO plot.mplutils.colorline
 ** TODO plot.mplutils.make_segments
 * Migrate from libmx
-** TODO shp2dex
+** DONE shp2dex
 ** TODO scripts
 ** TODO PCA
 ** TODO cluster

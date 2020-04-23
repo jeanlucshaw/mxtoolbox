@@ -251,7 +251,7 @@ def _manage_shapefile_types(dataframe):
 
     # Type not recognized
     else:
-        raise TypeError('Shapefile type not in [A, B, C]')
+        raise TypeError('Shapefile type not in [A, B, C, D]')
 
     return dataframe[['AREA', *fields, 'LEGEND', 'shapes']]
 
@@ -929,7 +929,7 @@ def _shp2dex(sname,
         # Unassigned points are considered missing
         for egg in egg_strs:
             df_output.at[df_output['LEGEND'] == '', egg] = 'X'
-        df_output.at[df_output['LEGEND'] == '', 'LEGEND'] = 'missing'
+        # df_output.at[df_output['LEGEND'] == '', 'LEGEND'] = 'missing'
     else:
         # This happens when the shapefile is empty
         warn('Shapefile is empty: returning "missing" for all grid points in dex')
