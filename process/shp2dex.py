@@ -4,10 +4,10 @@ Convert Canadian ice service (CIS) ESRI shapefiles to ascii format (dex).
 CIS daily ice analysis charts (dailys) and regional analysis charts (weeklys) are
 collected every day on mixing and processed to provide information such as,
 
-* Ice thickness maps.
-* First occurence maps.
-* Total gulf, Newfoundland shelf and Scotian Shelf ice volumes.
-* Comparisons to climatology.
+   * Ice thickness maps.
+   * First occurence maps.
+   * Total gulf, Newfoundland shelf and Scotian Shelf ice volumes.
+   * Comparisons to climatology.
 
 These analyses are performed by a combination of Perl/awk routines and are
 facilitated by first transforming the shapefiles to gridded ascii plain text
@@ -15,28 +15,36 @@ in a format called dex, containing geographical coordinates and egg code data.
 Time information is carried by the file name (YYYYMMDD) and the columns in
 the file are ordered as follows,
 
-* Longitude (west)
-* Latitude
-* Total ice concentration
-* Partial ice concentration (thickest ice)
-* Stage of developpment (thickest ice)
-* Form of ice (thickest ice)
-* Partial ice concentration (second thickest ice)
-* Stage of developpment (second thickest ice)
-* Form of ice (second thickest ice)
-* Partial ice concentration (third thickest ice)
-* Stage of developpment (third thickest ice)
-* Form of ice (third thickest ice)
+   1 - Longitude (west)
+   2 - Latitude
+   3 - Total ice concentration
+   4 - Partial ice concentration (thickest ice)
+   5 - Stage of developpment (thickest ice)
+   6 - Form of ice (thickest ice)
+   7 - Partial ice concentration (second thickest ice)
+   8 - Stage of developpment (second thickest ice)
+   9 - Form of ice (second thickest ice)
+   10 - Partial ice concentration (third thickest ice)
+   11 - Stage of developpment (third thickest ice)
+   12 - Form of ice (third thickest ice)
 
 This module performs the conversion and is meant to be called from command
-line. The options are the following,
+line. Command line interface description can be shown by entering,
+
+.. code::
+
+   $ shp2dex -h
+
 """
-import argparse, csv, os, shapefile, sys, re
+import argparse
+import os
+import re
+from warnings import warn
+import shapefile
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from warnings import warn
 from mxtoolbox.process.math_ import in_polygon
 
 
@@ -70,7 +78,7 @@ def load_cis_shp(name):
         Shapefile record and field information.
     empty : bool
         True if missing fields essential for processing.
-    
+
     """
     sf = shapefile.Reader(name)
     fld = np.array(sf.fields)[:, 0]
@@ -79,7 +87,7 @@ def load_cis_shp(name):
 
     # Empty strings become X
     rcd[rcd == ''] = 'X'
-    
+
     # Load to pandas dataframe
     dataframe = pd.DataFrame(rcd, columns = fld[1:])
 
@@ -111,53 +119,53 @@ def _manage_shapefile_types(dataframe):
 
            | Legend string = A_LEGEND
            | Legend strings = ['Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
-           | Old egg code = E_*
+           | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['']
            | Missing form = ['', 'X']
            | Missing stage = ['']
-           | Example = "data/GEC_H_19740102.shp"
+           | Example = "GEC_H_19740102.shp"
 
         * Type B:
 
            | Legend string = POLY_TYPE
            | Legend strings = ['I', 'L', 'N', 'W']
-           | New egg code = *
+           | New egg code = [CT, CA, ... ]
            | Area string = AREA
            | Missing concentration = ['', '-9', '99']
            | Missing form = ['', '-9', '99']
            | Missing stage = ['', '-9', '99']
-           | Example = "data/GEC_D_20150108.shp"
+           | Example = "GEC_D_20150108.shp"
 
         * Type C:
 
            | Legend string = SGD_POLY_T
            | Legend strings = ['I', 'L', 'W']
-           | New egg code = SGD_*
-           | Old egg code = E_*
+           | New egg code = [SGD_CT, SGD_CA, ... ]
+           | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['']
            | Missing form = ['', 'X']
            | Missing stage = ['']
-           | Example = "data/GEC_H_20200120.shp"
+           | Example = "GEC_H_20200120.shp"
 
         * Type D:
 
            | Legend string = POLY_TYPE
            | Legend strings = ['I', 'L', 'W']
-           | New egg code = *
-           | Old egg code = E_*
+           | New egg code = [CT, CA, ... ]
+           | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['']
            | Missing form = ['', 'X']
            | Missing stage = ['']
-           | Example = "data/GEC_H_20200309.shp"
+           | Example = "GEC_H_20200309.shp"
 
         * Type Z:
 
            | Legend string = LEGEND
-           | Legend strings = ['Ice', 'Fast-ice', 'Land', 'IF', 'missing']
-           | Old egg code = E_*
+           | Legend strings = ['I', 'F', 'L', 'W', 'N']
+           | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['X']
            | Missing form = ['X']
@@ -193,9 +201,10 @@ def _manage_shapefile_types(dataframe):
         dataframe = dataframe.rename(mapper, axis=1)
 
         # Convert legend labels
-        dataframe.at[(dataframe.LEGEND == 'Fast ice'), 'LEGEND'] = 'Fast-ice'
+        dataframe.at[(dataframe.LEGEND == 'Fast ice'), 'LEGEND'] = 'F'
+        dataframe.at[(dataframe.LEGEND == 'Land'), 'LEGEND'] = 'L'
         dataframe.at[(dataframe.LEGEND == 'Ice free') |
-                      (dataframe.LEGEND == 'Open water'), 'LEGEND'] = 'IF'
+                      (dataframe.LEGEND == 'Open water'), 'LEGEND'] = 'W'
 
     # Type B
     elif ('POLY_TYPE' in dataframe.keys()) and ('E_CT' not in dataframe.keys()):
@@ -219,35 +228,17 @@ def _manage_shapefile_types(dataframe):
             translated = _newegg_2_oldegg(raw, 'bla', i)
             dataframe.at[i, translated.keys()] = translated.values
 
-        # Convert legend labels
-        dataframe.at[(dataframe.LEGEND == 'W'), 'LEGEND'] = 'IF'
-        dataframe.at[(dataframe.LEGEND == 'I'), 'LEGEND'] = 'Ice'
-        dataframe.at[(dataframe.LEGEND == 'L'), 'LEGEND'] = 'Land'
-        dataframe.at[(dataframe.LEGEND == 'N'), 'LEGEND'] = 'missing'
-
     # Type C
     elif 'SGD_POLY_T' in dataframe.keys():
         # Rename columns
         mapper = {'SGD_POLY_T': 'LEGEND'}
         dataframe = dataframe.rename(mapper, axis=1)
 
-        # Convert legend labels
-        dataframe.at[(dataframe.LEGEND == 'W'), 'LEGEND'] = 'IF'
-        dataframe.at[(dataframe.LEGEND == 'I'), 'LEGEND'] = 'Ice'
-        dataframe.at[(dataframe.LEGEND == 'L'), 'LEGEND'] = 'Land'
-        dataframe.at[(dataframe.LEGEND == 'N'), 'LEGEND'] = 'missing'
-
     # Type D
     elif all([key in DF2.keys() for key in ['POLY_TYPE', 'CT', 'E_CT']]):
     # Rename columns
         mapper = {'POLY_TYPE': 'LEGEND'}
         dataframe = dataframe.rename(mapper, axis=1)
-
-        # Convert legend labels
-        dataframe.at[(dataframe.LEGEND == 'W'), 'LEGEND'] = 'IF'
-        dataframe.at[(dataframe.LEGEND == 'I'), 'LEGEND'] = 'Ice'
-        dataframe.at[(dataframe.LEGEND == 'L'), 'LEGEND'] = 'Land'
-        dataframe.at[(dataframe.LEGEND == 'N'), 'LEGEND'] = 'missing'
 
     # Type not recognized
     else:
@@ -666,8 +657,8 @@ def _separate_wrapping_polygons(x, y, decimals=5):
 
     # Make list of polygons
     N = int(wrap_index.size)
-    polygons_x, polygons_y = [],[]
-    for ii in range(0, N-2, 2):
+    polygons_x, polygons_y = [], []
+    for ii in range(0, N - 2, 2):
         polygons_x.append(x[wrap_index[ii]: wrap_index[ii + 2]])
         polygons_y.append(y[wrap_index[ii]: wrap_index[ii + 2]])
 
@@ -714,10 +705,10 @@ def _show_cis_summary(fname):
     fields = ['A_LEGEND', 'POLY_TYPE', 'SGD_POLY_T',
               'CT', 'CA', 'CB', 'CC',
               'SA', 'SB', 'SC',
-              'FA', 'FB', 'FC', 
+              'FA', 'FB', 'FC',
               'E_CT', 'E_CA', 'E_CB', 'E_CC',
               'E_SA', 'E_SB', 'E_SC',
-              'E_FA', 'E_FB', 'E_FC', 
+              'E_FA', 'E_FB', 'E_FC',
               'SGD_CT', 'SGD_CA', 'SGD_CB', 'SGD_CC',
               'SGD_SA', 'SGD_SB', 'SGD_SC',
               'SGD_FA', 'SGD_FB', 'SGD_FC']
@@ -731,10 +722,9 @@ def _show_cis_summary(fname):
 
 def _shp2dex(sname,
              gname,
-             urlon=-38,
-             urlat=52,
              lwest=True,
-             skipland=True):
+             skipland=True,
+             fill_dataframe=True):
     """
     Extract egg code data from CIS ESRI shapefiles.
 
@@ -751,14 +741,6 @@ def _shp2dex(sname,
         the queried coordinates. This is expected to be
         a two column file containing [lon lat] points
         separated by spaces.
-    urlon : float
-        Longitude of projection upper right corner.
-        Default value of -38 works for shapefiles
-        in Eastern Canada.
-    urlat : float
-        Latitude of projection upper right corner.
-        Default value of 52 works for
-        shapefiles in Eastern Canada.
     lwest : bool
         Return longitude as negative west, defaults
         to True.
@@ -768,6 +750,11 @@ def _shp2dex(sname,
         If it is not known if the grid has points
         on land and you wish to mark land points, set
         to false.
+    fill_dataframe : bool
+        If False return an empty dataframe but a full
+        printable string column. False reduces computation
+        time by half and is the default when this module
+        is called from command line.
 
     Returns
     -------
@@ -787,6 +774,7 @@ def _shp2dex(sname,
             * Partial ice concentration (third thickest ice)
             * Stage of developpment (third thickest ice)
             * Form of ice (third thickest ice)
+            * Printable dex strings
 
     """
     # Option management
@@ -802,32 +790,16 @@ def _shp2dex(sname,
                 'E_CC', 'E_SC', 'E_FC']
 
     # Initialize output
-    columns = ['lon', 'lat', 'LEGEND', *egg_strs, 'assigned']
+    columns = ['lon', 'lat', 'LEGEND', *egg_strs, 'assigned', 'printable']
     df_output = pd.read_csv(gname, names=columns, na_filter=False)
     df_output['assigned'] = False
 
     # Read projection file
     if os.path.exists(sname[0:-4]+".prj"):
-        proj, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
+        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
 
         # Datum
         b = a * (ifp - 1) / ifp
-
-        # if geo == 'basemap':
-        #     # Basemap
-        #     m = Basemap(urcrnrlon=urlon,
-        #                 urcrnrlat=urlat,
-        #                 llcrnrlon=lon0,
-        #                 llcrnrlat=lat0,
-        #                 projection=proj,
-        #                 rsphere=(a, b),
-        #                 resolution='l',
-        #                 lat_1=std1,
-        #                 lat_2=std2,
-        #                 lon_0=lon0,
-        #                 lat_0=lat0)
-        #     def to_lon_lat(x, y):
-        #         return m(x, y, inverse=True)
         globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
         lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
                                     globe=globe,
@@ -854,7 +826,7 @@ def _shp2dex(sname,
         for (i, shape) in enumerate(df_records.shapes.values):
 
             # Skip land polygons if skipland is True
-            if (df_records.LEGEND[i] == 'Land') and skipland:
+            if (df_records.LEGEND[i] == 'L') and skipland:
                 pass
             else:
 
@@ -874,73 +846,108 @@ def _shp2dex(sname,
                 # Points to check
                 condition = '%f < lon < %f & %f < lat < %f & not assigned'
                 df_candidates = df_output.query(condition % (lon.min(),
-                                                       lon.max(),
-                                                       lat.min(),
-                                                       lat.max())) 
+                                                             lon.max(),
+                                                             lat.min(),
+                                                             lat.max()))
 
-                # Find pip with Sloan Algorithm
-                # if pip == 'sloan':
-                #     Po = Polygon(lon, lat)
-
-                #     # Find grid points in polygon
-                #     mindst = Po.is_inside(df_candidates.lon.values,
-                #                           df_candidates.lat.values)
-                #     target_index = df_candidates.loc[mindst >= 0].index.values
-                # else:
+                # Find grid points in polygon
                 inside = in_polygon(df_candidates.lon.values,
                                     df_candidates.lat.values,
                                     lon,
                                     lat)
                 target_index = df_candidates.loc[inside].index.values
-                
-                # Index of points to write in egg
+
+                # Index of points to write
                 if target_index.size > 0:
                     # For improved readability
                     r = df_records.iloc[i]
-                    
-                    " Legend "
+
+                    """ Legend """
                     # Fast-ice
-                    if ("Fast-ice" == r.LEGEND) or r.E_FA == '8':
-                        df_output.at[target_index, 'LEGEND'] = 'Fast-ice'
+                    if ("F" == r.LEGEND) or r.E_FA == '8':
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'Fast-ice'
+                        df_output.at[target_index, 'printable'] = 'Fast-ice'
                     # On land
-                    elif r.LEGEND == "Land":
-                        df_output.at[target_index, 'LEGEND'] = 'Land'
+                    elif r.LEGEND == 'L':
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'Land'
+                        df_output.at[target_index, 'printable'] = 'Land'
                     # Missing data
-                    elif r.LEGEND == 'missing':
-                        df_output.at[target_index, 'LEGEND'] = 'missing'
+                    elif r.LEGEND == 'm':
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'missing'
+                        df_output.at[target_index, 'printable'] = 'missing'
                     # Open water
-                    elif (r.LEGEND == 'IF') or (r.E_CT == 'X' and r.E_CA == 'X'):
-                        df_output.at[target_index, 'LEGEND'] = 'IF'
+                    elif (r.LEGEND == 'W') or (r.E_CT == 'X' and r.E_CA == 'X'):
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'IF'
+                        df_output.at[target_index, 'printable'] = 'IF'
                     # Icebergs
                     elif (r.E_SA == '98' and r.E_FA == '10'):
-                        df_output.at[target_index, 'LEGEND'] = 'Icebergs'
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'Icebergs'
+                        df_output.at[target_index, 'printable'] = 'Icebergs'
+
                     # Ice
                     else:
-                        df_output.at[target_index, 'LEGEND'] = 'Egg'
+                        # Create egg code string in dex format
+                        format_egg = '%s  %s %s %s' % (r.E_CT.rjust(2),
+                                                       r.E_CA,
+                                                       r.E_SA,
+                                                       r.E_FA)
 
-                    " Egg code "
+                        # Add second ice class to formatted print string
+                        if r.E_CB != 'X':
+                            format_egg = '%s  %s %s %s' % (format_egg,
+                                                           r.E_CB,
+                                                           r.E_SB,
+                                                           r.E_FB)
+
+                            # Add third ice class to formatted print string
+                            if r.E_CC != 'X':
+                                format_egg = '%s  %s %s %s' % (format_egg,
+                                                               r.E_CC,
+                                                               r.E_SC,
+                                                               r.E_FC)
+
+                        # Write to dataframe
+                        if fill_dataframe:
+                            df_output.at[target_index, 'LEGEND'] = 'Egg'
+                        df_output.at[target_index, 'printable'] = format_egg
+
                     # Assign egg code
-                    for egg in egg_strs:
-                        df_output.at[target_index, egg] = r[egg]
+                    if fill_dataframe:
+                        for egg in egg_strs:
+                            df_output.at[target_index, egg] = r[egg]
 
                     # No need to check these grid points again
                     df_output.at[target_index, 'assigned'] = True
 
         # Unassigned points are considered missing
-        for egg in egg_strs:
-            df_output.at[df_output['LEGEND'] == '', egg] = 'X'
-        # df_output.at[df_output['LEGEND'] == '', 'LEGEND'] = 'missing'
+        if fill_dataframe:
+            for egg in egg_strs:
+                df_output.at[(~df_output['assigned']), egg] = 'X'
+            df_output.at[(~df_output['assigned']), 'LEGEND'] = 'missing'
+        df_output.at[(~df_output['assigned']), 'printable'] = 'missing'
+
     else:
         # This happens when the shapefile is empty
         warn('Shapefile is empty: returning "missing" for all grid points in dex')
         for egg in egg_strs:
             df_output.at[:, egg] = 'X'
         df_output.at[:, 'LEGEND'] = 'missing'
+        df_output.at[:, 'printable'] = 'missing'
 
     # Reverse longitude sign if specified at input
     df_output['lon'] *= sign
-    
-    return df_output[['lon', 'lat', 'LEGEND', *egg_strs]]
+
+    # Prepend formated longitude and latitudes to dex string
+    df_output['printable'] = (df_output['lon'].apply(lambda x : '%07.3f' % x) + " " +
+                              df_output['lat'].apply(lambda x : '%05.2f' % x) + " " +
+                              df_output['printable'])
+
+    return df_output[['lon', 'lat', 'LEGEND', *egg_strs, 'printable']]
 
 
 # Command line interface
@@ -1001,31 +1008,7 @@ if __name__ == '__main__':
     # Convert and write to file
     for shp in args.shapefiles:
         # Perform conversion
-        start = perf_counter()
-        df_dex = _shp2dex(shp, grid, **kwargs)
-        end = perf_counter()
-        print('shp2dex call: %.2f seconds' % (end - start))
-
-        start = perf_counter()
-        # Format to match required character lengths, spacing and
-        df_dex['printable'] = (df_dex['lon'].apply(lambda x : '%07.3f' % x) + " " +
-                               df_dex['lat'].apply(lambda x : '%05.2f' % x) + " " +
-                               df_dex['E_CT'].apply(lambda x : x.rjust(2)) + "  " +
-                               df_dex['E_CA'] + " " +
-                               df_dex['E_SA'] + " " +
-                               df_dex['E_FA'] + "  " +
-                               df_dex['E_CB'] + " " +
-                               df_dex['E_SB'] + " " +
-                               df_dex['E_FB'] + "  " +
-                               df_dex['E_CC'] + " " +
-                               df_dex['E_SC'] + " " +
-                               df_dex['E_FC'])
-        df_dex.at[df_dex.E_CC == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:30])
-        df_dex.at[df_dex.E_CB == 'X', 'printable'] = df_dex['printable'].apply(lambda x : x[:23])
-        df_dex.at[df_dex.E_CA == 'X', 'printable'] = (df_dex['printable'].apply(lambda x : x[:14]) +
-                                                      df_dex.LEGEND)
+        df_dex = _shp2dex(shp, grid, **{'fill_dataframe': False, **kwargs})
 
         # Write to output
         df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
-        end = perf_counter()
-        print('shp2dex call: %.2f seconds' % (end - start))
