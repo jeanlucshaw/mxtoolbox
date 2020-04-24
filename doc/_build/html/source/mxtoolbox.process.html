@@ -7,12 +7,12 @@
     <title>process subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="read subpackage" href="mxtoolbox.read.html" />
@@ -736,6 +736,18 @@ line. Command line interface description can be shown by entering,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ shp2dex -h
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More background information can be found at the following links:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://www.canada.ca/en/environment-climate-change/services/weather-manuals-documentation/manice-manual-of-ice/chapter-5.htm">About the Egg code and CIS data products.</a></p></li>
+</ul>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jcomm.info/index.php?option=com_oe&amp;task=viewDocumentRecord&amp;docID=4439">About the SIGRID-3 shapefile format used by the CIS.</a></p></li>
+</ul>
+</div></blockquote>
+</div>
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex.load_cis_shp">
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
@@ -984,6 +996,31 @@ wrapping points.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="mxtoolbox.process.shp2dex._show_cis_field">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_show_cis_field</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._show_cis_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print possible values of shapefile field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Name of field to detail.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.shp2dex._show_cis_summary">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_show_cis_summary</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._show_cis_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print possible values of egg code data for CIS (.shp).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.process.shp2dex.plot_cis_shp">
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">savepath=None</em>, <em class="sig-param">hl=None</em>, <em class="sig-param">lab=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1134,7 +1171,7 @@ index of peaks in original array.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -1159,7 +1196,7 @@ index of peaks in original array.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Jean-Luc Shaw.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>
 </html>

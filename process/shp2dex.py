@@ -35,6 +35,18 @@ line. Command line interface description can be shown by entering,
 
    $ shp2dex -h
 
+Note
+----
+More background information can be found at the following links:
+
+   * `About the Egg code and CIS data products.`__
+
+   .. __ : https://www.canada.ca/en/environment-climate-change/services/weather-manuals-documentation/manice-manual-of-ice/chapter-5.htm
+
+   * `About the SIGRID-3 shapefile format used by the CIS.`__
+
+   .. __ : https://www.jcomm.info/index.php?option=com_oe&task=viewDocumentRecord&docID=4439
+
 """
 import argparse
 import os
@@ -53,6 +65,8 @@ __all__ = ['load_cis_shp',
            '_parse_prj',
            '_manage_shapefile_types',
            '_separate_wrapping_polygons',
+           '_show_cis_field',
+           '_show_cis_summary',
            'plot_cis_shp']
 
 
