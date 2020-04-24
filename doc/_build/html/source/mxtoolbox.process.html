@@ -5,32 +5,41 @@
   <head>
     <meta charset="utf-8" />
     <title>process subpackage &#8212; mxtoolbox April 2020 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="read subpackage" href="mxtoolbox.read.html" />
-    <link rel="prev" title="plot subpackage" href="mxtoolbox.plot.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="plot subpackage" href="mxtoolbox.plot.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.read.html" title="read subpackage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.plot.html" title="plot subpackage"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <div class="section" id="process-subpackage">
@@ -693,18 +702,21 @@ of as rotating the frame of reference anti-clockwise by
 <p>Convert Canadian ice service (CIS) ESRI shapefiles to ascii format (dex).</p>
 <p>CIS daily ice analysis charts (dailys) and regional analysis charts (weeklys) are
 collected every day on mixing and processed to provide information such as,</p>
-<ul class="simple">
+<blockquote>
+<div><ul class="simple">
 <li><p>Ice thickness maps.</p></li>
 <li><p>First occurence maps.</p></li>
 <li><p>Total gulf, Newfoundland shelf and Scotian Shelf ice volumes.</p></li>
 <li><p>Comparisons to climatology.</p></li>
 </ul>
+</div></blockquote>
 <p>These analyses are performed by a combination of Perl/awk routines and are
 facilitated by first transforming the shapefiles to gridded ascii plain text
 in a format called dex, containing geographical coordinates and egg code data.
 Time information is carried by the file name (YYYYMMDD) and the columns in
 the file are ordered as follows,</p>
-<ul class="simple">
+<blockquote>
+<div><ol class="arabic simple">
 <li><p>Longitude (west)</p></li>
 <li><p>Latitude</p></li>
 <li><p>Total ice concentration</p></li>
@@ -717,9 +729,13 @@ the file are ordered as follows,</p>
 <li><p>Partial ice concentration (third thickest ice)</p></li>
 <li><p>Stage of developpment (third thickest ice)</p></li>
 <li><p>Form of ice (third thickest ice)</p></li>
-</ul>
+</ol>
+</div></blockquote>
 <p>This module performs the conversion and is meant to be called from command
-line. The options are the following,</p>
+line. Command line interface description can be shown by entering,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ shp2dex -h
+</pre></div>
+</div>
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex.load_cis_shp">
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
@@ -746,7 +762,7 @@ shape object of each record is found in column <cite>shapes</cite>.</p>
 
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex._shp2dex">
-<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">urlon=-38</em>, <em class="sig-param">urlat=52</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em>, <em class="sig-param">fill_dataframe=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
 <p>Conversion from map coordinates to decimal degrees
 is carried out by cartopy. Point in polygon querying
@@ -759,12 +775,6 @@ is done using the matplotlib library.</p>
 the queried coordinates. This is expected to be
 a two column file containing [lon lat] points
 separated by spaces.</p></li>
-<li><p><strong>urlon</strong> (<em>float</em>) – Longitude of projection upper right corner.
-Default value of -38 works for shapefiles
-in Eastern Canada.</p></li>
-<li><p><strong>urlat</strong> (<em>float</em>) – Latitude of projection upper right corner.
-Default value of 52 works for
-shapefiles in Eastern Canada.</p></li>
 <li><p><strong>lwest</strong> (<em>bool</em>) – Return longitude as negative west, defaults
 to True.</p></li>
 <li><p><strong>skipland</strong> (<em>bool</em>) – Skip polygons marked as land if this is True.
@@ -772,6 +782,10 @@ Defaults to True. Skipping land will be faster.
 If it is not known if the grid has points
 on land and you wish to mark land points, set
 to false.</p></li>
+<li><p><strong>fill_dataframe</strong> (<em>bool</em>) – If False return an empty dataframe but a full
+printable string column. False reduces computation
+time by half and is the default when this module
+is called from command line.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -791,6 +805,7 @@ to false.</p></li>
 <li><p>Partial ice concentration (third thickest ice)</p></li>
 <li><p>Stage of developpment (third thickest ice)</p></li>
 <li><p>Form of ice (third thickest ice)</p></li>
+<li><p>Printable dex strings</p></li>
 </ul>
 </div></blockquote>
 </p>
@@ -799,6 +814,13 @@ to false.</p></li>
 <dd class="field-odd"><p>pandas.Dataframe</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">math_.in_polygon()</span></code></dt><dd><p>Point in polygon querying.</p>
+</dd>
+</dl>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -853,12 +875,12 @@ label differences between types are summarized below.</p>
 <div><div class="line-block">
 <div class="line">Legend string = A_LEGEND</div>
 <div class="line">Legend strings = [‘Fast ice’, ‘Ice free’, ‘Land’, ‘Open water’, ‘Remote egg’]</div>
-<div class="line">Old egg code = E_*</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘’]</div>
 <div class="line">Missing form = [‘’, ‘X’]</div>
 <div class="line">Missing stage = [‘’]</div>
-<div class="line">Example = “data/GEC_H_19740102.shp”</div>
+<div class="line">Example = “GEC_H_19740102.shp”</div>
 </div>
 </div></blockquote>
 </li>
@@ -867,12 +889,12 @@ label differences between types are summarized below.</p>
 <div><div class="line-block">
 <div class="line">Legend string = POLY_TYPE</div>
 <div class="line">Legend strings = [‘I’, ‘L’, ‘N’, ‘W’]</div>
-<div class="line">New egg code = *</div>
+<div class="line">New egg code = [CT, CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘’, ‘-9’, ‘99’]</div>
 <div class="line">Missing form = [‘’, ‘-9’, ‘99’]</div>
 <div class="line">Missing stage = [‘’, ‘-9’, ‘99’]</div>
-<div class="line">Example = “data/GEC_D_20150108.shp”</div>
+<div class="line">Example = “GEC_D_20150108.shp”</div>
 </div>
 </div></blockquote>
 </li>
@@ -881,13 +903,13 @@ label differences between types are summarized below.</p>
 <div><div class="line-block">
 <div class="line">Legend string = SGD_POLY_T</div>
 <div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
-<div class="line">New egg code = SGD_*</div>
-<div class="line">Old egg code = E_*</div>
+<div class="line">New egg code = [SGD_CT, SGD_CA, … ]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘’]</div>
 <div class="line">Missing form = [‘’, ‘X’]</div>
 <div class="line">Missing stage = [‘’]</div>
-<div class="line">Example = “data/GEC_H_20200120.shp”</div>
+<div class="line">Example = “GEC_H_20200120.shp”</div>
 </div>
 </div></blockquote>
 </li>
@@ -896,13 +918,13 @@ label differences between types are summarized below.</p>
 <div><div class="line-block">
 <div class="line">Legend string = POLY_TYPE</div>
 <div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
-<div class="line">New egg code = *</div>
-<div class="line">Old egg code = E_*</div>
+<div class="line">New egg code = [CT, CA, … ]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘’]</div>
 <div class="line">Missing form = [‘’, ‘X’]</div>
 <div class="line">Missing stage = [‘’]</div>
-<div class="line">Example = “data/GEC_H_20200309.shp”</div>
+<div class="line">Example = “GEC_H_20200309.shp”</div>
 </div>
 </div></blockquote>
 </li>
@@ -910,8 +932,8 @@ label differences between types are summarized below.</p>
 <blockquote>
 <div><div class="line-block">
 <div class="line">Legend string = LEGEND</div>
-<div class="line">Legend strings = [‘Ice’, ‘Fast-ice’, ‘Land’, ‘IF’, ‘missing’]</div>
-<div class="line">Old egg code = E_*</div>
+<div class="line">Legend strings = [‘I’, ‘F’, ‘L’, ‘W’, ‘N’]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘X’]</div>
 <div class="line">Missing form = [‘X’]</div>
@@ -1074,44 +1096,35 @@ index of peaks in original array.</p>
 
 
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">mxtoolbox</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.plot.html">plot subpackage</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">process subpackage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.analyses">analyses module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.convert">convert module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.math_">math_ module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.shp2dex">shp2dex module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-mxtoolbox.process.signal_">signal_ module</a></li>
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">process subpackage</a><ul>
+<li><a class="reference internal" href="#module-mxtoolbox.process.analyses">analyses module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.process.convert">convert module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.process.math_">math_ module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.process.shp2dex">shp2dex module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.process.signal_">signal_ module</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read subpackage</a></li>
 </ul>
 
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="mxtoolbox.plot.html" title="previous chapter">plot subpackage</a></li>
-      <li>Next: <a href="mxtoolbox.read.html" title="next chapter">read subpackage</a></li>
-  </ul></li>
-</ul>
-</div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mxtoolbox.plot.html"
+                        title="previous chapter">plot subpackage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mxtoolbox.read.html"
+                        title="next chapter">read subpackage</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/mxtoolbox.process.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -1121,33 +1134,32 @@ index of peaks in original array.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2020, Jean-Luc Shaw.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="../_sources/source/mxtoolbox.process.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.read.html" title="read subpackage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.plot.html" title="plot subpackage"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Jean-Luc Shaw.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
   </body>
 </html>
