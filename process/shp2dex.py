@@ -435,9 +435,9 @@ def _newegg_2_oldegg(egg_dict, sname, i):
     return egg_dict
 
 def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
-#     """
-#     Plot polygons of a CIS ice shapefile
-#     """
+    """
+    Plot polygons of a CIS ice shapefile
+    """
 #     trans = exists(sname[0: -4] + ".prj")
 #     if trans:
 #         # Read projection file
@@ -489,44 +489,49 @@ def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
 #     rcd = rcd[I]
 #     lgd = lgd[I]
 
-#     fig, ax = plt.subplots(1, figsize=(15, 10))
-#     for jj in range(shp.size):
+    # Read projection file
+    if os.path.exists(sname[0:-4]+".prj"):
+        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
 
-#         if lab == 'lgd':
-#             prt = lgd[jj]
-#         elif lab == 'num':
-#             prt = jj
-#         elif isinstance(lab, int):
-#             prt = rcd[jj, lab]
-#         else:
-#             prt = None
+        # Datum
+        b = a * (ifp - 1) / ifp
+        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
+        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
+                                    globe=globe,
+                                    central_latitude=lat0,
+                                    central_longitude=lon0)
+        def to_lon_lat(x, y):
+            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
+            return transformed[:, 0], transformed[:, 1]
 
-#         # Get polygon coordinates
-#         P = shp[jj].points
-#         x = np.nan * np.ones(len(P))
-#         y = np.nan * np.ones(len(P))
-#         for ii in np.arange(0, len(P)):
-#             y[ii] = P[ii][1]
-#             x[ii] = P[ii][0]
-#         if trans:
-#             lon, lat = m(x, y, inverse=True)
-#         else:
-#             lon, lat = x, y
-#         llon, llat, I = _separate_wrapping_polygons(lon, lat, decimals=5)
+        prjfile = True
+    else:
+        prjfile = False
 
-#         if (lgd[jj] == 'Land' or lgd[jj] == 'L'):
-#             ax.fill(llon[0], llat[0], edgecolor='k', facecolor='w', alpha=0.5)
-#         else:
-#             ax.fill(llon[0], llat[0], edgecolor='k', alpha=0.5)
-#             ax.text(llon[0].mean(), llat[0].mean(), prt)
-#             if jj == hl:
-#                 ax.fill(llon[0], llat[0], edgecolor='r', facecolor='r')
-#                 ax.text(llon[0].mean(), llat[0].mean(), prt)
+    # Read shapefile
+    df_records, empty = load_cis_shp(sname)
+    df_managed = _manage_shapefile_types(df_records)
 
-#     ax.set_title(sname)
-#     if savepath != None:
-#         plt.savefig(savepath + sname[0: -4] + '.png')
-#     plt.show()
+    # Plot polygons
+    for (i, shape) in enumerate(df_records.shapes.values):
+        
+        # Get polygon coordinates
+        x, y = np.split(np.array(shape.points), 2, axis=1)
+        if prjfile:
+            lon, lat = to_lon_lat(x.flatten(), y.flatten())
+        else:
+            lon, lat = x.flatten(), y.flatten()
+
+        # Only keep outside polygon
+        polygons_lon, polygons_lat, _ = _separate_wrapping_polygons(lon,
+                                                                    lat,
+                                                                    decimals=7)
+        lon, lat = polygons_lon[0], polygons_lat[0]
+
+        plt.plot(lon, lat, 'k')
+        plt.text(lon.mean(), lat.mean(), df_managed.iloc[i].LEGEND)
+
+    plt.show()
     return None
 
 
@@ -974,7 +979,6 @@ def _shp2dex(sname,
 
 # Command line interface
 if __name__ == '__main__':
-    from time import perf_counter
 
     # Set up parser
     parser  = argparse.ArgumentParser(usage=__doc__)
@@ -995,34 +999,47 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--earth',
                         action='store_true',
                         help='Check land polygons for grid points')
+    parser.add_argument('-s', '--summary',
+                        action='store_true',
+                        help='Print shapefile egg code summary')
+    parser.add_argument('-p', '--plot',
+                        action='store_true',
+                        help='Plot shapefile egg code data')
     args = parser.parse_args()
 
-    # Parameters
-    fields = ['E_CT',
-              'E_CA', 'E_SA', 'E_FA',
-              'E_CB', 'E_SB', 'E_FB',
-              'E_CC', 'E_SC', 'E_FC']
+    # Show egg code summary
+    if args.summary:
+        for shp in args.shapefiles:
+            _show_cis_summary(shp)
 
-    # Option switches
-    if args.gridfile != None:
-        grid = args.gridfile
+    # Plot egg code polygons
+    elif args.plot:
+        plot_cis_shp(args.shapefiles)
+
+    # Convert to dex
     else:
-        grid = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
+        # Parameters
+        fields = ['E_CT',
+                  'E_CA', 'E_SA', 'E_FA',
+                  'E_CB', 'E_SB', 'E_FB',
+                  'E_CC', 'E_SC', 'E_FC']
 
-    kwargs = {}
-    if args.urlon:
-        kwargs['urlon'] = args.urlon
-    if args.urlat:
-        kwargs['urlat'] = args.urlat
-    if args.least:
-        kwargs['lwest'] = False
-    if args.earth:
-        kwargs['skipland'] = False
+        # Option switches
+        if args.gridfile != None:
+            grid = args.gridfile
+        else:
+            grid = "/data/SeaIce/scripts/CIS_grid_lon015_lat01.csv"
 
-    # Convert and write to file
-    for shp in args.shapefiles:
-        # Perform conversion
-        df_dex = _shp2dex(shp, grid, **{'fill_dataframe': False, **kwargs})
+        kwargs = {}
+        if args.least:
+            kwargs['lwest'] = False
+        if args.earth:
+            kwargs['skipland'] = False
 
-        # Write to output
-        df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
+        # Convert and write to file
+        for shp in args.shapefiles:
+            # Perform conversion
+            df_dex = _shp2dex(shp, grid, **{'fill_dataframe': False, **kwargs})
+
+            # Write to output
+            df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
