@@ -1020,4 +1020,4 @@ if __name__ == '__main__':
             df_dex = _shp2dex(shp, grid, **{'fill_dataframe': False, **kwargs})
 
             # Write to output
-            df_dex.to_csv('%s.dex2' % shp[0:-4], columns=['printable'], header=False, index=False)
+            df_dex.to_csv('%s.dex' % shp[0:-4], columns=['printable'], header=False, index=False)
