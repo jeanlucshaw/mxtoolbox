@@ -47,6 +47,10 @@ More background information can be found at the following links:
 
    .. __ : https://www.jcomm.info/index.php?option=com_oe&task=viewDocumentRecord&docID=4439
 
+   * `CIS sea ice glossary.`__
+
+   .. __ : https://www.canada.ca/en/environment-climate-change/services/ice-forecasts-observations/latest-conditions/glossary.html
+
 """
 import argparse
 import os
@@ -64,13 +68,14 @@ __all__ = ['load_cis_shp',
            '_shp2dex',
            '_parse_prj',
            '_manage_shapefile_types',
+           '_newegg_2_oldegg',
            '_separate_wrapping_polygons',
            '_show_cis_field',
            '_show_cis_summary',
            'plot_cis_shp']
 
 
-def load_cis_shp(name):
+def load_cis_shp(name, ascending=True):
     """
     Read CIS shapefile to dataframe and polygon list.
 
@@ -108,7 +113,7 @@ def load_cis_shp(name):
     # Convert area to numeric and sort
     dataframe['shapes'] = shp
     dataframe['AREA'] = np.float64(dataframe.AREA.values)
-    dataframe = dataframe.sort_values('AREA', ignore_index=True)
+    dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
 
     # Flag as empty if not enough fields
     empty = dataframe.shape[1] < 11
@@ -132,7 +137,7 @@ def _manage_shapefile_types(dataframe):
         * Type A:
 
            | Legend string = A_LEGEND
-           | Legend strings = ['Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
+           | Legend strings = ['Bergy water', 'Egg', 'Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
            | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['']
@@ -218,8 +223,10 @@ def _manage_shapefile_types(dataframe):
         dataframe.at[(dataframe.LEGEND == 'Fast ice'), 'LEGEND'] = 'F'
         dataframe.at[(dataframe.LEGEND == 'Land'), 'LEGEND'] = 'L'
         dataframe.at[(dataframe.LEGEND == 'Ice free') |
-                      (dataframe.LEGEND == 'Open water'), 'LEGEND'] = 'W'
-
+                     (dataframe.LEGEND == 'Bergy water') |
+                     (dataframe.LEGEND == 'Open water'), 'LEGEND'] = 'W'
+        dataframe.at[(dataframe.LEGEND == 'Remote egg') |
+                     (dataframe.LEGEND == 'Egg'), 'LEGEND'] = 'I'
     # Type B
     elif ('POLY_TYPE' in dataframe.keys()) and ('E_CT' not in dataframe.keys()):
         # Rename egg code columns
@@ -434,60 +441,31 @@ def _newegg_2_oldegg(egg_dict, sname, i):
 
     return egg_dict
 
-def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
+def plot_cis_shp(sname):
     """
-    Plot polygons of a CIS ice shapefile
+    Plot polygons of a CIS ice shapefile.
+
+    Polygons are plotted from large to small. Color
+    meanings are,
+
+       * Magenta: ice
+       * Cyan: fast-ice
+       * Grey: land
+       * Blue: water
+       * Black: no data
+
+    Parameters
+    ----------
+    sname : str
+        Name and path of CIS shapefile.
+
     """
-#     trans = exists(sname[0: -4] + ".prj")
-#     if trans:
-#         # Read projection file
-#         proj, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
-
-#         # Datum
-#         b = a * (ifp - 1) / ifp
-
-#         # Basemap
-#         urlon = -38
-#         urlat = 50
-#         m = Basemap(urcrnrlon=urlon,
-#                     urcrnrlat=urlat,
-#                     llcrnrlon=lon0,
-#                     llcrnrlat=lat0,
-#                     projection=proj,
-#                     rsphere=(a, b),
-#                     resolution='l',
-#                     lat_1=std1,
-#                     lat_2=std2,
-#                     lon_0=lon0,
-#                     lat_0=lat0)
-
-#     # Read shapefile
-#     sf = shapefile.Reader(sname) ;
-#     shp = np.asarray(sf.shapes())
-#     fld = np.asarray(sf.fields)[:, 0]
-#     rcd = np.asarray(sf.records())
-
-#     # Get size and polygon legend
-#     # roll because of deletion flag
-#     lgdi = np.flatnonzero([(fld=='A_LEGEND') | (fld=='POLY_TYPE') | (fld=='SGD_POLY_T')])[0] - 1
-# #    lgdi = np.where(np.roll(np.logical_or(fld[:, 0] == 'A_LEGEND',
-# #                                          fld[:, 0] == 'POLY_TYPE'), -1))
-#     sfci = np.where(np.roll(fld == 'AREA', -1))
-#     lgd = np.asarray([jj[lgdi] for jj in rcd])
-#     sfc = np.asarray([float(jj[sfci[0][0]]) for jj in rcd])
-
-#     # Sort shapes according to size largest first
-#     shp = shp[np.argsort(sfc)[::-1]]
-#     rcd = rcd[np.argsort(sfc)[::-1]]
-#     lgd = lgd[np.argsort(sfc)[::-1]]
-
-#     # Place land elements last
-#     I = np.append(np.nonzero(np.logical_and(lgd != 'L', lgd != 'Land'))[0],
-#                   np.nonzero(np.logical_or(lgd == 'L', lgd == 'Land'))[0])
-
-#     shp = shp[I]
-#     rcd = rcd[I]
-#     lgd = lgd[I]
+    # Colors
+    colors = dict({'I': 'm',
+                   'L': 'lightgray',
+                   'W': 'b',
+                   'N': 'k',
+                   'F': 'c'})
 
     # Read projection file
     if os.path.exists(sname[0:-4]+".prj"):
@@ -509,12 +487,12 @@ def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
         prjfile = False
 
     # Read shapefile
-    df_records, empty = load_cis_shp(sname)
+    df_records, empty = load_cis_shp(sname, ascending=False)
     df_managed = _manage_shapefile_types(df_records)
 
     # Plot polygons
     for (i, shape) in enumerate(df_records.shapes.values):
-        
+
         # Get polygon coordinates
         x, y = np.split(np.array(shape.points), 2, axis=1)
         if prjfile:
@@ -528,11 +506,10 @@ def plot_cis_shp(sname, savepath=None, hl=None, lab=None):
                                                                     decimals=7)
         lon, lat = polygons_lon[0], polygons_lat[0]
 
-        plt.plot(lon, lat, 'k')
-        plt.text(lon.mean(), lat.mean(), df_managed.iloc[i].LEGEND)
+        # Add to plot
+        plt.fill(lon, lat, fc=colors[df_managed.iloc[i].LEGEND], ec='k', linestyle='-')
 
     plt.show()
-    return None
 
 
 def _parse_prj(fname):
@@ -1014,7 +991,8 @@ if __name__ == '__main__':
 
     # Plot egg code polygons
     elif args.plot:
-        plot_cis_shp(args.shapefiles)
+        for shp in args.shapefiles:
+            plot_cis_shp(shp)
 
     # Convert to dex
     else:

@@ -7,12 +7,12 @@
     <title>process subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="read subpackage" href="mxtoolbox.read.html" />
@@ -746,11 +746,14 @@ line. Command line interface description can be shown by entering,</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://www.jcomm.info/index.php?option=com_oe&amp;task=viewDocumentRecord&amp;docID=4439">About the SIGRID-3 shapefile format used by the CIS.</a></p></li>
 </ul>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.canada.ca/en/environment-climate-change/services/ice-forecasts-observations/latest-conditions/glossary.html">CIS sea ice glossary.</a></p></li>
+</ul>
 </div></blockquote>
 </div>
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex.load_cis_shp">
-<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ascending=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read CIS shapefile to dataframe and polygon list.</p>
 <p>Creates a pandas DataFrame with records from the <cite>.dbf</cite>
 companion file as rows and the field names as columns. The
@@ -777,8 +780,8 @@ shape object of each record is found in column <cite>shapes</cite>.</p>
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em>, <em class="sig-param">fill_dataframe=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
 <p>Conversion from map coordinates to decimal degrees
-is carried out by cartopy. Point in polygon querying
-is done using the matplotlib library.</p>
+is carried out by the cartopy library. Point in polygon
+querying is done using the matplotlib library.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -803,7 +806,7 @@ is called from command line.</p></li>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><p>A dataframe with columns,</p>
 <blockquote>
-<div><ul class="simple">
+<div><ol class="arabic simple">
 <li><p>Longitude (west)</p></li>
 <li><p>Latitude</p></li>
 <li><p>Legend</p></li>
@@ -818,7 +821,7 @@ is called from command line.</p></li>
 <li><p>Stage of developpment (third thickest ice)</p></li>
 <li><p>Form of ice (third thickest ice)</p></li>
 <li><p>Printable dex strings</p></li>
-</ul>
+</ol>
 </div></blockquote>
 </p>
 </dd>
@@ -886,7 +889,7 @@ label differences between types are summarized below.</p>
 <blockquote>
 <div><div class="line-block">
 <div class="line">Legend string = A_LEGEND</div>
-<div class="line">Legend strings = [‘Fast ice’, ‘Ice free’, ‘Land’, ‘Open water’, ‘Remote egg’]</div>
+<div class="line">Legend strings = [‘Bergy water’, ‘Egg’, ‘Fast ice’, ‘Ice free’, ‘Land’, ‘Open water’, ‘Remote egg’]</div>
 <div class="line">Old egg code = [E_CT, E_CA, … ]</div>
 <div class="line">Area string = AREA</div>
 <div class="line">Missing concentration = [‘’]</div>
@@ -970,6 +973,32 @@ label differences between types are summarized below.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="mxtoolbox.process.shp2dex._newegg_2_oldegg">
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_newegg_2_oldegg</code><span class="sig-paren">(</span><em class="sig-param">egg_dict</em>, <em class="sig-param">sname</em>, <em class="sig-param">i</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._newegg_2_oldegg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert new more precise egg code to older more general values.</p>
+<p>Two different systems of egg code values exist in the CIS files. The
+most recent offers the possibility of increased precision but is
+this precision is rarely used. As it makes little difference for now
+and as the next processing step expects values in the old format,
+new format egg code is translated back via this routine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>egg_dict</strong> (<em>dict</em>) – New egg code keys and values.</p></li>
+<li><p><strong>sname</strong> (<em>str</em>) – Shapefile name.</p></li>
+<li><p><strong>jj</strong> (<em>int</em>) – Polygon index.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>translated</strong> – Input translated to old egg code.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.process.shp2dex._separate_wrapping_polygons">
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_separate_wrapping_polygons</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">decimals=5</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._separate_wrapping_polygons" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find wrapping points of polygon sequence stored in vectors <cite>x</cite> and <cite>y</cite>.</p>
@@ -1012,7 +1041,7 @@ wrapping points.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex._show_cis_summary">
 <code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">_show_cis_summary</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex._show_cis_summary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print possible values of egg code data for CIS (.shp).</p>
+<dd><p>Print possible values of egg code data in shapefile.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p>
@@ -1022,8 +1051,25 @@ wrapping points.</p>
 
 <dl class="function">
 <dt id="mxtoolbox.process.shp2dex.plot_cis_shp">
-<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">savepath=None</em>, <em class="sig-param">hl=None</em>, <em class="sig-param">lab=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-prename descclassname">mxtoolbox.process.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot polygons of a CIS ice shapefile.</p>
+<p>Polygons are plotted from large to small. Color
+meanings are,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Magenta: ice</p></li>
+<li><p>Cyan: fast-ice</p></li>
+<li><p>Grey: land</p></li>
+<li><p>Blue: water</p></li>
+<li><p>Black: no data</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sname</strong> (<em>str</em>) – Name and path of CIS shapefile.</p>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 <div class="section" id="module-mxtoolbox.process.signal_">
@@ -1171,7 +1217,7 @@ index of peaks in original array.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -1196,7 +1242,7 @@ index of peaks in original array.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Jean-Luc Shaw.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
     </div>
   </body>
 </html>
