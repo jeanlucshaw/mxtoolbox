@@ -709,7 +709,7 @@ def _show_cis_field(fname, field):
 
 def _show_cis_summary(fname):
     """
-    Print possible values of egg code data for CIS (.shp).
+    Print possible values of egg code data in shapefile.
 
     Parameters
     ----------
@@ -743,8 +743,8 @@ def _shp2dex(sname,
     Extract egg code data from CIS ESRI shapefiles.
 
     Conversion from map coordinates to decimal degrees
-    is carried out by cartopy. Point in polygon querying
-    is done using the matplotlib library.
+    is carried out by the cartopy library. Point in polygon
+    querying is done using the matplotlib library.
 
     Parameters
     ----------
@@ -775,20 +775,20 @@ def _shp2dex(sname,
     pandas.Dataframe
         A dataframe with columns,
 
-            * Longitude (west)
-            * Latitude
-            * Legend
-            * Total ice concentration
-            * Partial ice concentration (thickest ice)
-            * Stage of developpment (thickest ice)
-            * Form of ice (thickest ice)
-            * Partial ice concentration (second thickest ice)
-            * Stage of developpment (second thickest ice)
-            * Form of ice (second thickest ice)
-            * Partial ice concentration (third thickest ice)
-            * Stage of developpment (third thickest ice)
-            * Form of ice (third thickest ice)
-            * Printable dex strings
+            1. Longitude (west)
+            2. Latitude
+            3. Legend
+            4. Total ice concentration
+            5. Partial ice concentration (thickest ice)
+            6. Stage of developpment (thickest ice)
+            7. Form of ice (thickest ice)
+            8. Partial ice concentration (second thickest ice)
+            9. Stage of developpment (second thickest ice)
+            10. Form of ice (second thickest ice)
+            11. Partial ice concentration (third thickest ice)
+            12. Stage of developpment (third thickest ice)
+            13. Form of ice (third thickest ice)
+            14. Printable dex strings
 
     See Also
     --------
@@ -988,14 +988,6 @@ if __name__ == '__main__':
                         '--gridfile',
                         metavar='',
                         help='Name and path of grid file')
-    parser.add_argument('-l',
-                        '--urlat',
-                        metavar='',
-                        help='Latitude of upper right projection corner')
-    parser.add_argument('-L',
-                        '--urlon',
-                        metavar='',
-                        help='Longitude of upper right projection corner')
     parser.add_argument('-E',
                         '--least',
                         action='store_true',
