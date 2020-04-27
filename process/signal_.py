@@ -1,7 +1,7 @@
 """
 Analyses of 1D signal type datasets or multidimensional
-arrays processed along one dimension. This includes 
-filtering and binning functions. 
+arrays processed along one dimension. This includes
+filtering and binning functions.
 """
 import numpy as np
 import xarray as xr
@@ -11,7 +11,7 @@ from .convert import binc2edge
 
 __all__ = ['pd_bin',
            'xr_bin',
-           'xr_filter',
+           'xr_filtfilt',
            'xr_godin',
            'xr_peaks']
 
@@ -82,39 +82,71 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
     return dataset
 
 
-def xr_filter(coord, val, fc, btype='high', axis=-1, order=1):
+def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):
     """
-    Apply zero phase shift butterworth filter to xarray.
+    Pass xarray data through variable state forward-backward filter.
 
-    !!!This needs to be tested and the UI needs a rework!!!
+    Data is first gridded to a regular time vector going from the
+    first element of `dataset[dim]` to its last element. The resolution
+    used is the median time step of the input time coordinate. Forward-
+    backward filtering doubles the window's order, so the input value
+    is integer divided by two. Odd order values will result in filtering
+    of order `int(order / 2)`.
 
-    Wrapper of scipy.signal.filtfilt that takes for input a coordinate
-    DataArray and a val DataArray. Returns a DataArray of the filtered
-    val values along the initial coordinate. Cutoff frequency should be
-    supplied in seconds -1.
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Input data.
+    dim : str
+        Dimension along which to filter.
+    cutoff : float
+        Filter cutoff specified in Hz.
+    btype : str
+        Filter type passed to scipy.signal.butter.
+    order : int
+        Filter order passed to scipy.signal.butter.
+    vars_ : list of str
+        Variables to filter, defaults to all.
+
+    Returns
+    -------
+    xarray.Dataset
+        The filtered input dataset
     """
+    # Save the original time vector
+    time_ungrid = dataset[dim].copy()
 
-    # Replace nan by interpolated values
-    val = val.interpolate_na(coord.name)
-
-    # Drop any label along coord where 
-    val = val.where(np.isfinite(val), drop=True)
-    crd = coord.where(np.isfinite(val), drop=True)
+    # Grid the data
+    time_step = ps.xr_time_step(dataset, dim, 's')
+    time_grid = np.arange(dataset[dim].values[0],
+                          dataset[dim].values[-1],
+                          np.timedelta64(int(time_step), 's'),
+                          dtype=dataset[dim].dtype)
+    dataset = dataset.interp({dim: time_grid})
 
     # Parameters
-    dt = np.diff(coord).mean().tolist() / 10**9
-    fs = 1/dt
-    fn = fs/2
+    fs = 1 / time_step
+    fn = fs / 2
 
-    # Filtering
-    b, a = signal.butter(order, fc/fn, btype=btype, output="ba")
-    flt = signal.filtfilt(b, a, val.values, axis=axis)
+    # Create the filter function 
+    b, a = sl.butter(int(order / 2), cutoff / fn, btype=btype, output="ba")
+    filtfilt = lambda x : sl.filtfilt(b, a, x)
 
-    # Interpolate to original grid
-    flt = xr.DataArray(flt, dims=[coord.name], coords=[crd.values])
-    flt = flt.interp({coord.name: coord.values})
+    # apply_ufunc interface
+    if vars_ is None:
+        vars_ = dataset.keys()
 
-    return flt
+    output = dataset.copy()
+    for var in vars_:
+        output[var] = xr.apply_ufunc(filtfilt,
+                                     dataset[var],
+                                     input_core_dims=[[dim]],
+                                     output_core_dims=[[dim]])
+
+    # Regrid to original time vector
+    output = output.interp({dim: time_ungrid})
+
+    return output
 
 
 def xr_godin(dataarray, tname):
