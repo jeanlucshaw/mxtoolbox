@@ -17,7 +17,9 @@ __all__ = ['ts_diagram',
            'xr_plot_pm_patch']
 
 
-def scorecard(df, field, ax,
+def scorecard(df,
+              field,
+              ax,
               side_label='',
               color_displays='anomaly',
               value_displays='value',
@@ -29,34 +31,44 @@ def scorecard(df, field, ax,
               hide_xlabels=False,
               sub_na=None):
     """
-    Function scorecard:
+    Make AZMP-like monthly/yearly scorecard plots.
 
     Takes as input a pandas dataframe with one of the columns named
-    time and expected to be type numpy datetime64[ns]. Makes a monthly
-    scorecard plot modelled on Peter Galbraith's AZMP figures for the
-    column field of the dataframe and places it in axes ax.
+    time and expected to be type numpy datetime64[ns]. Aesthetics are of
+    the scorecard plot are modelled on Peter Galbraith's AZMP figures.
 
-    Options:
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Contains the input time series.
+    field : str
+        Name of the column to analyse.
+    ax : pyplot.Axes
+        Where to plot the scorecard
+    color_displays : str ('anomaly', 'normalized' or 'value')
+        Meaning of the color dimension. Make the color of the boxes
+        reflect anomaly to the mean, value normalized by standard
+        deviation of the whole time series, or the actual value.
+    value_displays : str ('anomaly' or 'value' 
+        Meaning of the number to be displayed in the box.
+    anomaly_color_levels : int
+        Number of color steps on both sides of zero.
+    units_label : str
+        Units of the average values displayed on the right.
+    averages : bool
+        Display averages by month throughout all years.
+    colorbar : bool
+        Display colorbar. Requires averages=False.
+    hide_xlabels : bool
+        Hide labels of years on x axis.
 
-    side_label: Label on the left of the plot
+    Returns
+    -------
+    2D array
+        Averaged values.
+    2D array
+        Anomaly values.
 
-    color_displays: choose from 'anomaly', 'normalized', or 'value' to
-    make the color of the boxes reflect anomaly to the mean, value normalized
-    by standard deviation of the whole time series, or the actual value.
-
-    value_displays: choose between 'anomaly' and 'value' to set the number to
-    be displayed in the box.
-
-    anomaly_color_levels: choose how many color steps to have in both
-    directions with respect to zero.
-
-    units_label: units of the average values displayed on the right.
-
-    averages: boolean, display averages by month throughout all years.
-
-    colorbar: boolean, display colorbar if averages is false.
-
-    hide_xlabels: boolean, usefull for stacked plots.
     """
     # Compute card values
     months = df.time.dt.month.sort_values().unique()
@@ -323,31 +335,33 @@ def ts_diagram(axes,
                s_min=32,
                s_max=37,
                lab_curve_exp=1,
-               levels=np.arange(5, 36)):
+               levels=None):
     """
     Draw density contours as background of a TS plot.
 
-    Mandatory input:
+    Parameters
+    ----------
+    axes : pyplot.Axes
+        Axes on which to operate.
+    t_min : float
+        Minimum temperature to display.
+    t_max : float
+        Maximum temperature to display.
+    s_min : float
+        Minimum salinity to display.
+    s_max : float
+        Maximum salinity to display.
+    lab_curve_exp : float
+        Move labels towards the top right (>1) or bottom left (<1) corner.
+    levels : 1D array
+        Density contours to draw. Defaults to (5, 36).
 
-    axes:            [matplotlib.pyplot.axes]: where to draw
-
-    Optional inputs:
-
-    t_min:           [float]: minimum temperature to display
-    t_max:           [float]: maximum temperature to display
-    s_min:           [float]: minimum salinity to display
-    s_max:           [float]: maximum salinity to display
-    lab_curve_exp:   [float]: exponent of the curve on which
-                              to draw density labels. 1 will
-                              draw them straight from (t_max,s_min)
-                              to (t_min,s_max). Raising its value
-                              pushes labels towards (t_max,s_max) and
-                              lowering it pushes labels towards
-                              (t_min,s_min)
-    levels:          [numpy array]: density contours to draw
     """
     # Parameters
     npts = 100
+
+    if levels is None:
+        levels = np.arange(5, 36)
 
     # Prepare TS grid and calculate density
     sal_grid, temp_grid = np.meshgrid(np.linspace(s_min, s_max, npts),
@@ -386,9 +400,23 @@ def ts_diagram(axes,
 
 def xr_plot_pm_patch(ds, xcoord, base, interval, ax, color='lightskyblue'):
     """
-    Plot a patch at ds field base plus or minus ds field interval along
-    the whole ds coordinate xcoord. Useful for making climatologies form
-    example.
+    Draw a patch of +- interval width around time series.
+ 
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Contains the data to plot.
+    xcoord : str
+        Name of time series coordinate.
+    base : str
+        Name of data to use as vertical center of the patch.
+    interval : str
+        Name of data to use as vertical half height of the patch.
+    ax : pyplot.Axes
+        Axes on which to draw.
+    color : str
+        Name of the patch's color.
+
     """
     ds = xr_abs(ds, interval)
     BASE = np.hstack((ds[base].values, ds[base].values[::-1]))
