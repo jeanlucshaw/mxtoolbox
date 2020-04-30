@@ -25,7 +25,8 @@ __all__ = ['broadcastable',
            'rotate_frame',
            'xr_abs',
            'xr_time_step',
-           'xr_unique']
+           'xr_unique',
+           'mxy2abc']
 
 def broadcastable(a, b):
     """
@@ -172,9 +173,10 @@ def distance_along_bearing(xpts,
 
     """
     # Project coordinates to bearing line
-    a = -np.tan(bearing * np.pi / 180)
-    b = 1
-    c = -y0
+    # a = -np.tan(bearing * np.pi / 180)
+    # b = 1
+    # c = -y0
+    a, b, c = mxy2abc(np.tan(bearing * np.pi / 180), x0, y0)
     xprj, yprj = project_to_line(xpts, ypts, a, b, c)
 
     # Calculate distance
@@ -184,7 +186,11 @@ def distance_along_bearing(xpts,
         distance = _distance(xprj, yprj, x0, y0)
 
     # Make negative distances where y < y0
-    distance[yprj < y0] = -distance[yprj < y0]
+    if np.array(yprj).size > 1:
+        distance[yprj < y0] = -distance[yprj < y0]
+    else:
+        if yprj < y0:
+            distance = -distance
 
     return distance
 
@@ -459,6 +465,7 @@ def project_to_line(xpts,
     y = (a * (-b * xpts + a * ypts) - b * c) / (a ** 2 + b ** 2)
     return x, y
 
+
 def _distance(xpts, ypts, x0, y0):
     """
     Return cartesian distance from (xpts, ypts) to (x0, y0).
@@ -633,3 +640,31 @@ def xr_unique(dataset, dim):
     '''
     _, index = np.unique(dataset[dim], return_index=True)
     return dataset.isel({dim: index})
+
+
+def mxy2abc(m, x0, y0):
+    """
+    For a line defined by,
+
+    .. math::
+
+       y = m (x - h) + b
+
+    reformulate as,
+
+    .. math::
+
+       ax + by + c = 0
+
+    Parameters
+    ----------
+    m, x0, y0 : float
+        Line parameters in form 1.
+
+    Returns
+    -------
+    a, b, c : float
+        Line parameters in form 2.
+
+    """
+    return 1, -1/m, y0 / m - x0

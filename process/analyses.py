@@ -7,12 +7,138 @@ import xarray as xr
 from scipy.optimize import leastsq
 from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
 
-__all__ = ['principal_modes',
+__all__ = ['pca',
+           'pd_pca',
+           'principal_modes',
            'gaussian_smoothing',
            'lsq_curve_fit',
            'pd_regression_statistics',
+           'xr_2D_to_1D_interp',
            'xr_cross_correlate',
            'xr_time_aht']
+
+
+def pca(input_):
+    """
+    Perform principal component analysis on numpy array.
+
+    Parameters
+    ----------
+    input_ : 2D array
+        Columns (n) are variables, rows (m) are observations.
+
+    Returns
+    -------
+    U : 2D array (n by n)
+        Columns are the eigenvectors.
+    lbda : 1D array
+        Eigenvalues.
+    F : 2D array
+        Matrix of component scores.
+    UL_sr : 2D array
+        Projection of the descriptors to PC space.
+
+    Note
+    ----
+
+       Implemented following,
+
+       Legendre and Legendre (1998), Numerical Ecology, Elsevier, 852 pp.
+    """
+    Y_h = input_ - input_.mean(axis=0)
+
+    # Calculate the dispersion matrix
+    S = (1 / (1 - Y_h.shape[0])) * Y_h.T @ Y_h
+
+    # Find eigenvalues and eigenvectors
+    vals, vecs = np.linalg.eig(S)
+    I = np.argsort(abs(vals))[::-1]
+    U = vecs[:,I]
+    lbda = vals[I]
+
+    # Normalize eigenvectors to unit length
+    U /= np.sqrt((U ** 2).sum(axis=0)) 
+
+    # Calculate the matrix of component scores
+    F = Y_h @ U
+
+    # Calculate projection of descriptors in reduced space
+    UL_sr = U @ np.sqrt(np.diag(np.abs(lbda)))
+
+    return U, lbda, F, UL_sr
+
+
+# Function definition
+def pd_pca(dataframe, features, target=None, plot=False, **plt_kwargs):
+    """
+    Add principal component vectors to dataframe.
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        Data to analyse.
+    features : list of str
+        Descriptors to use.
+    target : str
+        Name of target column.
+    plot : bool
+        Visualize results.
+    plt_kwargs : dict
+        Keyword arguments passed to pandas.plot.scatter.
+
+    Returns
+    -------
+    pcdf : pandas.Dataframe
+        Input dataframe with added PC columns.
+    lbda : 1D array
+        Eigenvalues of principal modes.
+    UL_sr : 2D array
+        Projection of features to reduced space.
+
+    """
+    # Standardize dataset
+    Y = dataframe.loc[:, features].values
+
+    # Perform PCA
+    U, lbda, F, UL_sr = pca(Y)
+
+    # Format results
+    pcdf = pd.DataFrame(data=F,
+                        columns=['PC%d' % (i + 1) for i in range(len(features))])
+    if target:
+        cols = [*features, target]
+    else:
+        cols = features
+    pcdf = pd.concat([pcdf, dataframe.loc[:, cols]], axis=1)
+
+    # Visualize
+    if plot:
+        # Scattered data in reduced space
+        ax = pcdf.plot.scatter(x='PC1',
+                               y='PC2',
+                               c='k',
+                               **plt_kwargs)
+
+        # Feature axes projected to reduced space
+        for i in range(len(features)):
+            ax.plot([0, UL_sr[i, 0]], [0, UL_sr[i, 1]], 'k')
+            ax.text(UL_sr[i, 0], UL_sr[i, 1], features[i])
+
+        # Label axes with explained variance
+        ax.set(xlabel='PC1 (%.2f%%)' % (100 * lbda[0] / lbda.sum()),
+               ylabel='PC2 (%.2f%%)' % (100 * lbda[1] / lbda.sum()))
+
+        # Set plot aspect ratio
+        high_lim = np.max(ax.get_ylim() + ax.get_xlim())
+        low_lim = np.min(ax.get_ylim() + ax.get_xlim())
+        ax.set(xlim=(low_lim, high_lim),
+               ylim=(low_lim, high_lim))
+        ax.figure.set_figheight(5)
+        ax.figure.set_figwidth(5)
+        plt.show()
+
+    return pcdf, lbda, UL_sr
+
 
 def principal_modes(args):
     """
@@ -273,6 +399,32 @@ def pd_regression_statistics(dataframe, xname, yname):
                                             sum_of_sq_mean_y,
                                             'xx',
                                             'xx'))
+
+
+def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
+    """
+    Interpolate 2D field along arbitrary track.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset or xarray.DataArray
+        Data from which to interpolate.
+    x, y : 1D array
+        Coordinates of interpolation track.
+    xcoord, ycoord : str
+        Coordinate names of the 2D field.
+    name : str
+        Name of the track coordinate.
+
+    Returns
+    -------
+    xarray.Dataset or xarray.DataArray
+        Field interpolated to track.
+
+    """
+    da_x = xr.DataArray(x, dims=name)
+    da_y = xr.DataArray(y, dims=name)
+    return dataset.interp({xcoord: da_x, ycoord: da_y})
 
 
 def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
