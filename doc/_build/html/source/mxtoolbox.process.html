@@ -48,6 +48,56 @@
 <span id="analyses-module"></span><h2>analyses module<a class="headerlink" href="#module-mxtoolbox.process.analyses" title="Permalink to this headline">¶</a></h2>
 <p>Complex analyses transforming data into other data.</p>
 <dl class="function">
+<dt id="mxtoolbox.process.analyses.pca">
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">pca</code><span class="sig-paren">(</span><em class="sig-param">input_</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.pca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform principal component analysis on numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_</strong> (<em>2D array</em>) – Columns (n) are variables, rows (m) are observations.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>U</strong> (<em>2D array (n by n)</em>) – Columns are the eigenvectors.</p></li>
+<li><p><strong>lbda</strong> (<em>1D array</em>) – Eigenvalues.</p></li>
+<li><p><strong>F</strong> (<em>2D array</em>) – Matrix of component scores.</p></li>
+<li><p><strong>UL_sr</strong> (<em>2D array</em>) – Projection of the descriptors to PC space.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Implemented following,</p>
+<p>Legendre and Legendre (1998), Numerical Ecology, Elsevier, 852 pp.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.analyses.pd_pca">
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">pd_pca</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em>, <em class="sig-param">features</em>, <em class="sig-param">target=None</em>, <em class="sig-param">plot=False</em>, <em class="sig-param">**plt_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.pd_pca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add principal component vectors to dataframe.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Data to analyse.</p></li>
+<li><p><strong>features</strong> (<em>list of str</em>) – Descriptors to use.</p></li>
+<li><p><strong>target</strong> (<em>str</em>) – Name of target column.</p></li>
+<li><p><strong>plot</strong> (<em>bool</em>) – Visualize results.</p></li>
+<li><p><strong>plt_kwargs</strong> (<em>dict</em>) – Keyword arguments passed to pandas.plot.scatter.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>pcdf</strong> (<em>pandas.Dataframe</em>) – Input dataframe with added PC columns.</p></li>
+<li><p><strong>lbda</strong> (<em>1D array</em>) – Eigenvalues of principal modes.</p></li>
+<li><p><strong>UL_sr</strong> (<em>2D array</em>) – Projection of features to reduced space.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.process.analyses.principal_modes">
 <code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">principal_modes</code><span class="sig-paren">(</span><em class="sig-param">args</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.principal_modes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform eigenvalue decomposition using numpy.</p>
@@ -176,6 +226,28 @@ variable is considered to be xname.</p>
 Statistics for terrified biologists,
 Blackwell publishing
 p. 262</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.analyses.xr_2D_to_1D_interp">
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">xr_2D_to_1D_interp</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">xcoord</em>, <em class="sig-param">ycoord</em>, <em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.xr_2D_to_1D_interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate 2D field along arbitrary track.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset or xarray.DataArray</em>) – Data from which to interpolate.</p></li>
+<li><p><strong>x, y</strong> (<em>1D array</em>) – Coordinates of interpolation track.</p></li>
+<li><p><strong>xcoord, ycoord</strong> (<em>str</em>) – Coordinate names of the 2D field.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of the track coordinate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Field interpolated to track.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset or xarray.DataArray</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -692,6 +764,28 @@ of as rotating the frame of reference anti-clockwise by
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math_.mxy2abc">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">mxy2abc</code><span class="sig-paren">(</span><em class="sig-param">m</em>, <em class="sig-param">x0</em>, <em class="sig-param">y0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.mxy2abc" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a line defined by,</p>
+<div class="math notranslate nohighlight">
+\[y = m (x - h) + b\]</div>
+<p>reformulate as,</p>
+<div class="math notranslate nohighlight">
+\[ax + by + c = 0\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>m, x0, y0</strong> (<em>float</em>) – Line parameters in form 1.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>a, b, c</strong> – Line parameters in form 2.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
