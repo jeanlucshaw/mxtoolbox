@@ -1127,14 +1127,33 @@ return values at bin centers <cite>binc</cite>.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.process.signal_.xr_filter">
-<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_filter</code><span class="sig-paren">(</span><em class="sig-param">coord</em>, <em class="sig-param">val</em>, <em class="sig-param">fc</em>, <em class="sig-param">btype='high'</em>, <em class="sig-param">axis=-1</em>, <em class="sig-param">order=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply zero phase shift butterworth filter to xarray.</p>
-<p>!!!This needs to be tested and the UI needs a rework!!!</p>
-<p>Wrapper of scipy.signal.filtfilt that takes for input a coordinate
-DataArray and a val DataArray. Returns a DataArray of the filtered
-val values along the initial coordinate. Cutoff frequency should be
-supplied in seconds -1.</p>
+<dt id="mxtoolbox.process.signal_.xr_filtfilt">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_filtfilt</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">dim</em>, <em class="sig-param">cutoff</em>, <em class="sig-param">btype='low'</em>, <em class="sig-param">order=2</em>, <em class="sig-param">vars_=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_filtfilt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass xarray data through variable state forward-backward filter.</p>
+<p>Data is first gridded to a regular time vector going from the
+first element of <cite>dataset[dim]</cite> to its last element. The resolution
+used is the median time step of the input time coordinate. Forward-
+backward filtering doubles the window’s order, so the input value
+is integer divided by two. Odd order values will result in filtering
+of order <cite>int(order / 2)</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Input data.</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – Dimension along which to filter.</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em>) – Filter cutoff specified in Hz.</p></li>
+<li><p><strong>btype</strong> (<em>str</em>) – Filter type passed to scipy.signal.butter.</p></li>
+<li><p><strong>order</strong> (<em>int</em>) – Filter order passed to scipy.signal.butter.</p></li>
+<li><p><strong>vars_</strong> (<em>list of str</em>) – Variables to filter, defaults to all.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The filtered input dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
