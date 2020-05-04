@@ -132,6 +132,63 @@ def _distance(xpts, ypts, x0, y0):
     return np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
 
 
+def destination_point(x0, y0, distance, bearing, meters_per_unit=1000):
+    """
+    Find coordinates of a point `distance` km in initial direction `bearing`.
+
+    Let :math:`\lambda_0, \phi_0` be the longitude and latitude of some
+    initial coordinate. On a spherical earth, coordinates of a point
+    :math:`\lambda_f, \phi_f` a distance `d` along a great-circle line
+    with initial bearing :math:`\theta` can be computed as,
+
+    .. math::
+
+       \phi_f = \sin^{-1}\left(\sin\phi_0\cos\delta + \cos\phi_0\sin\delta\cos\theta\right)\\
+
+    and,
+
+    .. math::
+
+       \lambda_f = \lambda_0 + \tan^{-1}\left(\frac{\sin\theta\sin\delta\cos\phi_0}
+       {\cos\delta - \sin\phi_0\sin\phi_f}\right)
+
+    where :math:`\delta` is the `d` divided by the earth's radius set
+    at 6371 km.
+
+    Parameters
+    ----------
+    x0, y0 : float
+        Starting longitude and latitude.
+    distance : float
+        Distance to travel.
+    bearing : float
+        Initial azimuth in degrees, 0 north and 90 east.
+    meters_per_unit : float
+        Defines the unit of `distance`. Defaults to 1000 for km.
+
+    Returns
+    -------
+    float
+        Longitude and latitude of destination point.
+
+    """
+    # Unit conversions
+    delta = meters_per_unit * distance / 6371008.8
+    phi_0 = y0 * np.pi / 180 
+    lbd_0 = x0 * np.pi / 180
+    theta = bearing * np.pi / 180
+
+    # Destination latitude in radians
+    phi_f = np.arcsin(np.sin(phi_0) * np.cos(delta) + np.cos(phi_0) * np.sin(delta) * np.cos(theta))
+
+    # Destination longitude in radians
+    arg_y = np.sin(theta) * np.sin(delta) * np.cos(phi_0)
+    arg_x = np.cos(delta) - np.sin(phi_0) * np.sin(phi_f)
+    lbd_f = lbd_0 + np.arctan2(arg_y, arg_x)
+
+    return (180 * lbd_f / np.pi, 180 * phi_f / np.pi)
+
+
 def distance_along_bearing(xpts,
                            ypts,
                            bearing,

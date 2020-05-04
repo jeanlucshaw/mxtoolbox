@@ -4,9 +4,159 @@ Functions to streamline work when using cartopy
 import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from ..process.math_ import destination_point
 
-__all__ = ['cp_mercator_panel',
+__all__ = ['cp_map_ruler',
+           'cp_mercator_panel',
            'cp_proj_panel']
+
+
+def cp_map_ruler(axes,
+                 x_start,
+                 y_start,
+                 length,
+                 bearing,
+                 interval=10,
+                 n_minor=4,
+                 size=1,
+                 space=1,
+                 units='km',
+                 text_side='east',
+                 text_kw=None,
+                 line_kw=None):
+    """
+    Draw a distance ruler on a cartopy map.
+
+    Each tick is found iteratively by travelling `interval` along
+    a great circle line starting at the previous tick towards
+    `heading`.
+
+    Parameters
+    ----------
+    axes : GeoAxes
+        The axes on which to draw.
+    x_start, y_start : float
+        Longitude and latitude or ruler zero.
+    length : float
+        Distance covered by the ruler (km).
+    bearing : float
+        Along which destination is calculated between ticks in degrees
+        with zero north and 90 east.
+    interval : float
+        Number of kilometers between ticks.
+    n_minor : int
+        Number of minor ticks between major ticks.
+    size : float
+        Tick length. Smaller size means bigger ticks.
+    space : float
+        Between text and ruler. Bigger means more space.
+    units : str
+        Unit description to draw on top of the ruler.
+    text_side : str
+        Display labels `east` or `west` of the ruler.
+    text_kw : dict
+        Keyword arguments passed to `axes.text`.
+    line_kw : dict
+        Keyword arguments passed to `axes.plot`.
+
+    Note
+    ----
+
+       At large scales the ruler will distort but the distance
+       between ticks is always right. Distortions are most visible
+       at scales > 1000 km and at absolute latitudes > 35.
+
+    See Also
+    --------
+    
+       * math_.destination_point
+
+    """
+
+    # Option switches
+    if line_kw is None:
+        line_kw = {'color': 'k', 'linestyle': '-', 'transform': axes.transAxes}
+    else:
+        line_kw = {'color': 'k', 'linestyle': '-', **line_kw, 'transform': axes.transAxes}
+
+    text_override = {'va': 'center', 'transform': axes.transAxes, 'rotation_mode': 'anchor'}
+    if text_kw is None:
+        text_kw = {}
+    if text_side == 'east':
+        text_sign = 1
+        text_kw = {'ha': 'left',  **text_kw, **text_override}
+    else:
+        text_sign = -1
+        text_kw = {'ha': 'right', **text_kw, **text_override}
+
+    # Transforms between map and axis coordinates
+    data_to_axis = axes.transData + axes.transAxes.inverted()
+    axis_to_data = data_to_axis.inverted()
+
+    # Parameters and vector initialization
+    distance = 0
+    step_count = length // interval
+    lon = np.ones(step_count + 1) * x_start
+    lat = np.ones(step_count + 1) * y_start
+    tick_x = np.zeros(step_count + 1)
+    tick_y = np.zeros(step_count + 1)
+
+    # Generate distance points vector
+    for i in range(1, lon.size):
+        lon[i], lat[i] = destination_point(lon[i-1], lat[i-1], interval, bearing)
+
+        # Transform to axes coordinates
+        x1, y1 = data_to_axis.transform((lon[i - 1], lat[i - 1]))
+        x2, y2 = data_to_axis.transform((lon[i], lat[i]))
+
+        # Get perpendicular scaled vector
+        norm = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 20 * size
+        if (i - 1) % (n_minor + 1) != 0:
+            norm *= 3
+        u, v = -(y2 - y1) / norm, (x2 - x1) / norm
+
+        # Draw barbs
+        axes.plot([x1, x1 + u],[y1, y1 + v], **line_kw)
+        axes.plot([x1, x1 - u],[y1, y1 - v], **line_kw)
+
+        # Label major ticks
+        if (i-1) % (n_minor + 1) == 0:
+            angle = np.arctan2(y2-y1, x2-x1) * 180 / np.pi
+            axes.text(x1 - space * u * text_sign,
+                      y1 - space * v * text_sign,
+                      '%d' % distance,
+                      rotation=angle - 90,
+                      **text_kw)
+
+        # Keep track of distance travelled
+        distance += interval
+
+    # Draw last barb
+    norm = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 50 * size
+    if step_count % (n_minor + 1) != 0:
+        norm *= 3
+    u, v = -(y2 - y1) / norm, (x2 - x1) / norm
+    axes.plot([x2, x2 + u],[y2, y2 + v], **line_kw)
+    axes.plot([x2, x2 - u],[y2, y2 - v], **line_kw)
+
+    # Label last barb if major
+    if step_count % (n_minor + 1) == 0:
+        axes.text(x2 - space * u * text_sign,
+                  y2 - space * v * text_sign,
+                  '%d' % distance,
+                  rotation=angle - 90,
+                  **text_kw)
+
+    axes.text(x2 + space * v,
+              y2 + space * u * text_sign,
+              units,
+              rotation=angle - 90,
+              **{**text_kw, 'ha': 'center', 'va': 'bottom'})
+
+    
+    # Draw center of the ruler
+    axes.plot(lon, lat, **{**line_kw, 'transform': axes.transData})
+
 
 def cp_mercator_panel(axes: 'array of subplots',
                       preset: 'GSL or WA' = None,
