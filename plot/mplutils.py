@@ -15,7 +15,8 @@ __all__ = ['axlabel_doy2months',
            'colorbar',
            'colorline',
            'labeled_colorbar',
-           'move_axes']
+           'move_axes',
+           'text_array']
 
 
 def axlabel_doy2months(axes):
@@ -251,3 +252,50 @@ def move_axes(axes, ud=0, rl=0):
     box.y0 += ud
     box.y1 += ud
     axes.set_position(box)
+
+
+def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, **kwargs):
+    """
+    Add multiple text annotations to plot in one call.
+
+    To add a single text label, use `axes.text`. This function
+    is a wrapper around it that accepts arrays of coordinates
+    and corresponding labels. If anything goes wrong with one
+    label (e.g. value not printable, coordinate is missing value)
+    it is silently skipped.
+
+    Paramaters
+    ----------
+    axes : pyplot.Axes
+        The axes on which to draw.
+    xpts, ypts : 1D array
+        Coordinates of the labels to draw.
+    labels : iterable of str or numeric type
+        Labels to draw.
+    fmt : str
+        Numeric format of the labels, e.g. '%d'.
+    xoffset, yoffset : float, 1D array or object
+        Horizontal or vertical label offsets in coordinates
+        of xpts and ypts.
+    **kwargs : keyword arguments
+        Passed to pyplot.text.
+
+    """
+    if xoffset is None:
+        xoffset = np.zeros(np.array(xpts).size)
+    elif np.array(xoffset).size == 1:
+        xoffset = np.tile(xoffset, np.array(xpts).size)
+    if yoffset is None:
+        yoffset = np.zeros(np.array(xpts).size)
+    elif np.array(yoffset).size == 1:
+        yoffset = np.tile(yoffset, np.array(xpts).size)
+
+    for x, y, s, xo, yo in zip(xpts, ypts, labels, xoffset, yoffset):
+        try:
+            if fmt:
+                s = fmt % s
+            axes.text(x + xo, y + yo, s, **kwargs)
+        except ValueError:
+            pass
+
+    return None

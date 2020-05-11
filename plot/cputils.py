@@ -22,6 +22,7 @@ def cp_map_ruler(axes,
                  space=1,
                  units='km',
                  text_side='east',
+                 text_rot=0,
                  text_kw=None,
                  line_kw=None):
     """
@@ -54,6 +55,8 @@ def cp_map_ruler(axes,
         Unit description to draw on top of the ruler.
     text_side : str
         Display labels `east` or `west` of the ruler.
+    text_rot : float
+        Rotate text if not diplaying properly (workaround).
     text_kw : dict
         Keyword arguments passed to `axes.text`.
     line_kw : dict
@@ -62,9 +65,13 @@ def cp_map_ruler(axes,
     Note
     ----
 
-       At large scales the ruler will distort but the distance
+       * At large scales the ruler will distort but the distance
        between ticks is always right. Distortions are most visible
        at scales > 1000 km and at absolute latitudes > 35.
+
+       * This routine relies on current axes aspect ratio. If it is
+       changed after a call to cp_map_ruler, the ruler will be crooked.
+       Call just before showing/plotting for best results.
 
     See Also
     --------
@@ -101,6 +108,12 @@ def cp_map_ruler(axes,
     tick_x = np.zeros(step_count + 1)
     tick_y = np.zeros(step_count + 1)
 
+    # Adjust for rectangular axes
+    lon_size = np.diff(axes.get_xlim())[0]
+    lat_size = np.diff(axes.get_ylim())[0]
+    aspect = lat_size / lon_size
+
+
     # Generate distance points vector
     for i in range(1, lon.size):
         lon[i], lat[i] = destination_point(lon[i-1], lat[i-1], interval, bearing)
@@ -113,7 +126,7 @@ def cp_map_ruler(axes,
         norm = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 20 * size
         if (i - 1) % (n_minor + 1) != 0:
             norm *= 3
-        u, v = -(y2 - y1) / norm, (x2 - x1) / norm
+        u, v = -(y2 - y1) / norm * aspect, (x2 - x1) / norm / aspect
 
         # Draw barbs
         axes.plot([x1, x1 + u],[y1, y1 + v], **line_kw)
@@ -121,11 +134,11 @@ def cp_map_ruler(axes,
 
         # Label major ticks
         if (i-1) % (n_minor + 1) == 0:
-            angle = np.arctan2(y2-y1, x2-x1) * 180 / np.pi
+            angle = np.arctan2(v, u) * 180 / np.pi + 180
             axes.text(x1 - space * u * text_sign,
                       y1 - space * v * text_sign,
                       '%d' % distance,
-                      rotation=angle - 90,
+                      rotation=angle + text_rot,
                       **text_kw)
 
         # Keep track of distance travelled
@@ -135,7 +148,7 @@ def cp_map_ruler(axes,
     norm = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 50 * size
     if step_count % (n_minor + 1) != 0:
         norm *= 3
-    u, v = -(y2 - y1) / norm, (x2 - x1) / norm
+    u, v = -(y2 - y1) / norm * aspect, (x2 - x1) / norm / aspect
     axes.plot([x2, x2 + u],[y2, y2 + v], **line_kw)
     axes.plot([x2, x2 - u],[y2, y2 - v], **line_kw)
 
@@ -144,13 +157,13 @@ def cp_map_ruler(axes,
         axes.text(x2 - space * u * text_sign,
                   y2 - space * v * text_sign,
                   '%d' % distance,
-                  rotation=angle - 90,
+                  rotation=angle + text_rot,
                   **text_kw)
 
     axes.text(x2 + space * v,
               y2 + space * u * text_sign,
               units,
-              rotation=angle - 90,
+              rotation=angle + text_rot,
               **{**text_kw, 'ha': 'center', 'va': 'bottom'})
 
     

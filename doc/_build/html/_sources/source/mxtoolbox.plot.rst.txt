@@ -1,6 +1,15 @@
 plot subpackage
 ===============
 
+cputils module
+---------------
+
+.. automodule:: mxtoolbox.plot.cputils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 mplutils module
 ---------------
 

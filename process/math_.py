@@ -12,6 +12,7 @@ shapely.speedups.enable()
 
 __all__ = ['broadcastable',
            'circular_distance',
+           'destination_point',
            'distance_along_bearing',
            'f_gaussian',
            'f_sine',

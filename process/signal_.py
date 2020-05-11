@@ -11,6 +11,7 @@ from .convert import binc2edge
 
 __all__ = ['pd_bin',
            'xr_bin',
+           'xr_bin_where',
            'xr_filtfilt',
            'xr_godin',
            'xr_peaks']
@@ -71,15 +72,102 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
         Dataset binned at `binc` along `dim`.
     '''
     edge = binc2edge(binc)
-    dimorder = tuple(dataset.coords)
+
+    # Save dimension orders for each variable
+    dim_dict = dict()
+    for key in dataset.keys():
+        dim_dict[key] = dataset[key].dims
+
+    # Save attributes
     attributes = dataset.attrs
+
+    # Bin averaging
     dataset = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
-          .reduce(func, dim=dim)
-          .rename({dim+'_bins': dim})
-          .transpose(*dimorder))
+               .reduce(func, dim=dim)
+               .rename({dim+'_bins': dim}))
+
+    # Restore attributes
     dataset.attrs = attributes
 
+    # Restore dimension order to each variable
+    for key, dim_tuple in dim_dict.items():
+        dataset[key] = dataset[key].transpose(*dim_tuple)
+
     return dataset
+
+
+def xr_bin_where(dataset, field, selector, dim, binc, fill_na=-99999):
+    """
+    Bin select values in all variables based on one variable.
+
+    Obtain the values of `field` chosen by `selector` and the
+    associated values of all other variables at the same
+    coordinates. For example, setting `selector` to `np.argmax`
+    will return the binned maximum of `field` and the values of
+    the other variables at the same coordinates (not necessarily
+    their maximums).
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset to operate on.
+    field : str
+        Name of variable off of which to base selection.
+    selector : callable
+        Returns index of selected value in each bin.
+    dim : str
+        Name of dimension along which to bin.
+    binc : 1D array
+        Bin centers.
+    fill_na : numeric
+        Replace missing data in `field` with this value
+        prior to applying `selector`. Good values are function
+        dependent. For example you could use -99999 for
+        numpy.argmax and 99999 for numpy.argmin to not affect
+        the outcome.
+
+    Returns
+    -------
+    xarray.Dataset
+        The bin selected dataset.
+
+    Note
+    ----
+
+       The selector function is applied to the GroupBy objects
+       after binning. It is expected to return the index of
+       the selected value and not the selected value itself (e.g.
+       `numpy.argmax` or `numpy.argmin`).
+    """
+    def _reductor(DATASET, FIELD=None, SELECTOR=None, DIM=None):
+        return DATASET.isel(**{DIM: DATASET[FIELD].reduce(SELECTOR, dim=DIM)})
+
+    # Save original dimension orders for each variable
+    dim_dict = dict()
+    for key in dataset.keys():
+        dim_dict[key] = dataset[key].dims
+
+    # Remove nan values
+    output = dataset.fillna(fill_na)
+
+    # Binning
+    output = (output.groupby_bins(output[dim], binc2edge(binc), labels=binc)
+              .apply(_reductor, FIELD=field, SELECTOR=selector, DIM=dim)
+              .reset_coords(dim)
+              .drop_vars(dim)
+              .rename({dim+'_bins': dim}))
+
+    # Restore nan values
+    output = output.where(output != fill_na)
+
+    # Transpose to original dimensions
+    for key, dim_tuple in dim_dict.items():
+        output[key] = output[key].transpose(*dim_tuple)
+
+    # Pass on attributes
+    output.attrs = dataset.attrs
+
+    return output
 
 
 def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):

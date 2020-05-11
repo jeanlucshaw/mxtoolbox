@@ -5,10 +5,14 @@ conversions.
 import gsw
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from .math_ import broadcastable, rotate_frame
 
 __all__ = ['anomaly2rgb',
            'binc2edge',
+           'bine2center',
+           'dd2dms',
+           'dms2dd',
            'hd2uv',
            'pd_add_seasons',
            'tetha2hd',
@@ -73,8 +77,14 @@ def binc2edge(z):
         Bin centers.
 
     Returns
+    -------
     numpy.array, pandas.DatetimeIndex, pandas.Series
         Bin edges.
+
+    See Also
+    --------
+
+       * convert.bine2center
 
     """
     if type(z) is pd.core.indexes.datetimes.DatetimeIndex:
@@ -109,6 +119,89 @@ def binc2edge(z):
         EDGES = np.r_[z[0]-dz[0]/2, z[1:]-dz/2, z[-1] + dz[-1]/2]
 
     return EDGES
+
+
+def bine2center(bine):
+    """
+    Get bin centers from bin edges.
+
+    Bin centers can be irregularly spaced. Edges are halfway between
+    one point and the next.
+
+    Parameters
+    ----------
+    bine : 1D array
+        Bin edges.
+
+    Returns
+    -------
+    1D array
+        Bin centers.
+
+    See Also
+    --------
+
+       * convert.binc2edge
+    """
+    return bine[:-1] + np.diff(bine) / 2
+
+
+def dms2dd(degrees, minutes, seconds):
+    """
+    Convert coordinates from deg., min., sec., to decimal degress.
+
+    Parameters
+    ----------
+    degrees : float or 1D array
+        Degree of coordinate, positive east.
+    minutes : float or 1D array
+        Minutes of coordinate, positive definite.
+    seconds : float or 1D array
+        Seconds of coordinate, positive definite.
+
+    Returns
+    -------
+    float or 1D array
+        Coordinates in decimal degrees.
+
+    See Also
+    --------
+
+       * convert.dd2dms
+
+    """
+    sign = np.sign(degrees)
+    return degrees + sign * minutes / 60 + sign * seconds / 3600
+
+
+def dd2dms(degrees_decimal):
+    """
+    Convert coordinates from decimal degrees to deg., min., sec.
+
+    Parameters
+    ----------
+    degrees_decimal : float or 1D array
+        Coordinates in decimal degrees, positive east.
+
+    Returns
+    -------
+    degrees : float or 1D array
+        Degree of coordinate, positive east.
+    minutes : float or 1D array
+        Minutes of coordinate, positive definite.
+    seconds : float or 1D array
+        Seconds of coordinate, positive definite.
+
+    See Also
+    --------
+
+       * convert.dms2dd
+
+    """
+    degrees = np.int16(degrees_decimal)
+    minutes = np.int16((degrees_decimal - degrees) * 60.)
+    seconds = (degrees_decimal - degrees - minutes / 60.) * 3600.
+    return (degrees, abs(minutes), abs(seconds))
 
 
 def hd2uv(heading, magnitude, rotate_by=0):
@@ -218,17 +311,17 @@ def pd_add_seasons(dataframe, time='time', stype='astro'):
     # Loop over years
     for year in dataframe[time].dt.year.unique():
         if stype == 'astro':
-            strt_w_pv = pd.datetime(year - 1, 12, 20)
-            strt_w_nx = pd.datetime(year, 12, 20)
-            strt_sprg = pd.datetime(year, 3, 20)
-            strt_summ = pd.datetime(year, 6, 20)
-            strt_fall = pd.datetime(year, 9, 20)
+            strt_w_pv = datetime(year - 1, 12, 20)
+            strt_w_nx = datetime(year, 12, 20)
+            strt_sprg = datetime(year, 3, 20)
+            strt_summ = datetime(year, 6, 20)
+            strt_fall = datetime(year, 9, 20)
         elif stype == 'met':
-            strt_w_pv = pd.datetime(year - 1, 12, 1)
-            strt_w_nx = pd.datetime(year, 12, 1)
-            strt_sprg = pd.datetime(year, 3, 1)
-            strt_summ = pd.datetime(year, 6, 1)
-            strt_fall = pd.datetime(year, 9, 1)
+            strt_w_pv = datetime(year - 1, 12, 1)
+            strt_w_nx = datetime(year, 12, 1)
+            strt_sprg = datetime(year, 3, 1)
+            strt_summ = datetime(year, 6, 1)
+            strt_fall = datetime(year, 9, 1)
         else:
             raise ValueError('%s is not a valid season type value.' % stype)
 
