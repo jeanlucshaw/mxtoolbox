@@ -49,7 +49,7 @@
 <p>Functions to streamline work when using cartopy</p>
 <dl class="function">
 <dt id="mxtoolbox.plot.cputils.cp_map_ruler">
-<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_map_ruler</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">x_start</em>, <em class="sig-param">y_start</em>, <em class="sig-param">length</em>, <em class="sig-param">bearing</em>, <em class="sig-param">interval=10</em>, <em class="sig-param">n_minor=4</em>, <em class="sig-param">size=1</em>, <em class="sig-param">space=1</em>, <em class="sig-param">units='km'</em>, <em class="sig-param">text_side='east'</em>, <em class="sig-param">text_kw=None</em>, <em class="sig-param">line_kw=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_map_ruler" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_map_ruler</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">x_start</em>, <em class="sig-param">y_start</em>, <em class="sig-param">length</em>, <em class="sig-param">bearing</em>, <em class="sig-param">interval=10</em>, <em class="sig-param">n_minor=4</em>, <em class="sig-param">size=1</em>, <em class="sig-param">space=1</em>, <em class="sig-param">units='km'</em>, <em class="sig-param">text_side='east'</em>, <em class="sig-param">text_rot=0</em>, <em class="sig-param">text_kw=None</em>, <em class="sig-param">line_kw=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_map_ruler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw a distance ruler on a cartopy map.</p>
 <p>Each tick is found iteratively by travelling <cite>interval</cite> along
 a great circle line starting at the previous tick towards
@@ -68,6 +68,7 @@ with zero north and 90 east.</p></li>
 <li><p><strong>space</strong> (<em>float</em>) – Between text and ruler. Bigger means more space.</p></li>
 <li><p><strong>units</strong> (<em>str</em>) – Unit description to draw on top of the ruler.</p></li>
 <li><p><strong>text_side</strong> (<em>str</em>) – Display labels <cite>east</cite> or <cite>west</cite> of the ruler.</p></li>
+<li><p><strong>text_rot</strong> (<em>float</em>) – Rotate text if not diplaying properly (workaround).</p></li>
 <li><p><strong>text_kw</strong> (<em>dict</em>) – Keyword arguments passed to <cite>axes.text</cite>.</p></li>
 <li><p><strong>line_kw</strong> (<em>dict</em>) – Keyword arguments passed to <cite>axes.plot</cite>.</p></li>
 </ul>
@@ -75,9 +76,14 @@ with zero north and 90 east.</p></li>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>At large scales the ruler will distort but the distance
+<ul class="simple">
+<li><p>At large scales the ruler will distort but the distance
 between ticks is always right. Distortions are most visible
-at scales &gt; 1000 km and at absolute latitudes &gt; 35.</p>
+at scales &gt; 1000 km and at absolute latitudes &gt; 35.</p></li>
+<li><p>This routine relies on current axes aspect ratio. If it is
+changed after a call to cp_map_ruler, the ruler will be crooked.
+Call just before showing/plotting for best results.</p></li>
+</ul>
 </div>
 </dd></dl>
 
@@ -213,6 +219,30 @@ needs a final nudge here and there.</p>
 <li><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Axes to operate on.</p></li>
 <li><p><strong>ud</strong> (<em>float</em>) – Move panel up by <cite>ud</cite> in axes units (0-1).</p></li>
 <li><p><strong>rl</strong> (<em>float</em>) – Move panel right by <cite>rl</cite> in axes units (0-1).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.plot.mplutils.text_array">
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">text_array</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">labels</em>, <em class="sig-param">fmt=None</em>, <em class="sig-param">xoffset=None</em>, <em class="sig-param">yoffset=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.text_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add multiple text annotations to plot in one call.</p>
+<p>To add a single text label, use <cite>axes.text</cite>. This function
+is a wrapper around it that accepts arrays of coordinates
+and corresponding labels. If anything goes wrong with one
+label (e.g. value not printable, coordinate is missing value)
+it is silently skipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>pyplot.Axes</em>) – The axes on which to draw.</p></li>
+<li><p><strong>xpts, ypts</strong> (<em>1D array</em>) – Coordinates of the labels to draw.</p></li>
+<li><p><strong>labels</strong> (<em>iterable of str or numeric type</em>) – Labels to draw.</p></li>
+<li><p><strong>fmt</strong> (<em>str</em>) – Numeric format of the labels, e.g. ‘%d’.</p></li>
+<li><p><strong>xoffset, yoffset</strong> (<em>float, 1D array or object</em>) – Horizontal or vertical label offsets in coordinates
+of xpts and ypts.</p></li>
+<li><p><strong>**kwargs</strong> (<em>keyword arguments</em>) – Passed to pyplot.text.</p></li>
 </ul>
 </dd>
 </dl>

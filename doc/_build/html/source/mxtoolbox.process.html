@@ -326,11 +326,72 @@ saturate at -2 and 2.</p>
 one point and the next.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>z</strong> (<em>numpy.array, pandas.DatetimeIndex, pandas.Series</em>) – Bin centers.</p></li>
-<li><p><strong>Returns</strong></p></li>
-<li><p><strong>numpy.array, pandas.DatetimeIndex, pandas.Series</strong> – Bin edges.</p></li>
+<dd class="field-odd"><p><strong>z</strong> (<em>numpy.array, pandas.DatetimeIndex, pandas.Series</em>) – Bin centers.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Bin edges.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.array, pandas.DatetimeIndex, pandas.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.bine2center">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">bine2center</code><span class="sig-paren">(</span><em class="sig-param">bine</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.bine2center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get bin centers from bin edges.</p>
+<p>Bin centers can be irregularly spaced. Edges are halfway between
+one point and the next.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bine</strong> (<em>1D array</em>) – Bin edges.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Bin centers.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.dd2dms">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">dd2dms</code><span class="sig-paren">(</span><em class="sig-param">degrees_decimal</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.dd2dms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert coordinates from decimal degrees to deg., min., sec.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>degrees_decimal</strong> (<em>float or 1D array</em>) – Coordinates in decimal degrees, positive east.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>degrees</strong> (<em>float or 1D array</em>) – Degree of coordinate, positive east.</p></li>
+<li><p><strong>minutes</strong> (<em>float or 1D array</em>) – Minutes of coordinate, positive definite.</p></li>
+<li><p><strong>seconds</strong> (<em>float or 1D array</em>) – Seconds of coordinate, positive definite.</p></li>
 </ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.dms2dd">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">dms2dd</code><span class="sig-paren">(</span><em class="sig-param">degrees</em>, <em class="sig-param">minutes</em>, <em class="sig-param">seconds</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.dms2dd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert coordinates from deg., min., sec., to decimal degress.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>degrees</strong> (<em>float or 1D array</em>) – Degree of coordinate, positive east.</p></li>
+<li><p><strong>minutes</strong> (<em>float or 1D array</em>) – Minutes of coordinate, positive definite.</p></li>
+<li><p><strong>seconds</strong> (<em>float or 1D array</em>) – Seconds of coordinate, positive definite.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Coordinates in decimal degrees.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float or 1D array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -443,6 +504,40 @@ is specified to ‘deg’.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Angular distance between <cite>a1</cite> and <cite>a2</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math_.destination_point">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">destination_point</code><span class="sig-paren">(</span><em class="sig-param">x0</em>, <em class="sig-param">y0</em>, <em class="sig-param">distance</em>, <em class="sig-param">bearing</em>, <em class="sig-param">meters_per_unit=1000</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.destination_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find coordinates of a point <cite>distance</cite> km in initial direction <cite>bearing</cite>.</p>
+<p>Let <span class="math notranslate nohighlight">\(\lambda_0, \phi_0\)</span> be the longitude and latitude of some
+initial coordinate. On a spherical earth, coordinates of a point
+<span class="math notranslate nohighlight">\(\lambda_f, \phi_f\)</span> a distance <cite>d</cite> along a great-circle line
+with initial bearing <span class="math notranslate nohighlight">\(\theta\)</span> can be computed as,</p>
+<div class="math notranslate nohighlight">
+\[\phi_f = \sin^{-1}\left(\sin\phi_0\cos\delta + \cos\phi_0\sin\delta\cos\theta\right)\]</div>
+<p>and,</p>
+<div class="math notranslate nohighlight">
+\[\lambda_f = \lambda_0 + \tan^{-1}\left(\frac{\sin\theta\sin\delta\cos\phi_0}
+{\cos\delta - \sin\phi_0\sin\phi_f}\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\delta\)</span> is the <cite>d</cite> divided by the earth’s radius set
+at 6371 km.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0, y0</strong> (<em>float</em>) – Starting longitude and latitude.</p></li>
+<li><p><strong>distance</strong> (<em>float</em>) – Distance to travel.</p></li>
+<li><p><strong>bearing</strong> (<em>float</em>) – Initial azimuth in degrees, 0 north and 90 east.</p></li>
+<li><p><strong>meters_per_unit</strong> (<em>float</em>) – Defines the unit of <cite>distance</cite>. Defaults to 1000 for km.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Longitude and latitude of destination point.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
@@ -1218,6 +1313,47 @@ return values at bin centers <cite>binc</cite>.</p>
 <dd class="field-odd"><p>xarray.Dataset</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.signal_.xr_bin_where">
+<code class="sig-prename descclassname">mxtoolbox.process.signal_.</code><code class="sig-name descname">xr_bin_where</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em>, <em class="sig-param">selector</em>, <em class="sig-param">dim</em>, <em class="sig-param">binc</em>, <em class="sig-param">fill_na=-99999</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.signal_.xr_bin_where" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bin select values in all variables based on one variable.</p>
+<p>Obtain the values of <cite>field</cite> chosen by <cite>selector</cite> and the
+associated values of all other variables at the same
+coordinates. For example, setting <cite>selector</cite> to <cite>np.argmax</cite>
+will return the binned maximum of <cite>field</cite> and the values of
+the other variables at the same coordinates (not necessarily
+their maximums).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – The dataset to operate on.</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Name of variable off of which to base selection.</p></li>
+<li><p><strong>selector</strong> (<em>callable</em>) – Returns index of selected value in each bin.</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – Name of dimension along which to bin.</p></li>
+<li><p><strong>binc</strong> (<em>1D array</em>) – Bin centers.</p></li>
+<li><p><strong>fill_na</strong> (<em>numeric</em>) – Replace missing data in <cite>field</cite> with this value
+prior to applying <cite>selector</cite>. Good values are function
+dependent. For example you could use -99999 for
+numpy.argmax and 99999 for numpy.argmin to not affect
+the outcome.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The bin selected dataset.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The selector function is applied to the GroupBy objects
+after binning. It is expected to return the index of
+the selected value and not the selected value itself (e.g.
+<cite>numpy.argmax</cite> or <cite>numpy.argmin</cite>).</p>
+</div>
 </dd></dl>
 
 <dl class="function">
