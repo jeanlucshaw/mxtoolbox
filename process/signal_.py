@@ -205,7 +205,7 @@ def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):
     time_ungrid = dataset[dim].copy()
 
     # Grid the data
-    time_step = ps.xr_time_step(dataset, dim, 's')
+    time_step = xr_time_step(dataset, dim, 's')
     time_grid = np.arange(dataset[dim].values[0],
                           dataset[dim].values[-1],
                           np.timedelta64(int(time_step), 's'),
@@ -259,12 +259,24 @@ def xr_godin(dataarray, tname):
         Godin filtered DataArray.
 
     """
-    time_step = ps.xr_time_step(dataarray, tname, 'second')
+    # Save original dimension orders for each variable
+    if type(dataarray) == 'xarray.core.dataset.Dataset':
+        dim_dict = dict()
+        for key in dataarray.keys():
+            dim_dict[key] = dataarray[key].dims
+
+    # Perform averaging
+    time_step = xr_time_step(dataarray, tname, 'second')
     flt_godin = (dataarray
                  .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
                  .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
                  .rolling({tname: int(25 * 3600 / time_step)}, center=True).mean()
                  .resample({tname: '1D'}).mean())
+
+    # Transpose to original dimensions
+    if type(dataarray) == 'xarray.core.dataset.Dataset':
+        for key, dim_tuple in dim_dict.items():
+            flt_godin[key] = flt_godin[key].transpose(*dim_tuple)
 
     return flt_godin
 
