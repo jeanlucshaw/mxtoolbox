@@ -1,6 +1,15 @@
 read subpackage
 ===============
 
+adcp module
+-----------
+
+.. automodule:: mxtoolbox.read.adcp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 text module
 -----------
 

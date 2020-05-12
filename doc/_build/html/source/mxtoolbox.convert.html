@@ -4,72 +4,481 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>convert &#8212; mxtoolbox April 2020 documentation</title>
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <title>convert subpackage &#8212; mxtoolbox April 2020 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="plot" href="mxtoolbox.plot.html" />
-    <link rel="prev" title="Package documentation" href="../index.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="next" title="plot subpackage" href="mxtoolbox.plot.html" />
+    <link rel="prev" title="Package documentation" href="../index.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.plot.html" title="plot subpackage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Package documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
-  <div class="section" id="module-mxtoolbox.convert">
-<span id="convert"></span><h1>convert<a class="headerlink" href="#module-mxtoolbox.convert" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="convert-subpackage">
+<h1>convert subpackage<a class="headerlink" href="#convert-subpackage" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-mxtoolbox.convert.adcp2nc">
+<span id="adcp2nc-module"></span><h2>adcp2nc module<a class="headerlink" href="#module-mxtoolbox.convert.adcp2nc" title="Permalink to this headline">¶</a></h2>
+<p>Read and quality control binary ADCP data.</p>
+<p>Uses the CODAS library to read Teledyne RDI ADCP
+files (.000, .ENX, .ENS, .LTA, etc), arranges data
+into an xarray Dataset, performs QC, and saves to
+netCDF in the current directory.</p>
+<p>It is best to inlcude as much information as possible
+through the option flags as this will improve the quality
+control.</p>
+<p>This module is meant to be called from command line. A full
+list of options can be displayed by calling,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ adcp2nc -h
+</pre></div>
+</div>
+<p>For this utility to be available at the command line, add a
+file called <code class="code docutils literal notranslate"><span class="pre">adcp2nc</span></code> on your shell path, for example
+at <code class="code docutils literal notranslate"><span class="pre">/usr/local/bin/</span></code> containing the following lines,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/path/to/bash</span>
+<span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">python</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mxtoolbox</span><span class="o">/</span><span class="n">convert</span><span class="o">/</span><span class="n">adcp2nc</span><span class="o">.</span><span class="n">py</span> <span class="s2">&quot;$@&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="module-mxtoolbox.convert.shp2dex">
+<span id="shp2dex-module"></span><h2>shp2dex module<a class="headerlink" href="#module-mxtoolbox.convert.shp2dex" title="Permalink to this headline">¶</a></h2>
+<p>Convert Canadian ice service (CIS) ESRI shapefiles to ascii format (dex).</p>
+<p>CIS daily ice analysis charts (dailys) and regional analysis charts (weeklys) are
+collected every day on mixing and processed to provide information such as,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Ice thickness maps.</p></li>
+<li><p>First occurence maps.</p></li>
+<li><p>Total gulf, Newfoundland shelf and Scotian Shelf ice volumes.</p></li>
+<li><p>Comparisons to climatology.</p></li>
+</ul>
+</div></blockquote>
+<p>These analyses are performed by a combination of Perl/awk routines and are
+facilitated by first transforming the shapefiles to gridded ascii plain text
+in a format called dex, containing geographical coordinates and egg code data.
+Time information is carried by the file name (YYYYMMDD) and the columns in
+the file are ordered as follows,</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Longitude (west)</p></li>
+<li><p>Latitude</p></li>
+<li><p>Total ice concentration</p></li>
+<li><p>Partial ice concentration (thickest ice)</p></li>
+<li><p>Stage of developpment (thickest ice)</p></li>
+<li><p>Form of ice (thickest ice)</p></li>
+<li><p>Partial ice concentration (second thickest ice)</p></li>
+<li><p>Stage of developpment (second thickest ice)</p></li>
+<li><p>Form of ice (second thickest ice)</p></li>
+<li><p>Partial ice concentration (third thickest ice)</p></li>
+<li><p>Stage of developpment (third thickest ice)</p></li>
+<li><p>Form of ice (third thickest ice)</p></li>
+</ol>
+</div></blockquote>
+<p>This module performs the conversion and is meant to be called from command
+line. Command line interface description can be shown by entering,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ shp2dex -h
+</pre></div>
+</div>
+<p>For this utility to be available at the command line, add a
+file called <code class="code docutils literal notranslate"><span class="pre">shp2dex</span></code> on your shell path, for example
+at <code class="code docutils literal notranslate"><span class="pre">/usr/local/bin/</span></code> containing the following lines,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/path/to/bash</span>
+<span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">python</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mxtoolbox</span><span class="o">/</span><span class="n">convert</span><span class="o">/</span><span class="n">shp2dex</span><span class="o">.</span><span class="n">py</span> <span class="s2">&quot;$@&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More background information can be found at the following links:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://www.canada.ca/en/environment-climate-change/services/weather-manuals-documentation/manice-manual-of-ice/chapter-5.htm">About the Egg code and CIS data products.</a></p></li>
+</ul>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.jcomm.info/index.php?option=com_oe&amp;task=viewDocumentRecord&amp;docID=4439">About the SIGRID-3 shapefile format used by the CIS.</a></p></li>
+</ul>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.canada.ca/en/environment-climate-change/services/ice-forecasts-observations/latest-conditions/glossary.html">CIS sea ice glossary.</a></p></li>
+</ul>
+</div></blockquote>
+</div>
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex.load_cis_shp">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ascending=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read CIS shapefile to dataframe and polygon list.</p>
+<p>Creates a pandas DataFrame with records from the <cite>.dbf</cite>
+companion file as rows and the field names as columns. The
+dataframe is also sorted by polygon area as this is needed
+further down the processing chain. For uniformity, empty
+strings in records are replaced by ‘X’. A reference to the
+shape object of each record is found in column <cite>shapes</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Path and name to input shapefile (.shp).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Shapefile record and field information.</p></li>
+<li><p><strong>empty</strong> (<em>bool</em>) – True if missing fields essential for processing.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._shp2dex">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em>, <em class="sig-param">fill_dataframe=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
+<p>Conversion from map coordinates to decimal degrees
+is carried out by the cartopy library. Point in polygon
+querying is done using the matplotlib library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sname</strong> (<em>string</em>) – The shapefile (.shp) path and name.</p></li>
+<li><p><strong>gname</strong> (<em>string</em>) – Path and name of the text file containing
+the queried coordinates. This is expected to be
+a two column file containing [lon lat] points
+separated by spaces.</p></li>
+<li><p><strong>lwest</strong> (<em>bool</em>) – Return longitude as negative west, defaults
+to True.</p></li>
+<li><p><strong>skipland</strong> (<em>bool</em>) – Skip polygons marked as land if this is True.
+Defaults to True. Skipping land will be faster.
+If it is not known if the grid has points
+on land and you wish to mark land points, set
+to false.</p></li>
+<li><p><strong>fill_dataframe</strong> (<em>bool</em>) – If False return an empty dataframe but a full
+printable string column. False reduces computation
+time by half and is the default when this module
+is called from command line.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A dataframe with columns,</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Longitude (west)</p></li>
+<li><p>Latitude</p></li>
+<li><p>Legend</p></li>
+<li><p>Total ice concentration</p></li>
+<li><p>Partial ice concentration (thickest ice)</p></li>
+<li><p>Stage of developpment (thickest ice)</p></li>
+<li><p>Form of ice (thickest ice)</p></li>
+<li><p>Partial ice concentration (second thickest ice)</p></li>
+<li><p>Stage of developpment (second thickest ice)</p></li>
+<li><p>Form of ice (second thickest ice)</p></li>
+<li><p>Partial ice concentration (third thickest ice)</p></li>
+<li><p>Stage of developpment (third thickest ice)</p></li>
+<li><p>Form of ice (third thickest ice)</p></li>
+<li><p>Printable dex strings</p></li>
+</ol>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.Dataframe</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">math_.in_polygon()</span></code></dt><dd><p>Point in polygon querying.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._parse_prj">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_parse_prj</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._parse_prj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse shapefile (.prj) for projection parameters.</p>
+<p>Geographical projection information for shapefile data is
+contained in a companion file with the extension <cite>.prj</cite>. The
+Basemap class instance needs this information to convert
+polygon coordinates from map units (m) to longitudes and
+latitudes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Name of the projection file.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>proj</strong> (<em>str</em>) – Projection name abbreviated for input to Basemap.</p></li>
+<li><p><strong>lat0</strong> (<em>float</em>) – Latitude of origin.</p></li>
+<li><p><strong>lon0</strong> (<em>float</em>) – Longitude of origin.</p></li>
+<li><p><strong>std1</strong> (<em>float</em>) – Standard parallel 1 used by LCC projection.</p></li>
+<li><p><strong>std2</strong> (<em>float</em>) – Standard parallel 2 used by LCC projection.</p></li>
+<li><p><strong>a</strong> (<em>float</em>) – Datum semi-major radius.</p></li>
+<li><p><strong>ifp</strong> (<em>float</em>) – Inverse flattening parameter. Used to obtain the Datum
+semi-minor radius.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the moment, only Lambert conformal conic projections
+are supported.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._manage_shapefile_types">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_manage_shapefile_types</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._manage_shapefile_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Funnel shapefiles types to uniform labels.</p>
+<p>Labels of the information inside CIS shapefiles
+that this module processes have changed several times
+in the past. To avoid cluttered error handling in the
+main code from future new shapefile types, all files
+are converted to type Z before processing. Important
+label differences between types are summarized below.</p>
+<p>Shapefile types</p>
+<blockquote>
+<div><ul>
+<li><p>Type A:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = A_LEGEND</div>
+<div class="line">Legend strings = [‘Bergy water’, ‘Egg’, ‘Fast ice’, ‘Ice free’, ‘Land’, ‘Open water’, ‘Remote egg’]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “GEC_H_19740102.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type B:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = POLY_TYPE</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘N’, ‘W’]</div>
+<div class="line">New egg code = [CT, CA, … ]</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Missing form = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Missing stage = [‘’, ‘-9’, ‘99’]</div>
+<div class="line">Example = “GEC_D_20150108.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type C:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = SGD_POLY_T</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
+<div class="line">New egg code = [SGD_CT, SGD_CA, … ]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “GEC_H_20200120.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type D:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = POLY_TYPE</div>
+<div class="line">Legend strings = [‘I’, ‘L’, ‘W’]</div>
+<div class="line">New egg code = [CT, CA, … ]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘’]</div>
+<div class="line">Missing form = [‘’, ‘X’]</div>
+<div class="line">Missing stage = [‘’]</div>
+<div class="line">Example = “GEC_H_20200309.shp”</div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Type Z:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Legend string = LEGEND</div>
+<div class="line">Legend strings = [‘I’, ‘F’, ‘L’, ‘W’, ‘N’]</div>
+<div class="line">Old egg code = [E_CT, E_CA, … ]</div>
+<div class="line">Area string = AREA</div>
+<div class="line">Missing concentration = [‘X’]</div>
+<div class="line">Missing form = [‘X’]</div>
+<div class="line">Missing stage = [‘X’]</div>
+<div class="line">Example = None</div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Output from load_cis_shp of type A, B, C or D.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dataframe</strong> – Type Z.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._newegg_2_oldegg">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_newegg_2_oldegg</code><span class="sig-paren">(</span><em class="sig-param">egg_dict</em>, <em class="sig-param">sname</em>, <em class="sig-param">i</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._newegg_2_oldegg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert new more precise egg code to older more general values.</p>
+<p>Two different systems of egg code values exist in the CIS files. The
+most recent offers the possibility of increased precision but is
+this precision is rarely used. As it makes little difference for now
+and as the next processing step expects values in the old format,
+new format egg code is translated back via this routine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>egg_dict</strong> (<em>dict</em>) – New egg code keys and values.</p></li>
+<li><p><strong>sname</strong> (<em>str</em>) – Shapefile name.</p></li>
+<li><p><strong>jj</strong> (<em>int</em>) – Polygon index.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>translated</strong> – Input translated to old egg code.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._separate_wrapping_polygons">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_separate_wrapping_polygons</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">decimals=5</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._separate_wrapping_polygons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find wrapping points of polygon sequence stored in vectors <cite>x</cite> and <cite>y</cite>.</p>
+<p>The CIS shapefiles contain complex polygons with ‘holes’, which are often other
+polygons of the data set. The encompassing polygon is the first to be defined in
+vectors <cite>x</cite> and <cite>y</cite>, and it ‘wraps’ to its first coordinate before the start of
+the smaller polygon. This routine separates the these polygons by finding the
+wrapping points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x, y</strong> (<em>1D array</em>) – Coordinates of the polygon sequence.</p></li>
+<li><p><strong>decimals</strong> (<em>int</em>) – Number of decimals to keep in float comparison.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>polygons_x, polygons_y</strong> (<em>list of 1D arrays</em>) – Coordinates of the separated polygons.</p></li>
+<li><p><strong>wrap_index</strong> (<em>1D int array</em>) – Index value of the wrapping points.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._show_cis_field">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_field</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print possible values of shapefile field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Name of field to detail.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._show_cis_summary">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_summary</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print possible values of egg code data in shapefile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex.plot_cis_shp">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot polygons of a CIS ice shapefile.</p>
+<p>Polygons are plotted from large to small. Color
+meanings are,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Magenta: ice</p></li>
+<li><p>Cyan: fast-ice</p></li>
+<li><p>Grey: land</p></li>
+<li><p>Blue: water</p></li>
+<li><p>Black: no data</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sname</strong> (<em>str</em>) – Name and path of CIS shapefile.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 </div>
 
 
           </div>
-          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">mxtoolbox</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">convert</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.plot.html">plot</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.process.html">process</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mxtoolbox.read.html">read</a></li>
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">convert subpackage</a><ul>
+<li><a class="reference internal" href="#module-mxtoolbox.convert.adcp2nc">adcp2nc module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.convert.shp2dex">shp2dex module</a></li>
+</ul>
+</li>
 </ul>
 
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="../index.html" title="previous chapter">Package documentation</a></li>
-      <li>Next: <a href="mxtoolbox.plot.html" title="next chapter">plot</a></li>
-  </ul></li>
-</ul>
-</div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../index.html"
+                        title="previous chapter">Package documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mxtoolbox.plot.html"
+                        title="next chapter">plot subpackage</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/mxtoolbox.convert.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -80,32 +489,31 @@
     </div>
 </div>
 <script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2020, Jean-Luc Shaw.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="../_sources/source/mxtoolbox.convert.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mxtoolbox.plot.html" title="plot subpackage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Package documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Jean-Luc Shaw.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
   </body>
 </html>

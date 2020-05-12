@@ -40,6 +40,77 @@
             
   <div class="section" id="read-subpackage">
 <h1>read subpackage<a class="headerlink" href="#read-subpackage" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-mxtoolbox.read.adcp">
+<span id="adcp-module"></span><h2>adcp module<a class="headerlink" href="#module-mxtoolbox.read.adcp" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="mxtoolbox.read.adcp.adcp_init">
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_init</code><span class="sig-paren">(</span><em class="sig-param">Nz</em>, <em class="sig-param">Nt</em>, <em class="sig-param">Nb</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return empty xarray shell in standardized format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Nz</strong> (<em>int</em>) – Number of vertical bins.</p></li>
+<li><p><strong>Nt</strong> (<em>int</em>) – Number of time steps.</p></li>
+<li><p><strong>Nb</strong> (<em>int</em>) – Number of ADCP beams.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An empty dataset ready for data input.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.read.adcp.adcp_qc">
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_qc</code><span class="sig-paren">(</span><em class="sig-param">di</em>, <em class="sig-param">amp_th=30</em>, <em class="sig-param">pg_th=80</em>, <em class="sig-param">corr_th=0.6</em>, <em class="sig-param">roll_th=20</em>, <em class="sig-param">pitch_th=20</em>, <em class="sig-param">iv=None</em>, <em class="sig-param">gpsfile=None</em>, <em class="sig-param">sl=None</em>, <em class="sig-param">depth=None</em>, <em class="sig-param">R=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_qc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform ADCP quality control.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>di</strong> (<em>xarray.Dataset</em>) – ADCP dataset formatted as done by adcp_init.</p></li>
+<li><p><strong>amp_th</strong> (<em>float</em>) – Require more than this amplitude values.</p></li>
+<li><p><strong>pg_th</strong> (<em>float</em>) – Require more than this percentage of good 4-beam transformations.</p></li>
+<li><p><strong>corr_th</strong> (<em>float</em>) – Require more than this beam correlation value.</p></li>
+<li><p><strong>roll_th</strong> (<em>float</em>) – Require roll values be smaller than this value (degrees).</p></li>
+<li><p><strong>pitch_th</strong> (<em>float</em>) – Require pitch values be smaller than this value (degrees).</p></li>
+<li><p><strong>iv</strong> (<em>None</em>) – Unknown.</p></li>
+<li><p><strong>gpsfile</strong> (<em>str</em>) – GPS dataset formatted as by gps_init.</p></li>
+<li><p><strong>sl</strong> (<em>str</em>) – Use fixed depth or bottom track range to remove side lobe
+contamination. Set to either <cite>dep</cite> or <cite>bt</cite>.</p></li>
+<li><p><strong>depth</strong> (<em>float</em>) – Fixed depth used for removing side lobe contamination.</p></li>
+<li><p><strong>R</strong> (<em>float</em>) – Horizontally rotate velocity vectors by this value (radians).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.read.adcp.load_adcp_binary">
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">load_adcp_binary</code><span class="sig-paren">(</span><em class="sig-param">files</em>, <em class="sig-param">adcptype</em>, <em class="sig-param">force_dw=False</em>, <em class="sig-param">force_up=False</em>, <em class="sig-param">mindep=0</em>, <em class="sig-param">selected=None</em>, <em class="sig-param">clip=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.load_adcp_binary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read binary ADCP data to xarray.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> (<em>str or list of str</em>) – File(s) to read in.</p></li>
+<li><p><strong>adcptype</strong> (<em>str</em>) – Sensor type passed to pycurrents.Multiread. (‘wh’, ‘os’)</p></li>
+<li><p><strong>force_dw</strong> (<em>bool</em>) – Process as downward looking ADCP.</p></li>
+<li><p><strong>force_up</strong> (<em>bool</em>) – Process as upward looking ADCP.</p></li>
+<li><p><strong>mindep</strong> (<em>float</em>) – Require instrument depth be greater that this value in meters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>ADCP data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="module-mxtoolbox.read.text">
 <span id="text-module"></span><h2>text module<a class="headerlink" href="#module-mxtoolbox.read.text" title="Permalink to this headline">¶</a></h2>
 <p>Read text files of known formats into python variables</p>
@@ -131,6 +202,7 @@ the child cast.</p>
   <h3><a href="../index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">read subpackage</a><ul>
+<li><a class="reference internal" href="#module-mxtoolbox.read.adcp">adcp module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.read.text">text module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.read.wod">wod module</a></li>
 </ul>

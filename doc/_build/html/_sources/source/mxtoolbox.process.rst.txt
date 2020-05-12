@@ -25,15 +25,6 @@ math\_ module
    :undoc-members:
    :show-inheritance:
 
-shp2dex module
---------------
-
-.. automodule:: mxtoolbox.process.shp2dex
-   :members:
-   :private-members:
-   :undoc-members:
-   :show-inheritance:
-
 signal\_ module
 ---------------
 

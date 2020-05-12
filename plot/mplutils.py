@@ -264,7 +264,7 @@ def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, *
     label (e.g. value not printable, coordinate is missing value)
     it is silently skipped.
 
-    Paramaters
+    Parameters
     ----------
     axes : pyplot.Axes
         The axes on which to draw.

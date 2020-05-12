@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+   mxtoolbox.convert
    mxtoolbox.plot
    mxtoolbox.process
    mxtoolbox.read

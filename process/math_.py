@@ -140,18 +140,18 @@ def destination_point(x0, y0, distance, bearing, meters_per_unit=1000):
     Let :math:`\lambda_0, \phi_0` be the longitude and latitude of some
     initial coordinate. On a spherical earth, coordinates of a point
     :math:`\lambda_f, \phi_f` a distance `d` along a great-circle line
-    with initial bearing :math:`\theta` can be computed as,
+    with initial bearing :math:`\\theta` can be computed as,
 
     .. math::
 
-       \phi_f = \sin^{-1}\left(\sin\phi_0\cos\delta + \cos\phi_0\sin\delta\cos\theta\right)\\
+       \\phi_f = \\sin^{-1}\\left(\\sin\\phi_0\\cos\\delta + \\cos\\phi_0\\sin\\delta\\cos\\theta\\right)
 
     and,
 
     .. math::
 
-       \lambda_f = \lambda_0 + \tan^{-1}\left(\frac{\sin\theta\sin\delta\cos\phi_0}
-       {\cos\delta - \sin\phi_0\sin\phi_f}\right)
+       \\lambda_f = \\lambda_0 + \\tan^{-1}\\left(\\frac{\\sin\\theta\\sin\\delta\\cos\\phi_0}
+       {\\cos\\delta - \\sin\\phi_0\\sin\\phi_f}\\right)
 
     where :math:`\delta` is the `d` divided by the earth's radius set
     at 6371 km.

@@ -10,6 +10,7 @@ Package documentation
    :maxdepth: 4
    :caption: Contents:
 
+   source/mxtoolbox.convert
    source/mxtoolbox.plot
    source/mxtoolbox.process
    source/mxtoolbox.read

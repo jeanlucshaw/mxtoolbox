@@ -66,12 +66,12 @@ def cp_map_ruler(axes,
     ----
 
        * At large scales the ruler will distort but the distance
-       between ticks is always right. Distortions are most visible
-       at scales > 1000 km and at absolute latitudes > 35.
+         between ticks is always right. Distortions are most visible
+         at scales > 1000 km and at absolute latitudes > 35.
 
        * This routine relies on current axes aspect ratio. If it is
-       changed after a call to cp_map_ruler, the ruler will be crooked.
-       Call just before showing/plotting for best results.
+         changed after a call to cp_map_ruler, the ruler will be crooked.
+         Call just before showing/plotting for best results.
 
     See Also
     --------

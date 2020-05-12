@@ -35,6 +35,15 @@ line. Command line interface description can be shown by entering,
 
    $ shp2dex -h
 
+For this utility to be available at the command line, add a
+file called :code:`shp2dex` on your shell path, for example
+at :code:`/usr/local/bin/` containing the following lines,
+
+.. code::
+
+   #!/path/to/bash
+   /path/to/python /path/to/mxtoolbox/convert/shp2dex.py "$@"
+
 Note
 ----
 More background information can be found at the following links:
