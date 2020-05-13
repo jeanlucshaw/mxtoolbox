@@ -1,12 +1,14 @@
 from pycurrents.adcp.rdiraw import Multiread
+import xarray as xr
 import numpy as np
 import mxtoolbox.process as ps
-from libmx.utils.time import yb2dt
+from scipy.stats import circmean
+# from libmx.utils.time import yb2dt
 
 
 __all__ = ['adcp_init',
            'adcp_qc',
-           'load_adcp_binary']
+           'load_rdi_binary']
 
 
 def adcp_init(Nz, Nt, Nb):
@@ -115,11 +117,12 @@ def adcp_qc(di,
 
     # Set up conditions
     roll_mean = circmean(ds.Roll.values, low=-180, high=180)
-    roll_condition = np.abs(circdist(ds.Roll.values, roll_mean, units='deg')) < roll_th
+    roll_condition = np.abs(ps.circular_distance(ds.Roll.values, roll_mean, units='deg')) < roll_th
 
     pitch_mean = circmean(ds.pitch.values, low=-180, high=180)
-    pitch_condition = np.abs(circdist(ds.pitch.values, pitch_mean, units='deg')) < pitch_th
+    pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) < pitch_th
 
+    # Remove side lob influence according to a fixed depths (e.g. Moorings)
     if sl == 'dep':
         # Dowward looking
         if ds.attrs['looking'] == 'down':
@@ -139,9 +142,15 @@ def adcp_qc(di,
             raise Warning("Can not correct for side lobes, looking attribute not set.")
             sidelobe_condition = np.ones(ds.z.values.size, dtype='bool')
 
+    # Remove side lobe influence ping by ping
     elif sl=='bt':
         print("Per ping side lobe correction using bottom track range not yet implemented. Doing nothing.")
 
+    # Do not perform side lobe removal
+    else:
+        sidelobe_condition = np.ones_like(ds.u.values, dtype='bool')
+
+    # Apply conditions to velocity components
     for field in ['u', 'v', 'w', 'e']:
         ds[field] = ds[field].where( np.abs( ds.corr ) > corr_th )
         ds[field] = ds[field].where( np.abs( ds.pg ) > pg_th )
@@ -168,15 +177,16 @@ def adcp_qc(di,
     return ds
 
 
-def load_adcp_binary(files,
+def load_rdi_binary(files,
                      adcptype,
                      force_dw=False,
                      force_up=False,
                      mindep=0,
                      selected=None,
-                     clip=0):
+                     clip=0,
+                     t_offset=0):
     """
-    Read binary ADCP data to xarray.
+    Read Teledyne RDI binary ADCP data to xarray.
 
     Parameters
     ----------
@@ -208,7 +218,7 @@ def load_adcp_binary(files,
     # Get data set size and configuration
     if selected is None:
         selected = range(0, len(data.dday) - clip)
-    t = np.asarray(yb2dt(data.dday[selected] + t_offset, data.yearbase))
+    t = ps.dayofyear2dt(data.dday[selected] + t_offset, data.yearbase)
 
     # Configure depth of bin centers
     if force_dw or force_up:

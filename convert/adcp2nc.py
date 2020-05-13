@@ -6,6 +6,12 @@ files (.000, .ENX, .ENS, .LTA, etc), arranges data
 into an xarray Dataset, performs QC, and saves to
 netCDF in the current directory.
 
+Rowetech files are also accepted but reading is not handled
+by CODAS, and processing is much slower. Forcing processing
+as upward/downward looking is not yet implemented for this
+type of input. Neither are the minimum required depth or
+time offset options.
+
 It is best to inlcude as much information as possible
 through the option flags as this will improve the quality
 control.
@@ -30,9 +36,12 @@ See Also
 --------
 
    * mxtoolbox.read.adcp
+   * mxtoolbox.read.rtitools
+   * pycurrents.adcp.rdiraw.Multiread
 
 """
-from ..read.adcp import *
+from mxtoolbox.read.adcp import *
+from mxtoolbox.read.rtitools import load_rtb_binary
 import numpy as np
 import os
 import argparse
@@ -183,11 +192,18 @@ if __name__ == '__main__':
         path = path + '/'  # avoids trying to write at /
 
     # Read ADCP data
-    ds = load_adcp_binary(args.files,
-                          args.adcptype,
-                          force_dw=args.force_dw,
-                          force_up=args.force_up,
-                          mindep=mindep)
+    if args.adcptype in ['wh', 'bb', 'os']:
+        ds = load_rdi_binary(args.files,
+                             args.adcptype,
+                             force_dw=args.force_dw,
+                             force_up=args.force_up,
+                             mindep=mindep)
+        brand = 'RDI'
+    elif args.adcptype == 'sw':
+        ds = load_rtb_binary(args.files)
+        brand = 'RTI'
+    else:
+        raise ValueError('Sonar type %s not recognized' % args.adcptype)
 
     # Quality control
     if qc:
@@ -218,10 +234,10 @@ if __name__ == '__main__':
     # Manage temperature data
     if keep_temp:
         ds['temp'].values = np.asarray([data.temperature[selected]])
-    else:
-        temp = seabird_init(t)
-        temp['temp'] = ('time', np.array(data.temperature[selected]))
-        temp['z'] = ('time', np.array(data.XducerDepth[selected]))
-        temp.to_netcdf(path+args.name+'_'+strt+'_'+stop+'_RDI_TEMP.nc')
+    # else:
+    #     temp = seabird_init(t)
+    #     temp['temp'] = ('time', np.array(data.temperature[selected]))
+    #     temp['z'] = ('time', np.array(data.XducerDepth[selected]))
+    #     temp.to_netcdf(path+args.name+'_'+strt+'_'+stop+'_RDI_TEMP.nc')
 
-    ds.to_netcdf(path+args.name+'_'+strt+'_'+stop+'_RDI_ADCP.nc')
+    ds.to_netcdf('%s%s_%s_%s_%s_ADCP.nc' % (path, args.name, strt, stop, brand))

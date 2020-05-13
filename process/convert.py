@@ -5,7 +5,7 @@ conversions.
 import gsw
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from .math_ import broadcastable, rotate_frame
 
 __all__ = ['anomaly2rgb',
@@ -17,9 +17,8 @@ __all__ = ['anomaly2rgb',
            'pd_add_seasons',
            'tetha2hd',
            'uv2hd',
-           'xr_SA_CT_pden']
-
-
+           'xr_SA_CT_pden',
+           'dayofyear2dt']
 def anomaly2rgb(value):
     """
     Map standardized anomaly to discretized red to blue color scheme.
@@ -416,3 +415,29 @@ def xr_SA_CT_pden(dataset,
     dataset['sigma0'] = (dataset[t].dims, sigma0)
 
     return dataset
+
+
+def dayofyear2dt(days, yearbase):
+    """ Function yb2dt() syntax:        out     = yb2dt(input,yearbase)
+
+    Takes as input days since january first of the year specified by yearbase and
+    returns a list of datetime objects.
+
+    Convert UTC days of year since January 1, 00:00:00 of `yearbase` to datetime array.
+
+    Parameters
+    ----------
+    days : 1D array
+        Dates in day of year format.
+    yearbase : int
+        Year when the data starts.
+
+    Returns
+    -------
+    1D array
+        Datetime equivalent of day of year dates.
+
+    """
+    start = np.array(['%d-01-01' % yearbase], dtype='M8[us]')
+    deltas = np.array([np.int32(np.floor(days * 24 * 3600))], dtype='m8[s]')
+    return (start + deltas).flatten()
