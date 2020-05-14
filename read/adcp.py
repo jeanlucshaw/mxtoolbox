@@ -123,8 +123,10 @@ def adcp_qc(di,
     pitch_mean = circmean(ds.pitch.values, low=-180, high=180)
     pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) < pitch_th
 
-    velocity_condition = (abs(ds.u.values) > vel_th) | (abs(ds.v.values) > vel_th)
-    bottom_track_condition = (abs(ds.u_bt.values) > vel_th) | (abs(ds.v_bt.values) > vel_th)
+    velocity_condition = (np.less(abs(ds.u.values), vel_th, where=np.isfinite(ds.u.values)) |
+                          np.less(abs(ds.v.values), vel_th, where=np.isfinite(ds.v.values)))
+    bottom_track_condition = (np.less(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
+                              np.less(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
 
     # Remove side lob influence according to a fixed depths (e.g. Moorings)
     if sl == 'dep':

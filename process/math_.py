@@ -4,7 +4,7 @@ Mathematical, geometrical and simple matrix operations.
 import numpy as np
 # from math import radians, cos, sin, asin, sqrt
 import shapely.speedups
-from mpl_toolkits.basemap import Basemap
+# from mpl_toolkits.basemap import Basemap
 from shapely.geometry import Point, Polygon
 from scipy.interpolate import interp1d
 import matplotlib.path as mpltPath
@@ -435,49 +435,50 @@ def increase_resolution(xpts, ypts, N, offset_idx=0):
 
 
 def polygon_area(xpts, ypts, lonlat=False, pos=True):
-    """
-    Compute polygon area.
+    return None
+#     """
+#     Compute polygon area.
 
-    Use Greene's theorem to compute polygon area. Input vectors
-    can be longitudes and latitudes if lonlat is specified. Otherwise
-    they are assumed coordinates of linear space.
+#     Use Greene's theorem to compute polygon area. Input vectors
+#     can be longitudes and latitudes if lonlat is specified. Otherwise
+#     they are assumed coordinates of linear space.
 
-    Parameters
-    ----------
-    xpts, ypts : array like
-        Polygon coordinates.
-    lonlat : bool
-        If input is lonlat, convert to CEA projection.
-    pos : bool
-        Return absolute value of area, defaults to True.
+#     Parameters
+#     ----------
+#     xpts, ypts : array like
+#         Polygon coordinates.
+#     lonlat : bool
+#         If input is lonlat, convert to CEA projection.
+#     pos : bool
+#         Return absolute value of area, defaults to True.
 
-    Returns
-    -------
-    float
-        Polygon area. Units are coordinate dependent.
+#     Returns
+#     -------
+#     float
+#         Polygon area. Units are coordinate dependent.
 
-    """
-    # Ensure polygon is closed
-    if xpts[0] != xpts[-1] or ypts[0] != ypts[-1]:
-        xpts, ypts = np.hstack((xpts, xpts[0])), np.hstack((ypts, ypts[0]))
+#     """
+#     # Ensure polygon is closed
+#     if xpts[0] != xpts[-1] or ypts[0] != ypts[-1]:
+#         xpts, ypts = np.hstack((xpts, xpts[0])), np.hstack((ypts, ypts[0]))
 
-    # If in longitudes and latitudes, convert to linear 2D space
-    if lonlat:
-        cea = Basemap(projection='cea',
-                      llcrnrlat=ypts.min(),
-                      urcrnrlat=ypts.max(),
-                      llcrnrlon=xpts.min(),
-                      urcrnrlon=xpts.max())
-        xpts, ypts = cea(xpts, ypts)
+#     # If in longitudes and latitudes, convert to linear 2D space
+#     if lonlat:
+#         cea = Basemap(projection='cea',
+#                       llcrnrlat=ypts.min(),
+#                       urcrnrlat=ypts.max(),
+#                       llcrnrlon=xpts.min(),
+#                       urcrnrlon=xpts.max())
+#         xpts, ypts = cea(xpts, ypts)
 
-    # Compute area
-    area = 0.5 * np.sum(ypts[:-1] * np.diff(xpts) - xpts[:-1] * np.diff(ypts))
+#     # Compute area
+#     area = 0.5 * np.sum(ypts[:-1] * np.diff(xpts) - xpts[:-1] * np.diff(ypts))
 
-    # By default, disregard sign
-    if pos:
-        area = np.abs(area)
+#     # By default, disregard sign
+#     if pos:
+#         area = np.abs(area)
 
-    return area
+#     return area
 
 
 def project_to_line(xpts,
