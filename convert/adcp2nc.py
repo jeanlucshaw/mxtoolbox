@@ -74,6 +74,33 @@ if __name__ == '__main__':
                         metavar='3 - name',
                         help='''Mission, mooring, or station name to
                         prepend to the output file name.''')
+
+    parser.add_argument('-a', '--amp-thres',
+                        metavar='',
+                        type=float,
+                        help='Amplitude threshold (0-255). Defaults to 0.')
+    parser.add_argument('-c', '--corr-thres',
+                        metavar='',
+                        type=float,
+                        help='Correlation threshold (0-255). Defaults to 64.')
+    parser.add_argument('-d', '--depth',
+                        metavar='',
+                        type=float,
+                        help='Water depth (scalar)')
+    parser.add_argument('-D', '--force-dw',
+                        action='store_true',
+                        help='Force downward looking processing.')
+    parser.add_argument('-g', '--gps-file',
+                        metavar='',
+                        help='GPS netcdf file path and name.')
+    parser.add_argument('-i', '--include-temp',
+                        action='store_true',
+                        help='''Include temperature. Otherwise, default behavior
+                        is to save it to a difference netcdf file.''')
+    parser.add_argument('-k', '--clip',
+                        metavar='',
+                        type=int,
+                        help='Number of ensembles to clip from the end of the dataset.')
     parser.add_argument('-m', '--motion-correction',
                         metavar='',
                         help='''Motion correction mode. Defaults to no motion correction.
@@ -81,36 +108,6 @@ if __name__ == '__main__':
                         instrument motion. If given 'gps', will use gps data to
                         correct for instrument motion but fail if no gps file is
                         provided. See vkdat2vknetcdf.py for gps file details.''')
-    parser.add_argument('-s', '--sl-mode',
-                        metavar='',
-                        help='''Side lobe rejection mode. Default is None. If given `bt`,
-                        will use range to boundary from bottom track data. If given
-                        `dep` will use a constant depth but fail if depth is not
-                        provided for downward looking data. If data is upward looking,
-                        the average depth of the instrument is used as distance to
-                        boundary.''')
-    parser.add_argument('-d', '--depth',
-                        metavar='',
-                        type=float,
-                        help='Water depth (scalar)')
-    parser.add_argument('-T', '--mindep',
-                        metavar='',
-                        type=float,
-                        help='''Minimum instrument depth threshold. Keep only data for
-                        which the instrument was below the provided depth in
-                        meters.''')
-    parser.add_argument('-c', '--corr-thres',
-                        metavar='',
-                        type=float,
-                        help='Correlation threshold (0-255). Defaults to 64.')
-    parser.add_argument('-k', '--clip',
-                        metavar='',
-                        type=int,
-                        help='Number of ensembles to clip from the end of the dataset.')
-    parser.add_argument('-i', '--include-temp',
-                        action='store_true',
-                        help='''Include temperature. Otherwise, default behavior
-                        is to save it to a difference netcdf file.''')
     parser.add_argument('-o', '--t-offset',
                         metavar='',
                         type=int,
@@ -121,14 +118,13 @@ if __name__ == '__main__':
                         metavar='',
                         type=float,
                         help='Percentage of 4 beam threshold (0-100). Defaults to 80.')
-    parser.add_argument('-a', '--amp-thres',
-                        metavar='',
-                        type=float,
-                        help='Amplitude threshold (0-255). Defaults to 0.')
     parser.add_argument('-P', '--pitch-thres',
                         metavar='',
                         type=float,
                         help='Pitch threshold (0-180). Defaults to 20.')
+    parser.add_argument('-q', '--no-qc',
+                        action='store_true',
+                        help='Omit quality control.')
     parser.add_argument('-r', '--roll-thres',
                         metavar='',
                         type=float,
@@ -138,19 +134,29 @@ if __name__ == '__main__':
                         metavar='',
                         help='''Anti-clockwise positive angle in degrees by which to
                         rotate the frame of reference.
-                        (-360-360).''')
-    parser.add_argument('-g', '--gps-file',
+                        (-360 to 360).''')
+    parser.add_argument('-s', '--sl-mode',
                         metavar='',
-                        help='GPS netcdf file path and name.')
-    parser.add_argument('-q', '--no-qc',
-                        action='store_true',
-                        help='Omit quality control.')
-    parser.add_argument('-D', '--force-dw',
-                        action='store_true',
-                        help='Force downward looking processing.')
+                        help='''Side lobe rejection mode. Default is None. If given `bt`,
+                        will use range to boundary from bottom track data. If given
+                        `dep` will use a constant depth but fail if depth is not
+                        provided for downward looking data. If data is upward looking,
+                        the average depth of the instrument is used as distance to
+                        boundary.''')
+    parser.add_argument('-T', '--mindep',
+                        metavar='',
+                        type=float,
+                        help='''Minimum instrument depth threshold. Keep only data for
+                        which the instrument was below the provided depth in
+                        meters.''')
     parser.add_argument('-U', '--force-up',
                         action='store_true',
                         help='Force upward looking processing.')
+    parser.add_argument('-v', '--velocity-thres',
+                        type=float,
+                        metavar='',
+                        help='''Reject velocities whose absolute value is greather than
+                        this value in m/s.''')
     parser.add_argument('-z', '--zgrid',
                         metavar='',
                         help='''Interpolate depths to grid defined by the single column
@@ -162,27 +168,54 @@ if __name__ == '__main__':
     if args.force_up and args.force_dw:
         raise ValueError("Cannot force downwards AND upwards processing")
 
-    # Defaults in libmx.physics.xri.adcp_qc are for Rowetech ADCPs.
-    # Here RDI defaults need to be specified.
-    qc_kw = {}
-    qc_kw['iv'] = (args.motion_correction if args.motion_correction is not None
-                   else None)
-    qc_kw['gpsfile'] = args.gps_file if args.gps_file is not None else None
-    qc_kw['corr_th'] = args.corr_thres if args.corr_thres is not None else 64
-    qc_kw['pg_th'] = args.pg_thres if args.pg_thres is not None else 80
-    qc_kw['amp_th'] = args.amp_thres if args.amp_thres is not None else 0
-    t_offset = args.t_offset/24 if args.t_offset is not None else 0
-    qc_kw['pitch_th'] = args.pitch_thres if args.pitch_thres is not None else 20
-    qc_kw['roll_th'] = args.roll_thres if args.roll_thres is not None else 20
-    qc_kw['R'] = pi*args.rot_ang/180 if args.rot_ang is not None else None
-    qc_kw['sl'] = args.sl_mode if args.sl_mode is not None else None
-    qc_kw['depth'] = args.depth if args.depth is not None else None
-    clip = args.clip if args.clip is not None else 0
-    mindep = args.mindep if args.mindep is not None else 0
-    gridf = args.zgrid if args.zgrid is not None else None
-    qc = False if args.no_qc else True
-    keep_temp = True if args.include_temp else False
-    selected = None  # Not used for now. Would allow to subset input files
+    # Brand independent quality control defaults
+    qc_defaults = dict(iv=None,
+                       gpsfile=None,
+                       pitch_th=20,
+                       roll_th=20,
+                       R=0,
+                       sl=None,
+                       depth=None,
+                       pg_th=80)
+
+    # Brand dependent quality control defaults
+    rti_qc_defaults = dict(amp_th=20,
+                           corr_th=0.6)
+    rdi_qc_defaults = dict(amp_th=0,
+                           corr_th=64)
+
+    # Quality control options
+    user_qc_kw = {}
+    if args.motion_correction:
+        user_qc_kw['iv'] = args.motion_correction
+    if args.gps_file:
+        user_qc_kw['gpsfile'] = args.gps_file
+    if args.corr_thres:
+        user_qc_kw['corr_th'] = args.corr_thres
+    if args.pg_thres:
+        user_qc_kw['pg_th'] = args.pg_thres
+    if args.amp_thres:
+        user_qc_kw['amp_th'] = args.amp_thres
+    if args.pitch_thres:
+        user_qc_kw['pitch_th'] = args.pitch_thres
+    if args.roll_thres:
+        user_qc_kw['roll_th'] = args.roll_thres
+    if args.roll_thres:
+        user_qc_kw['vel_th'] = args.velocity_thres
+    if args.rot_ang:
+        user_qc_kw['R'] = np.pi * args.rot_ang / 180
+    if args.sl_mode:
+        user_qc_kw['sl'] = args.sl_mode
+    if args.depth:
+        user_qc_kw['depth'] = args.depth
+
+    # Other options
+    t_offset = args.t_offset / 24 if args.t_offset else 0
+    clip = args.clip or 0
+    mindep = args.mindep or 0
+    gridf = args.zgrid          # expected default is None anyway
+    qc = not args.no_qc
+    selected = None             # not used for now.
 
     # Get output path
     path = (os.path.dirname(args.files[0])
@@ -199,9 +232,11 @@ if __name__ == '__main__':
                              force_up=args.force_up,
                              mindep=mindep)
         brand = 'RDI'
+        qc_kw = {**qc_defaults, **rdi_qc_defaults, **user_qc_kw}
     elif args.adcptype == 'sw':
         ds = load_rtb_binary(args.files)
         brand = 'RTI'
+        qc_kw = {**qc_defaults, **rti_qc_defaults, **user_qc_kw}
     else:
         raise ValueError('Sonar type %s not recognized' % args.adcptype)
 
@@ -210,7 +245,7 @@ if __name__ == '__main__':
         ds = adcp_qc(ds, **qc_kw)
 
     # Interpolate to z grid
-    if gridf is not None:
+    if gridf:
         # Find maximum depth where 10% of data is good
         Ng = np.asarray([np.isfinite(ds.u.values[ii, :]).sum()
                          for ii in range(ds.z.size)])
@@ -232,7 +267,7 @@ if __name__ == '__main__':
     stop = str(ds.time.values[-1])[:10]
 
     # Manage temperature data
-    if keep_temp:
+    if args.include_temp:
         ds['temp'].values = np.asarray([data.temperature[selected]])
     # else:
     #     temp = seabird_init(t)

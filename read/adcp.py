@@ -68,6 +68,7 @@ def adcp_qc(di,
             corr_th=0.6,
             roll_th=20,
             pitch_th=20,
+            vel_th=5,
             iv=None,
             gpsfile=None,
             sl=None,
@@ -122,6 +123,9 @@ def adcp_qc(di,
     pitch_mean = circmean(ds.pitch.values, low=-180, high=180)
     pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) < pitch_th
 
+    velocity_condition = (abs(ds.u.values) > vel_th) | (abs(ds.v.values) > vel_th)
+    bottom_track_condition = (abs(ds.u_bt.values) > vel_th) | (abs(ds.v_bt.values) > vel_th)
+
     # Remove side lob influence according to a fixed depths (e.g. Moorings)
     if sl == 'dep':
         # Dowward looking
@@ -150,6 +154,10 @@ def adcp_qc(di,
     else:
         sidelobe_condition = np.ones_like(ds.u.values, dtype='bool')
 
+    # Apply condition to bottom track velocities
+    for field in ['u_bt', 'v_bt', 'w_bt']:
+        ds[field] = ds[field].where( bottom_track_condition )
+
     # Apply conditions to velocity components
     for field in ['u', 'v', 'w', 'e']:
         ds[field] = ds[field].where( np.abs( ds.corr ) > corr_th )
@@ -158,6 +166,7 @@ def adcp_qc(di,
         ds[field] = ds[field].where( roll_condition )
         ds[field] = ds[field].where( pitch_condition )
         ds[field] = ds[field].where( sidelobe_condition )
+        ds[field] = ds[field].where( velocity_condition )
 
         # No bottom track for error velocity
         if field in ['u', 'v', 'w']:
@@ -170,8 +179,8 @@ def adcp_qc(di,
                 ds[field] -= np.tile(gps[field].where(np.isfinite(gps.lon.values), 0), (ds.z.size, 1))
 
     # Rotate
-    if R != None:
-        u, v = Rarray2D(ds.u.values, ds.v.values, R, units='rad')
+    if R not in [None, 0]:
+        u, v = ps.rotate_frame(ds.u.values, ds.v.values, R, units='rad')
         ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
 
     return ds

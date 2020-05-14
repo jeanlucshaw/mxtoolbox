@@ -1,5 +1,5 @@
 * Test/reform
-** TODO process.signal.xr_flt
+** DONE process.signal.xr_flt
 ** TODO process.signal.xr_peaks
 ** TODO process.analyses.xr_t_aht
 ** TODO plot.mplutils.colorline
@@ -7,7 +7,16 @@
 * Migrate from libmx
 ** DONE shp2dex
 ** TODO scripts
-** TODO PCA
+*** TODO rdi2netcdf and rti2netcdf
+    These two scripts were merged into the adcp2nc module.
+**** TODO Add missing options to rti files
+***** TODO Minimum depth option 
+***** TODO Time offset option
+**** TODO Manage temperature
+**** TODO Add filter in qc for values > +- 4 m/s
+**** DONE Manage default qc parameters
+*** TODO vkdat2vknetcdf
+** DONE PCA
 ** TODO cluster
 * Documentation
 ** TODO Reformat docstrings to numpy style
@@ -30,5 +39,5 @@
 *** TODO process.cisdex
 *** DONE Change titles of module rst for better navigation
 ** TODO Hosting
-*** TODO Make visible on intranet
+*** DONE Make visible on intranet
 *** TODO Make visible on readthedocs
