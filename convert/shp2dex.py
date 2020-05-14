@@ -126,6 +126,10 @@ def load_cis_shp(name, ascending=True):
     dataframe['shapes'] = shp
     dataframe['AREA'] = np.float64(dataframe.AREA.values)
     dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
+    if not empty:
+        dataframe['shapes'] = shp
+        dataframe['AREA'] = np.float64(dataframe.AREA.values)
+        dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
 
     return dataframe, empty
 
