@@ -119,13 +119,14 @@ def load_cis_shp(name, ascending=True):
     # Load to pandas dataframe
     dataframe = pd.DataFrame(rcd, columns = fld[1:])
 
-    # Convert area to numeric and sort
-    dataframe['shapes'] = shp
-    dataframe['AREA'] = np.float64(dataframe.AREA.values)
-    dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
-
     # Flag as empty if not enough fields
     empty = dataframe.shape[1] < 11
+
+    # Convert area to numeric and sort
+    if not empty:
+        dataframe['shapes'] = shp
+        dataframe['AREA'] = np.float64(dataframe.AREA.values)
+        dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
 
     return dataframe, empty
 
