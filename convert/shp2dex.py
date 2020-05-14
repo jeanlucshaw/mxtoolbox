@@ -111,7 +111,7 @@ def load_cis_shp(name, ascending=True):
     sf = shapefile.Reader(name)
     fld = np.array(sf.fields)[:, 0]
     shp = np.array(sf.shapes())
-    rcd = np.array(sf.records())
+    rcd = np.array(sf.records(), dtype='<U36')
 
     # Empty strings become X
     rcd[rcd == ''] = 'X'
