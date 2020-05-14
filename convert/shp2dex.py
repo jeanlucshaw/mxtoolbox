@@ -111,7 +111,7 @@ def load_cis_shp(name, ascending=True):
     sf = shapefile.Reader(name)
     fld = np.array(sf.fields)[:, 0]
     shp = np.array(sf.shapes())
-    rcd = np.array(sf.records())
+    rcd = np.array(sf.records(), dtype='<U36')
 
     # Empty strings become X
     rcd[rcd == ''] = 'X'
@@ -126,6 +126,7 @@ def load_cis_shp(name, ascending=True):
     dataframe['shapes'] = shp
     dataframe['AREA'] = np.float64(dataframe.AREA.values)
     dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
+
     if not empty:
         dataframe['shapes'] = shp
         dataframe['AREA'] = np.float64(dataframe.AREA.values)
