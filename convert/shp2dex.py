@@ -111,7 +111,7 @@ def load_cis_shp(name, ascending=True):
     sf = shapefile.Reader(name)
     fld = np.array(sf.fields)[:, 0]
     shp = np.array(sf.shapes())
-    rcd = np.array(sf.records(), dtype='<U36')
+    rcd = np.array(sf.records())
 
     # Empty strings become X
     rcd[rcd == ''] = 'X'
@@ -119,13 +119,13 @@ def load_cis_shp(name, ascending=True):
     # Load to pandas dataframe
     dataframe = pd.DataFrame(rcd, columns = fld[1:])
 
+    # Flag as empty if not enough fields
+    empty = dataframe.shape[1] < 11
+
     # Convert area to numeric and sort
     dataframe['shapes'] = shp
     dataframe['AREA'] = np.float64(dataframe.AREA.values)
     dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
-
-    # Flag as empty if not enough fields
-    empty = dataframe.shape[1] < 11
 
     return dataframe, empty
 
