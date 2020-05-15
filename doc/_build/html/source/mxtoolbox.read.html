@@ -65,7 +65,7 @@
 
 <dl class="function">
 <dt id="mxtoolbox.read.adcp.adcp_qc">
-<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_qc</code><span class="sig-paren">(</span><em class="sig-param">di</em>, <em class="sig-param">amp_th=30</em>, <em class="sig-param">pg_th=80</em>, <em class="sig-param">corr_th=0.6</em>, <em class="sig-param">roll_th=20</em>, <em class="sig-param">pitch_th=20</em>, <em class="sig-param">iv=None</em>, <em class="sig-param">gpsfile=None</em>, <em class="sig-param">sl=None</em>, <em class="sig-param">depth=None</em>, <em class="sig-param">R=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_qc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_qc</code><span class="sig-paren">(</span><em class="sig-param">di</em>, <em class="sig-param">amp_th=30</em>, <em class="sig-param">pg_th=80</em>, <em class="sig-param">corr_th=0.6</em>, <em class="sig-param">roll_th=20</em>, <em class="sig-param">pitch_th=20</em>, <em class="sig-param">vel_th=5</em>, <em class="sig-param">iv=None</em>, <em class="sig-param">gpsfile=None</em>, <em class="sig-param">sl=None</em>, <em class="sig-param">depth=None</em>, <em class="sig-param">R=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_qc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform ADCP quality control.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -88,9 +88,9 @@ contamination. Set to either <cite>dep</cite> or <cite>bt</cite>.</p></li>
 </dd></dl>
 
 <dl class="function">
-<dt id="mxtoolbox.read.adcp.load_adcp_binary">
-<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">load_adcp_binary</code><span class="sig-paren">(</span><em class="sig-param">files</em>, <em class="sig-param">adcptype</em>, <em class="sig-param">force_dw=False</em>, <em class="sig-param">force_up=False</em>, <em class="sig-param">mindep=0</em>, <em class="sig-param">selected=None</em>, <em class="sig-param">clip=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.load_adcp_binary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read binary ADCP data to xarray.</p>
+<dt id="mxtoolbox.read.adcp.load_rdi_binary">
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">load_rdi_binary</code><span class="sig-paren">(</span><em class="sig-param">files</em>, <em class="sig-param">adcptype</em>, <em class="sig-param">force_dw=False</em>, <em class="sig-param">force_up=False</em>, <em class="sig-param">mindep=0</em>, <em class="sig-param">selected=None</em>, <em class="sig-param">clip=0</em>, <em class="sig-param">t_offset=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.load_rdi_binary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read Teledyne RDI binary ADCP data to xarray.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -124,17 +124,21 @@ triplets in array_file.</p>
 <dl class="function">
 <dt id="mxtoolbox.read.text.pd_cat_column_files">
 <code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">pd_cat_column_files</code><span class="sig-paren">(</span><em class="sig-param">path_list</em>, <em class="sig-param">cols</em>, <em class="sig-param">index_cols</em>, <em class="sig-param">sep='\\s+'</em>, <em class="sig-param">axis=1</em>, <em class="sig-param">parse_dates=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.pd_cat_column_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Takes as input a list of file paths pointing to ascii
+<dd><p>Merge ascii column files to dataframe.</p>
+<p>Takes as input a list of file paths pointing to ascii
 column data with the same columns, but not necessarily the
 the same rows and merges them into one pandas DataFrame.</p>
 <p>If merging on axis 0, make sure the text files have no header!</p>
-<p>path_list:    list of strings, paths to files to merge
-cols:         list of strings or integer lists. If a column is</p>
-<blockquote>
-<div><p>defined by an integer list, the column name will
-be extracted from the file name.</p>
-</div></blockquote>
-<p>index_cols:   list of strings, column(s) to use as coordinates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path_list</strong> (<em>list of str</em>) – Paths to files to merge.</p></li>
+<li><p><strong>cols</strong> (<em>list of str or int</em>) – If a column is defined by an integer list, the column name
+will be extracted from the file name.</p></li>
+<li><p><strong>index_cols</strong> (<em>list of str</em>) – Column(s) to use as coordinates.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">

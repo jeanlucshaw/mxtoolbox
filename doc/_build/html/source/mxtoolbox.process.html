@@ -457,6 +457,29 @@ Also returns the norm of vector (u,v) to variable ‘nm’.</p>
 columns as calculated by the Gibbs Seawater package gsw.</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="mxtoolbox.process.convert.dayofyear2dt">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">dayofyear2dt</code><span class="sig-paren">(</span><em class="sig-param">days</em>, <em class="sig-param">yearbase</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.dayofyear2dt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function yb2dt() syntax:        out     = yb2dt(input,yearbase)</p>
+<p>Takes as input days since january first of the year specified by yearbase and
+returns a list of datetime objects.</p>
+<p>Convert UTC days of year since January 1, 00:00:00 of <cite>yearbase</cite> to datetime array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>days</strong> (<em>1D array</em>) – Dates in day of year format.</p></li>
+<li><p><strong>yearbase</strong> (<em>int</em>) – Year when the data starts.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Datetime equivalent of day of year dates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-mxtoolbox.process.math_">
 <span id="math-module"></span><h2>math_ module<a class="headerlink" href="#module-mxtoolbox.process.math_" title="Permalink to this headline">¶</a></h2>
@@ -507,6 +530,27 @@ is specified to ‘deg’.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.math_.consecutive_duplicates">
+<code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">consecutive_duplicates</code><span class="sig-paren">(</span><em class="sig-param">x_pts</em>, <em class="sig-param">y_pts</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.consecutive_duplicates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find consecutive duplicate coordinates in 2D space.</p>
+<p>Given coordinates in 2D space <cite>x_pts</cite> and <cite>y_pts</cite>, a
+consecutive duplicate point has the same x and y values
+as the point before it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x_pts, y_pts</strong> (<em>1D array</em>) – Input coordinates in 2D space.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_nd, y_nd</strong> (<em>1D array</em>) – Input coordinates with consecutive duplicates removed.</p></li>
+<li><p><strong>duplicates</strong> (<em>1D array of bool</em>) – True at index value of consecutive duplicates.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -756,26 +800,7 @@ or equal to <cite>distance</cite>.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.math_.polygon_area">
 <code class="sig-prename descclassname">mxtoolbox.process.math_.</code><code class="sig-name descname">polygon_area</code><span class="sig-paren">(</span><em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">lonlat=False</em>, <em class="sig-param">pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.math_.polygon_area" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute polygon area.</p>
-<p>Use Greene’s theorem to compute polygon area. Input vectors
-can be longitudes and latitudes if lonlat is specified. Otherwise
-they are assumed coordinates of linear space.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>xpts, ypts</strong> (<em>array like</em>) – Polygon coordinates.</p></li>
-<li><p><strong>lonlat</strong> (<em>bool</em>) – If input is lonlat, convert to CEA projection.</p></li>
-<li><p><strong>pos</strong> (<em>bool</em>) – Return absolute value of area, defaults to True.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Polygon area. Units are coordinate dependent.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="mxtoolbox.process.math_.rotate_frame">

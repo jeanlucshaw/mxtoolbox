@@ -27,17 +27,24 @@ def pd_cat_column_files(path_list,
                      axis=1,
                      parse_dates=True):
     """
+    Merge ascii column files to dataframe.
+
     Takes as input a list of file paths pointing to ascii
     column data with the same columns, but not necessarily the
     the same rows and merges them into one pandas DataFrame.
 
     If merging on axis 0, make sure the text files have no header!
 
-    path_list:    list of strings, paths to files to merge
-    cols:         list of strings or integer lists. If a column is
-                  defined by an integer list, the column name will
-                  be extracted from the file name.
-    index_cols:   list of strings, column(s) to use as coordinates
+    Parameters
+    ----------
+    path_list : list of str
+        Paths to files to merge.
+    cols : list of str or int
+        If a column is defined by an integer list, the column name
+        will be extracted from the file name.
+    index_cols : list of str
+        Column(s) to use as coordinates.
+
     """
     # Separate path and file name
     fname = os.path.basename(path_list[0])

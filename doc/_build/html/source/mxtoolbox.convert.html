@@ -51,6 +51,11 @@
 files (.000, .ENX, .ENS, .LTA, etc), arranges data
 into an xarray Dataset, performs QC, and saves to
 netCDF in the current directory.</p>
+<p>Rowetech files are also accepted but reading is not handled
+by CODAS, and processing is much slower. Forcing processing
+as upward/downward looking is not yet implemented for this
+type of input. Neither are the minimum required depth or
+time offset options.</p>
 <p>It is best to inlcude as much information as possible
 through the option flags as this will improve the quality
 control.</p>
