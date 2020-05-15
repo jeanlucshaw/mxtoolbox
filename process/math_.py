@@ -12,6 +12,7 @@ shapely.speedups.enable()
 
 __all__ = ['broadcastable',
            'circular_distance',
+           'consecutive_duplicates',
            'destination_point',
            'distance_along_bearing',
            'f_gaussian',
@@ -124,6 +125,34 @@ def circular_distance(a1, a2, units='rad'):
         res =   180*res/np.pi
 
     return res
+
+
+def consecutive_duplicates(x_pts, y_pts):
+    """
+    Find consecutive duplicate coordinates in 2D space.
+
+    Given coordinates in 2D space `x_pts` and `y_pts`, a
+    consecutive duplicate point has the same x and y values
+    as the point before it.
+
+    Parameters
+    ----------
+    x_pts, y_pts : 1D array
+        Input coordinates in 2D space.
+
+    Returns
+    -------
+    x_nd, y_nd : 1D array
+        Input coordinates with consecutive duplicates removed.
+    duplicates : 1D array of bool
+        True at index value of consecutive duplicates.
+
+    """
+    index = np.arange(x_pts.size)
+    duplicate = np.array([False, *((np.diff(index) == 1) & (np.diff(x_pts) == 0) & (np.diff(y_pts) == 0))])
+    x_nd, y_nd = x_pts[~duplicate], y_pts[~duplicate]
+
+    return x_nd, y_nd, duplicate
 
 
 def _distance(xpts, ypts, x0, y0):
