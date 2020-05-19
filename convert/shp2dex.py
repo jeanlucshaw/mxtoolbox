@@ -70,7 +70,7 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from mxtoolbox.process.math_ import in_polygon
+from mxtoolbox.process.math_ import in_polygon, consecutive_duplicates
 
 
 __all__ = ['load_cis_shp',
@@ -147,7 +147,7 @@ def _manage_shapefile_types(dataframe):
         * Type A:
 
            | Legend string = A_LEGEND
-           | Legend strings = ['Bergy water', 'Egg', 'Fast ice', 'Ice free', 'Land', 'Open water', 'Remote egg']
+           | Legend strings = ['Bergy water', 'Egg', 'Fast ice', 'Ice free', 'Land', 'No data', 'Open water', 'Remote egg']
            | Old egg code = [E_CT, E_CA, ... ]
            | Area string = AREA
            | Missing concentration = ['']
@@ -232,6 +232,7 @@ def _manage_shapefile_types(dataframe):
         # Convert legend labels
         dataframe.at[(dataframe.LEGEND == 'Fast ice'), 'LEGEND'] = 'F'
         dataframe.at[(dataframe.LEGEND == 'Land'), 'LEGEND'] = 'L'
+        dataframe.at[(dataframe.LEGEND == 'No data'), 'LEGEND'] = 'N'
         dataframe.at[(dataframe.LEGEND == 'Ice free') |
                      (dataframe.LEGEND == 'Bergy water') |
                      (dataframe.LEGEND == 'Open water'), 'LEGEND'] = 'W'
@@ -635,31 +636,17 @@ def _separate_wrapping_polygons(x, y, decimals=5):
     wrap_index : 1D int array
         Index value of the wrapping points.
     """
+    # Remove consecutive duplicate coordinates
+    x = np.round(x, decimals=decimals)
+    y = np.round(y, decimals=decimals)
+    x, y, _ = consecutive_duplicates(x, y)
 
     # Make array and sort
     a = np.vstack((x, y)).T
-    a = np.round(a, decimals=decimals)
 
     # Find wrapping points indices
     arr, inv, cnt = np.unique(a, axis=0, return_inverse=True, return_counts=True)
     wrap_index = np.nonzero(cnt[inv] > 1)[0]
-
-    # Remove consecutive repeating coordinates
-    # This may look unnecessarily complicated but it solves a non-trivial problem and works.
-    Iu, Id = np.hstack((0, wrap_index)), np.hstack((wrap_index, wrap_index[-1]))
-    if wrap_index.size % 2 == 0:
-        cond = np.logical_or(np.logical_and(np.diff(Iu) == 1,
-                                            np.diff(x[Iu]) == 0,
-                                            np.diff(y[Iu]) == 0),
-                             np.logical_and(np.diff(Id[::-1]) == -1,
-                                            np.diff(x[Id[::-1]]) == 0,
-                                            np.diff(y[Id[::-1]]) == 0)[::-1])
-    else:
-        cond = np.logical_and(np.diff(Iu) == 1,
-                              np.diff(x[Iu]) == 0,
-                              np.diff(y[Iu]) == 0)
-
-    wrap_index = wrap_index[np.invert(cond)]
 
     # Make list of polygons
     N = int(wrap_index.size)
@@ -866,6 +853,7 @@ def _shp2dex(sname,
                                     lon,
                                     lat)
                 target_index = df_candidates.loc[inside].index.values
+
 
                 # Index of points to write
                 if target_index.size > 0:
