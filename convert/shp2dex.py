@@ -676,8 +676,6 @@ def _parse_prj(fname):
 
 def _separate_wrapping_polygons(x, y, decimals=5):
     """
-    Not used anymore. Could be moved to mxtoolbox.math_
-
     Find wrapping points of polygon sequence stored in vectors `x` and `y`.
 
     The CIS shapefiles contain complex polygons with 'holes', which are often other
