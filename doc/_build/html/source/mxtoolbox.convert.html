@@ -158,6 +158,53 @@ shape object of each record is found in column <cite>shapes</cite>.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._get_lon_lat_converter">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_lon_lat_converter</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_lon_lat_converter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return conversion function from map coordinates to longitudes and latitudes.</p>
+<p>When a projection string file (.prj) is present next to the
+analysed shapefile, use the Cartopy package to define a conversion
+function from the map projection (typically LCC) to Plate carree,
+longitude and latitude coordinates. Returns None is no (.prj) file
+is found. This usually means shapes are already in Plate carree
+coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Path and name of the analysed shapefile (.shp).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Converter function: lon, lat = func(x, y) .</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>callable or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.convert.shp2dex._get_polygon_lon_lat">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_polygon_lon_lat</code><span class="sig-paren">(</span><em class="sig-param">shape</em>, <em class="sig-param">to_lon_lat</em>, <em class="sig-param">separate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_polygon_lon_lat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return poly lon, lat for a single shape object.</p>
+<p>Setting the converter function to_lon_lat to None
+indicates coordinates are already in Plate carree
+projection and are simply read from file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>shapfile.Shape</em>) – Polygon to process.</p></li>
+<li><p><strong>to_lon_lat</strong> (<em>callable or None</em>) – Converter function to Plate carree coordinates.</p></li>
+<li><p><strong>separate</strong> (<em>bool</em>) – Only keep polygon outline (omit holes).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>lon, lat</strong> – Polygon Plate carree coordinates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.convert.shp2dex._shp2dex">
 <code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em>, <em class="sig-param">fill_dataframe=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract egg code data from CIS ESRI shapefiles.</p>

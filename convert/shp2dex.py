@@ -74,6 +74,8 @@ from mxtoolbox.process.math_ import in_polygon, consecutive_duplicates
 
 
 __all__ = ['load_cis_shp',
+           '_get_lon_lat_converter',
+           '_get_polygon_lon_lat',
            '_shp2dex',
            '_parse_prj',
            '_manage_shapefile_types',
