@@ -84,6 +84,92 @@ __all__ = ['load_cis_shp',
            'plot_cis_shp']
 
 
+def _get_lon_lat_converter(filename):
+    """
+    Return conversion function from map coordinates to longitudes and latitudes.
+
+    When a projection string file (.prj) is present next to the
+    analysed shapefile, use the Cartopy package to define a conversion
+    function from the map projection (typically LCC) to Plate carree,
+    longitude and latitude coordinates. Returns None is no (.prj) file
+    is found. This usually means shapes are already in Plate carree
+    coordinates.
+
+    Parameters
+    ----------
+    filename : str
+        Path and name of the analysed shapefile (.shp).
+
+    Returns
+    -------
+    callable or None
+        Converter function: lon, lat = func(x, y) .
+
+    """
+
+    # Read projection file
+    if os.path.exists(filename[0:-4]+".prj"):
+        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(filename[0:-4] + ".prj")
+
+        # Datum
+        b = a * (ifp - 1) / ifp
+        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
+        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
+                                    globe=globe,
+                                    central_latitude=lat0,
+                                    central_longitude=lon0)
+        def to_lon_lat(x, y):
+            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
+            return transformed[:, 0], transformed[:, 1]
+
+    else:
+        to_lon_lat = None
+
+    return to_lon_lat
+
+
+def _get_polygon_lon_lat(shape, to_lon_lat, separate=False):
+    """
+    Return poly lon, lat for a single shape object.
+
+    Setting the converter function to_lon_lat to None
+    indicates coordinates are already in Plate carree
+    projection and are simply read from file.
+
+    Parameters
+    ----------
+    shape : shapfile.Shape
+        Polygon to process.
+    to_lon_lat : callable or None
+        Converter function to Plate carree coordinates.
+    separate : bool
+        Only keep polygon outline (omit holes).
+
+    Returns
+    -------
+    lon, lat : 1D array
+        Polygon Plate carree coordinates.
+
+    See Also
+    --------
+
+       * shp2dex._get_lon_lat_converter
+
+    """
+    # Get polygon coordinates
+    x, y = np.split(np.array(shape.points), 2, axis=1)
+    if to_lon_lat:
+        lon, lat = to_lon_lat(x.flatten(), y.flatten())
+    else:
+        lon, lat = x.flatten(), y.flatten()
+
+    # Only keep outside polygon
+    if len(shape.parts) > 1 and separate:
+        lon, lat = lon[0: shape.parts[1]], lat[0: shape.parts[1]]
+
+    return lon, lat
+
+
 def load_cis_shp(name, ascending=True):
     """
     Read CIS shapefile to dataframe and polygon list.
@@ -452,6 +538,7 @@ def _newegg_2_oldegg(egg_dict, sname, i):
 
     return egg_dict
 
+
 def plot_cis_shp(sname):
     """
     Plot polygons of a CIS ice shapefile.
@@ -478,24 +565,8 @@ def plot_cis_shp(sname):
                    'N': 'k',
                    'F': 'c'})
 
-    # Read projection file
-    if os.path.exists(sname[0:-4]+".prj"):
-        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
-
-        # Datum
-        b = a * (ifp - 1) / ifp
-        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
-        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
-                                    globe=globe,
-                                    central_latitude=lat0,
-                                    central_longitude=lon0)
-        def to_lon_lat(x, y):
-            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
-            return transformed[:, 0], transformed[:, 1]
-
-        prjfile = True
-    else:
-        prjfile = False
+    # Manage map projection
+    to_lon_lat = _get_lon_lat_converter(sname)
 
     # Read shapefile
     df_records, empty = load_cis_shp(sname, ascending=False)
@@ -505,20 +576,11 @@ def plot_cis_shp(sname):
     for (i, shape) in enumerate(df_records.shapes.values):
 
         # Get polygon coordinates
-        x, y = np.split(np.array(shape.points), 2, axis=1)
-        if prjfile:
-            lon, lat = to_lon_lat(x.flatten(), y.flatten())
-        else:
-            lon, lat = x.flatten(), y.flatten()
-
-        # Only keep outside polygon
-        polygons_lon, polygons_lat, _ = _separate_wrapping_polygons(lon,
-                                                                    lat,
-                                                                    decimals=7)
-        lon, lat = polygons_lon[0], polygons_lat[0]
+        lon, lat = _get_polygon_lon_lat(shape, to_lon_lat, separate=True)
 
         # Add to plot
         plt.fill(lon, lat, fc=colors[df_managed.iloc[i].LEGEND], ec='k', linestyle='-')
+        plt.text(lon.mean(), lat.mean(), df_managed.iloc[i].LEGEND)
 
     plt.show()
 
@@ -614,6 +676,8 @@ def _parse_prj(fname):
 
 def _separate_wrapping_polygons(x, y, decimals=5):
     """
+    Not used anymore. Could be moved to mxtoolbox.math_
+
     Find wrapping points of polygon sequence stored in vectors `x` and `y`.
 
     The CIS shapefiles contain complex polygons with 'holes', which are often other
@@ -792,23 +856,24 @@ def _shp2dex(sname,
     df_output['assigned'] = False
 
     # Read projection file
-    if os.path.exists(sname[0:-4]+".prj"):
-        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
-
-        # Datum
-        b = a * (ifp - 1) / ifp
-        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
-        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
-                                    globe=globe,
-                                    central_latitude=lat0,
-                                    central_longitude=lon0)
-        def to_lon_lat(x, y):
-            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
-            return transformed[:, 0], transformed[:, 1]
-
-        prjfile = True
-    else:
-        prjfile = False
+    to_lon_lat = _get_lon_lat_converter(sname)
+#    if os.path.exists(sname[0:-4]+".prj"):
+#        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
+#
+#        # Datum
+#        b = a * (ifp - 1) / ifp
+#        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
+#        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
+#                                    globe=globe,
+#                                    central_latitude=lat0,
+#                                    central_longitude=lon0)
+#        def to_lon_lat(x, y):
+#            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
+#            return transformed[:, 0], transformed[:, 1]
+#
+#        prjfile = True
+#    else:
+#        prjfile = False
 
     # Read shapefile
     df_records, empty = load_cis_shp(sname)
@@ -828,19 +893,9 @@ def _shp2dex(sname,
             else:
 
                 # Get polygon coordinates
-                x, y = np.split(np.array(shape.points), 2, axis=1)
-                if prjfile:
-                    lon, lat = to_lon_lat(x.flatten(), y.flatten())
-                else:
-                    lon, lat = x.flatten(), y.flatten()
+                lon, lat = _get_polygon_lon_lat(shape, to_lon_lat, separate=True)
 
-                # Only keep outside polygon
-                polygons_lon, polygons_lat, _ = _separate_wrapping_polygons(lon,
-                                                                            lat,
-                                                                            decimals=7)
-                lon, lat = polygons_lon[0], polygons_lat[0]
-
-                # Points to check
+                # Only check unassigned grid points in the smallest polygon containing lat-lon box
                 condition = '%f < lon < %f & %f < lat < %f & not assigned'
                 df_candidates = df_output.query(condition % (lon.min(),
                                                              lon.max(),
@@ -860,7 +915,7 @@ def _shp2dex(sname,
                     # For improved readability
                     r = df_records.iloc[i]
 
-                    """ Legend """
+                    """ Legend assignments """
                     # Fast-ice
                     if ("F" == r.LEGEND) or r.E_FA == '8':
                         if fill_dataframe:
@@ -887,7 +942,7 @@ def _shp2dex(sname,
                             df_output.at[target_index, 'LEGEND'] = 'Icebergs'
                         df_output.at[target_index, 'printable'] = 'Icebergs'
 
-                    # Ice
+                    # Egg code assignments
                     else:
                         # Partial concentration A is set to CT in this case
                         if r.E_CT != 'X' and r.E_CA == 'X':
