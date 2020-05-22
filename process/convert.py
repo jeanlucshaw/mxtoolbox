@@ -5,6 +5,9 @@ conversions.
 import gsw
 import numpy as np
 import pandas as pd
+import xarray as xr
+from pyproj import Geod
+from scipy.interpolate import interp1d
 from datetime import datetime, timezone, timedelta
 from .math_ import broadcastable, rotate_frame
 
@@ -14,11 +17,17 @@ __all__ = ['anomaly2rgb',
            'dd2dms',
            'dms2dd',
            'hd2uv',
+           'lonlat2distances',
+           'lonlat2distancefrom',
+           'lonlat2heading',
+           'lonlat2speed',
            'pd_add_seasons',
            'tetha2hd',
            'uv2hd',
            'xr_SA_CT_pden',
            'dayofyear2dt']
+
+
 def anomaly2rgb(value):
     """
     Map standardized anomaly to discretized red to blue color scheme.
@@ -233,65 +242,170 @@ def hd2uv(heading, magnitude, rotate_by=0):
     return u, v
 
 
-def lonlat2heading(lon, lat):
-    '''
-    Function ll2heading usage:  h   =   ll2heading(lon,lat)
+def lonlat2distances(lon, lat, meters_per_unit=1, **kwargs):
+    """
+    Get distance between points of a GPS track.
 
-    Returns the initial heading for a great cirle line between successive
-    geographical coordinates given by 'lon', 'lat'. To maintain vector 
-    size, the last element is repeated.
-    '''
+    Distances are returned in meters by default. This
+    can be adjusted by setting the `meters_per_unit`
+    parameter (e.g. 1000 for km).
 
-    # 0-360
-    lon[lon<0]  =   lon[lon<0]  +   360
-    lat[lat<0]  =   lat[lat<0]  +   360
+    Parameters
+    ----------
+    lon, lat : 1D array
+        Plate carree coordinates to process.
+    meters_per_unit : float
+        Number of meters in the desired output unit of distance.
+    kwargs : keyword arguments
+        Passed to `pyroj.Geod` .
 
-    # Heading to radians
-    lon =   lon*np.pi/180
-    lat =   lat*np.pi/180
+    Returns
+    -------
+    distances : 1D array
+        Separating the input coordinates.
+    """
+    kwargs = {'ellps': 'WGS84', **kwargs}
+    _geod = Geod(**kwargs)
 
-    X   =   np.array([np.cos(lat[i])*np.sin(lat[i+1])-np.sin(lat[i])*np.cos(lat[i+1])*np.cos(lon[i+1]-lon[i]) for i in range(lon.size-1)])
-    Y   =   np.array([np.cos(lat[i+1])*np.sin(lon[i+1]-lon[i]) for i in range(lon.size-1)])
-    h   =   np.arctan2(Y,X)
+    distances = np.array([_geod.inv(lon1, lat1, lon2, lat2)
+                          for (lon1, lat1, lon2, lat2)
+                          in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 2]
 
-    # Radians to heading
-    h   =   180*np.array(h)/np.pi
+    distances /= meters_per_unit
 
-    # 0-360
-    h[h<0]      =   h[h<0]  +   360
+    return distances
 
-    # Keep vector size
-    h           =   np.append(h,h[-1])
 
-    return h
+def lonlat2distancefrom(lon, lat, lon_0, lat_0, meters_per_unit=1, **kwargs):
+    """
+    Get distance between GPS track and a fixed coordinate.
 
-def lonlat2speed(lon, lat, time):
-    '''
-    Function llt2spd usage:     u,v,nm,h    =   llt2spd(lon,lat,time)
+    Distances are returned in meters by default. This
+    can be adjusted by setting the `meters_per_unit`
+    parameter (e.g. 1000 for km).
 
-    Takes as input a series of coordinates and time in either UNIX time, or
-    numpy datetime64 format and returns horizontal velocity components 'u'/'v', as
-    well as the norm of horizontal velocity 'nm' and heading 'h'.
-    '''
-    # Manage time
-    if np.issubdtype(time[0],np.datetime64):
-        time    =   dt64tots(time)
+    Parameters
+    ----------
+    lon, lat : 1D array
+        Plate carree coordinates of GPS track.
+    lon_0, lat_0 : 1D array
+        Plate carree coordinates of fixed coordinate.
+    meters_per_unit : float
+        Number of meters in the desired output unit of distance.
+    kwargs : keyword arguments
+        Passed to `pyroj.Geod` .
 
-    # Compute norm and heading
-    dt  =   np.diff(time)
-    tc  =   time[0:-1]  +   0.5*dt
-    d   =   np.array([haversine(lon[i],lat[i],lon[i+1],lat[i+1]) for i in range(tc.size)])
-    n   =   d/dt
-    h   =   ll2heading(lon,lat)
+    Returns
+    -------
+    distances : 1D array
+        Separating the input coordinates.
+    """
+    kwargs = {'ellps': 'WGS84', **kwargs}
+    _geod = Geod(**kwargs)
 
-    # Reinterpolate to time vector
-    n   =   interp1d(tc,n,fill_value='extrapolate').__call__(time)
+    distances = np.array([_geod.inv(lon_, lat_, lon_0, lat_0)
+                          for (lon_, lat_)
+                          in zip(lon, lat)])[:, 2]
 
-    # Project to u,v components
-    u   =   n*np.sin(h*np.pi/180)
-    v   =   n*np.cos(h*np.pi/180)
+    distances /= meters_per_unit
 
-    return u,v,n,h
+    return distances
+
+
+def lonlat2heading(lon, lat, **kwargs):
+    """
+    Get forward azimuth from GPS track.
+
+    Parameters
+    ----------
+    lon, lat : 1D array
+        Plate carree coordinates to process.
+    kwargs : keyword arguments
+        Passed to `pyroj.Geod` .
+
+    Returns
+    -------
+    heading : 1D array
+        Forward azimuth.
+    """
+    kwargs = {'ellps': 'WGS84', **kwargs}
+    _geod = Geod(**kwargs)
+
+    heading = np.array([_geod.inv(lon1, lat1, lon2, lat2)
+                          for (lon1, lat1, lon2, lat2)
+                          in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 0]
+
+    return heading
+
+
+
+def lonlat2speed(lon,
+                 lat,
+                 time,
+                 heading=None,
+                 top_speed=None,
+                 meters_per_unit=1,
+                 seconds_per_unit=1):
+    """
+    Convert GPS track u, v and speed.
+
+    Speeds are returned in meters per second by default, but
+    this can be adjusted using the `meters_per_unit` and
+    `seconds_per_unit` optional paramters.
+
+    Parameters
+    ----------
+    lon, lat : 1D array
+        Plate carree coordinates to process.
+    time : 1D array of np.datetime64
+        Must convertible to `datetime64[s]`.
+    heading : 1D array
+        Forward azimuth vector. Calculated if not specified.
+    top_speed : float
+        Filter out speeds greater than this value.
+    meters_per_unit : float
+        Number of meters in the desired output unit of distance.
+    seconds_per_unit : float
+        Number of seconds in the desired output unit of time.
+
+    Returns
+    -------
+    u, v : 1D array
+        Eastward and northward velocity components.
+    speed : 1D array
+        Magnitude of velocity.
+    """
+
+    # Convert to datetime
+    time = time.astype('datetime64[s]')
+
+    # Compute dx
+    distances = lonlat2distances(lon, lat, meters_per_unit=meters_per_unit)
+
+    # Compute dt
+    time_delta = np.diff(time)
+    dt_seconds = np.float64(time_delta)
+
+    # Compute speed
+    speed = distances / dt_seconds * seconds_per_unit
+
+    # Compute centered time vector
+    time_centered = time[:-1] + time_delta / 2
+
+    # Interpolate to input time grid
+    dataarray = xr.DataArray(speed, dims=['time'], coords={'time': time_centered})
+    if top_speed:
+        dataarray = dataarray.where(dataarray < top_speed)
+    speed = dataarray.interp(time=time, kwargs=dict(fill_value='extrapolate')).values
+
+    # Compute heading
+    if heading is None:
+        heading = lonlat2heading(lon, lat)
+
+    # Compute velocity components
+    u, v = hd2uv(heading, speed)
+
+    return u, v, speed
 
 
 def pd_add_seasons(dataframe, time='time', stype='astro'):
