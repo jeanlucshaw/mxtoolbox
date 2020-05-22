@@ -42,6 +42,7 @@ See Also
 """
 from mxtoolbox.read.adcp import *
 from mxtoolbox.read.rtitools import load_rtb_binary
+from mxtoolbox.process.signal_ import xr_bin
 import numpy as np
 import os
 import argparse
@@ -97,6 +98,10 @@ if __name__ == '__main__':
                         action='store_true',
                         help='''Include temperature. Otherwise, default behavior
                         is to save it to a difference netcdf file.''')
+    parser.add_argument('-I', '--info',
+                        action='store_true',
+                        help='''Show information about the processed
+                        velocities.''')
     parser.add_argument('-k', '--clip',
                         metavar='',
                         type=int,
@@ -262,10 +267,6 @@ if __name__ == '__main__':
         ds.w.values = ds.w.where(cond)
         ds.e.values = ds.e.where(cond)
 
-    # Save to netcdf
-    strt = str(ds.time.values[0])[:10]
-    stop = str(ds.time.values[-1])[:10]
-
     # Manage temperature data
     if args.include_temp:
         ds['temp'].values = np.asarray([data.temperature[selected]])
@@ -275,4 +276,21 @@ if __name__ == '__main__':
     #     temp['z'] = ('time', np.array(data.XducerDepth[selected]))
     #     temp.to_netcdf(path+args.name+'_'+strt+'_'+stop+'_RDI_TEMP.nc')
 
+    # Information printout
+    if args.info:
+        def pprint(variable, units):
+            maximum = ds[variable].max()
+            minimum = ds[variable].min()
+            print('%15s : range (%.2f, %.2f) %s' % (variable,
+                                                    minimum,
+                                                    maximum,
+                                                    units))
+        print('=' * 80)
+        pprint('u', 'm/s')
+        pprint('v', 'm/s')
+        pprint('w', 'm/s')
+
+    # Save to netcdf
+    strt = str(ds.time.values[0])[:10]
+    stop = str(ds.time.values[-1])[:10]
     ds.to_netcdf('%s%s_%s_%s_%s_ADCP.nc' % (path, args.name, strt, stop, brand))
