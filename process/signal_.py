@@ -82,18 +82,21 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
     attributes = dataset.attrs
 
     # Bin averaging
-    dataset = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
+    output = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
                .reduce(func, dim=dim)
                .rename({dim+'_bins': dim}))
 
     # Restore attributes
-    dataset.attrs = attributes
+    output.attrs = attributes
 
     # Restore dimension order to each variable
     for key, dim_tuple in dim_dict.items():
-        dataset[key] = dataset[key].transpose(*dim_tuple)
+        if dim not in dim_tuple:
+            output[key] = dataset[key]
+        else:
+            output[key] = output[key].transpose(*dim_tuple)
 
-    return dataset
+    return output
 
 
 def xr_bin_where(dataset, field, selector, dim, binc, fill_na=-99999):
