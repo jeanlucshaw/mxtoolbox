@@ -16,6 +16,7 @@ __all__ = ['anomaly2rgb',
            'bine2center',
            'dd2dms',
            'dms2dd',
+           'dt2epoch',
            'hd2uv',
            'lonlat2distances',
            'lonlat2distancefrom',
@@ -28,48 +29,91 @@ __all__ = ['anomaly2rgb',
            'dayofyear2dt']
 
 
-def anomaly2rgb(value):
+def anomaly2rgb(values, normal=0.5):
     """
     Map standardized anomaly to discretized red to blue color scheme.
 
-    Returns an RGB triplet according to standardized anomaly value
-    passed as argument. Colors are defined in intervals of 0.5 std and
-    saturate at -2 and 2.
-
     Parameters
     ----------
-    value : float
+    values : float or 1D array
         Standardized anomaly value.
+    normal : float
+        Defines the absolute range of anomalies for which to return
+        a white RGB triplet.
 
     Returns
     -------
     list
         RGB triplet.
 
+    See Also
+    --------
+
+       Color definitions from :code:`/usr/local/bin/anomaly5steps_2RGB.pl`
+
     """
-    # Select color
-    if -0.5 < value < 0.5:
-        col = [1.0, 1.0, 1.0]
-    elif -0.5 > value > -1:
-        col = [0.875, 0.875, 1.000]
-    elif -1.0 > value > -1.5:
-        col = [0.700, 0.700, 1.000]
-    elif -1.5 > value > -2.0:
-        col = [0.360, 0.360, 0.900]
-    elif -2.0 > value:
-        col = [0.000, 0.000, 0.900]
-    elif 0.5 < value < 1:
-        col = [1.000, 0.875, 0.875]
-    elif 1.0 < value < 1.5:
-        col = [1.000, 0.700, 0.700]
-    elif 1.5 < value < 2.0:
-        col = [1.000, 0.360, 0.360]
-    elif 2.0 < value:
-        col = [0.900, 0.000, 0.000]
+
+    # Set white anomaly interval
+    values /= normal
+
+    # Make function compatible with scalars or arrays
+    if np.array(values).size == 1:
+        values = [values]
+        scalar = True
     else:
-        print("No mapping for anomaly value %.2f" % value)
-        col = 'k'
-    return col
+        cols = []
+        scalar = False
+
+    # Loop over values to process
+    for value in values:
+
+        # Blue 5
+        if value <= -5.0:
+            col = [0.500, 0.000, 0.900]
+        # Blue 4
+        elif -5.0 < value <= -4.0:
+            col = [0.000, 0.000, 0.900]
+        # Blue 3
+        elif -4.0 < value <= -3.0:
+            col = [0.450, 0.450, 0.900]
+        # Blue 2
+        elif -3.0 < value <= -2.0:
+            col = [0.700, 0.700, 1.000]
+        # Blue 1
+        elif -2.0 < value <= -1.0:
+            col = [0.875, 0.875, 1.000]
+
+        # White 
+        elif -1.0 < value < 1.0:
+            col = [1.0, 1.0, 1.0]
+
+        # Red 1
+        elif 1.0 <= value < 2.0:
+            col = [1.000, 0.875, 0.875]
+        # Red 2
+        elif 2.0 <= value < 3.0:
+            col = [1.000, 0.700, 0.700]
+        # Red 3
+        elif 3.0 <= value < 4.0:
+            col = [0.900, 0.450, 0.450]
+        # Red 4
+        elif 4.0 <= value < 5.0:
+            col = [0.900, 0.000, 0.000]
+        # Red 5
+        elif 5.0 <= value:
+            col = [0.500, 0.000, 0.000]
+
+        # Missing values set to gray
+        else:
+            col = [0.6, 0.6, 0.6]
+
+        # Add to RGB triplet list
+        if scalar:
+            cols = col
+        else:
+            cols.append(col)
+
+    return cols
 
 
 def binc2edge(z):
@@ -210,6 +254,33 @@ def dd2dms(degrees_decimal):
     minutes = np.int16((degrees_decimal - degrees) * 60.)
     seconds = (degrees_decimal - degrees - minutes / 60.) * 3600.
     return (degrees, abs(minutes), abs(seconds))
+
+
+def dt2epoch(datetimes, div=1):
+    """
+    Convert datetime array to numeric (epoch).
+
+    The output units are defined by the div parameter. For
+    reference,
+
+       * :code:`div=1` means seconds.
+       * :code:`div=60` means minutes.
+       * :code:`div=3600` means hours.
+       * :code:`div=86400` means days.
+
+    Parameters
+    ----------
+    datetimes : 1D array of datetime64
+        Times to convert.
+    div : float
+        Divide times by this value to set unit.
+
+    Returns
+    -------
+    1D array
+        Time in numeric values.
+    """
+    return datetimes.astype('datetime64[s]').astype('int') / div
 
 
 def hd2uv(heading, magnitude, rotate_by=0):
