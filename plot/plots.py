@@ -1,20 +1,143 @@
 """
 Streamline making typical plots for time series analysis, and
-physical oceanography. 
+physical oceanography.
 """
 import gsw
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from .mplutils import text_array
 from ..process.math_ import xr_abs
 from ..read.text import list2cm
-from ..process.convert import anomaly2rgb
+from ..process.convert import anomaly2rgb, binc2edge
 
-
-__all__ = ['ts_diagram',
+__all__ = ['anomaly_bar',
+           'ts_diagram',
            'scorecard',
            'scorecard_bottom_monthly',
            'xr_plot_pm_patch']
+
+
+def anomaly_bar(axes,
+                coord,
+                anomaly,
+                box_labels=None,
+                bar_label=None,
+                bar_label_pos='bottom',
+                pad_size=0.1,
+                bar_size=0.25,
+                orientation='vertical'):
+    """
+    Add anomaly side bar to current + climatology plot.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Add anomaly bar to these axes.
+    coord : 1D array
+        Centers of the anomaly boxes.
+    anomaly : 1D array
+        Anomaly values.
+    box_labels : 1D array or None
+        Show these values in boxes when specified, otherwise show `anomaly`.
+    bar_label : str
+        Add label to bar end (e.g. `box_labels` units).
+    bar_label_pos : str
+        Placement of `bar_label` either `left`, `right`, `top`, `bottom`
+        or first letter of these choices.
+    pad_size : float
+        Pad width as fraction of axes width.
+    bar_size : float
+        Bar width as fraction of axes width.
+    orientation : str
+        Make bar `horizontal` or `vertical`. First letters of these options
+        are also accepted values.
+
+    Returns
+    -------
+    pyplot.Axes
+        The axes in which the anomaly bar is drawn.
+
+    """
+    # Get axes position
+    position = axes.get_position()
+    left, bottom, width, height = position.bounds
+
+    # Set anomaly bar position
+    if orientation in ['vertical', 'v']:
+        bar_pos = (left + width + pad_size * width,
+                   bottom,
+                   bar_size * width,
+                   height)
+
+        # Manage bar and box label position accordingly
+        bar_box_x, bar_box_y = 0.5 * np.ones_like(coord), coord
+
+        bar_label_kw = {'ha': 'left', 'va': 'center'}
+        if bar_label_pos in ['b', 'bottom']:
+            bar_label_x, bar_label_y = 0, -coord[0]
+        elif bar_label_pos in ['t', 'top']:
+            bar_label_x, bar_label_y = 0, coord[-1] + (coord[-1] - coord[-2])
+
+    elif orientation in ['horizontal', 'h']:
+        bar_pos = (left,
+                   bottom - height * bar_size - pad_size * width,
+                   width,
+                   height * bar_size)
+
+        # Manage bar label position accordingly
+        bar_box_y, bar_box_x = 0.5 * np.ones_like(coord), coord
+
+        bar_label_kw = {'ha': 'center', 'va': 'center'}
+        if bar_label_pos in ['b', 'bottom']:
+            bar_label_y, bar_label_x = 0.5, -coord[0]
+        elif bar_label_pos in ['t', 'top']:
+            bar_label_y, bar_label_x = 0.5, coord[-1] + (coord[-1] - coord[-2])
+    else:
+        raise ValueError('Unrecognized value %s for paramater `orientation`.' % orientation)
+
+    # Create axes for colorbar
+    anomaly_ax = plt.axes(bar_pos)
+
+    # Map anomaly values to colors 
+    colors = anomaly2rgb(anomaly)
+
+    # Loop over anomaly boxes and color
+    edges = binc2edge(coord)
+    for low_lim, up_lim, fc in zip(edges[:-1], edges[1:], colors):
+
+        if orientation in ['v', 'vertical']:
+            anomaly_ax.axhspan(up_lim, low_lim, facecolor=fc)
+            anomaly_ax.axhline(up_lim, color='k')
+            anomaly_ax.axhline(low_lim, color='k')
+
+        elif orientation in ['h', 'horizontal']:
+            anomaly_ax.axvspan(up_lim, low_lim, facecolor=fc)
+            anomaly_ax.axvline(up_lim, color='k')
+            anomaly_ax.axvline(low_lim, color='k')
+
+    # Add box labels or anomaly values if labels not defined
+    if box_labels is not None:
+        labels = box_labels
+    else:
+        labels = anomaly
+    text_array(anomaly_ax,
+               bar_box_x,
+               bar_box_y,
+               labels,
+               fmt='%.1f',
+               ha='center',
+               va='center')
+
+    # Add bar label
+    if bar_label:
+        anomaly_ax.text(bar_label_x, bar_label_y, bar_label, **bar_label_kw)
+
+    # Axes parameters
+    anomaly_ax.tick_params(which='both', bottom=False, left=False)
+    anomaly_ax.set(ylim=axes.get_ylim(), xticklabels=[], yticklabels=[])
+
+    return anomaly_ax
 
 
 def scorecard(df,
