@@ -254,6 +254,35 @@ of xpts and ypts.</p></li>
 <p>Streamline making typical plots for time series analysis, and
 physical oceanography.</p>
 <dl class="function">
+<dt id="mxtoolbox.plot.plots.anomaly_bar">
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">anomaly_bar</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">coord</em>, <em class="sig-param">anomaly</em>, <em class="sig-param">box_labels=None</em>, <em class="sig-param">bar_label=None</em>, <em class="sig-param">bar_label_pos='bottom'</em>, <em class="sig-param">pad_size=0.1</em>, <em class="sig-param">bar_size=0.25</em>, <em class="sig-param">orientation='vertical'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.anomaly_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add anomaly side bar to current + climatology plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>matplotlib.axes</em>) – Add anomaly bar to these axes.</p></li>
+<li><p><strong>coord</strong> (<em>1D array</em>) – Centers of the anomaly boxes.</p></li>
+<li><p><strong>anomaly</strong> (<em>1D array</em>) – Anomaly values.</p></li>
+<li><p><strong>box_labels</strong> (<em>1D array or None</em>) – Show these values in boxes when specified, otherwise show <cite>anomaly</cite>.</p></li>
+<li><p><strong>bar_label</strong> (<em>str</em>) – Add label to bar end (e.g. <cite>box_labels</cite> units).</p></li>
+<li><p><strong>bar_label_pos</strong> (<em>str</em>) – Placement of <cite>bar_label</cite> either <cite>left</cite>, <cite>right</cite>, <cite>top</cite>, <cite>bottom</cite>
+or first letter of these choices.</p></li>
+<li><p><strong>pad_size</strong> (<em>float</em>) – Pad width as fraction of axes width.</p></li>
+<li><p><strong>bar_size</strong> (<em>float</em>) – Bar width as fraction of axes width.</p></li>
+<li><p><strong>orientation</strong> (<em>str</em>) – Make bar <cite>horizontal</cite> or <cite>vertical</cite>. First letters of these options
+are also accepted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The axes in which the anomaly bar is drawn.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pyplot.Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.plot.plots.ts_diagram">
 <code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">ts_diagram</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">t_min=-2</em>, <em class="sig-param">t_max=20</em>, <em class="sig-param">s_min=32</em>, <em class="sig-param">s_max=37</em>, <em class="sig-param">lab_curve_exp=1</em>, <em class="sig-param">levels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.ts_diagram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw density contours as background of a TS plot.</p>

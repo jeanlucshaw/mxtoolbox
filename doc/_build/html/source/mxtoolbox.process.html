@@ -279,18 +279,34 @@ using if necessary.</p>
 
 <dl class="function">
 <dt id="mxtoolbox.process.analyses.xr_time_aht">
-<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">xr_time_aht</code><span class="sig-paren">(</span><em class="sig-param">sl</em>, <em class="sig-param">h='h'</em>, <em class="sig-param">period=12.4</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.xr_time_aht" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function xr_t_aht summary:</p>
-<p>A much simplified version of libmx.physics.ocn.t_aht_ast</p>
-<p>Serves as validation of the aforementioned code and as a fast
-way to get time aht from a libmx.physics.xri.sealev xarray
-object.</p>
-<p>Parameters:</p>
-<p>sl: sealev object
-h: either ‘h’ or ‘hp’ to use measure or predicted sea level
-period: defaults to 12.40 hours (semidiurnal). This adjusts
-the required distance between high tides as well as the filtering
-frequency.</p>
+<code class="sig-prename descclassname">mxtoolbox.process.analyses.</code><code class="sig-name descname">xr_time_aht</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field='h'</em>, <em class="sig-param">period=12.4166</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.analyses.xr_time_aht" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add time after high tide variable to dataset.</p>
+<p>The cleaner the input time series, the cleaner the
+ouptut values will be. Before using consider,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Sorting by times.</p></li>
+<li><p>Removing duplicate times.</p></li>
+<li><p>Replacing missing values with harmonic analysis.</p></li>
+<li><p>Interpolating to regular time.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Data structure to operate on.</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Name of sea level variable.</p></li>
+<li><p><strong>period</strong> (<em>float</em>) – Number of hours in one tidal cycle.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>xarray.Dataset</em> – Data structure with the added <cite>aht</cite> variable (h).</p></li>
+<li><p><em>1D array</em> – Index values of high tides in input time array.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -300,14 +316,15 @@ frequency.</p>
 conversions.</p>
 <dl class="function">
 <dt id="mxtoolbox.process.convert.anomaly2rgb">
-<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">anomaly2rgb</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.anomaly2rgb" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">anomaly2rgb</code><span class="sig-paren">(</span><em class="sig-param">values</em>, <em class="sig-param">normal=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.anomaly2rgb" title="Permalink to this definition">¶</a></dt>
 <dd><p>Map standardized anomaly to discretized red to blue color scheme.</p>
-<p>Returns an RGB triplet according to standardized anomaly value
-passed as argument. Colors are defined in intervals of 0.5 std and
-saturate at -2 and 2.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>value</strong> (<em>float</em>) – Standardized anomaly value.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> (<em>float or 1D array</em>) – Standardized anomaly value.</p></li>
+<li><p><strong>normal</strong> (<em>float</em>) – Defines the absolute range of anomalies for which to return
+a white RGB triplet.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>RGB triplet.</p>
@@ -397,6 +414,36 @@ one point and the next.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="mxtoolbox.process.convert.dt2epoch">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">dt2epoch</code><span class="sig-paren">(</span><em class="sig-param">datetimes</em>, <em class="sig-param">div=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.dt2epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert datetime array to numeric (epoch).</p>
+<p>The output units are defined by the div parameter. For
+reference,</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">div=1</span></code> means seconds.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">div=60</span></code> means minutes.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">div=3600</span></code> means hours.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">div=86400</span></code> means days.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>datetimes</strong> (<em>1D array of datetime64</em>) – Times to convert.</p></li>
+<li><p><strong>div</strong> (<em>float</em>) – Divide times by this value to set unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Time in numeric values.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="mxtoolbox.process.convert.hd2uv">
 <code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">hd2uv</code><span class="sig-paren">(</span><em class="sig-param">heading</em>, <em class="sig-param">magnitude</em>, <em class="sig-param">rotate_by=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.hd2uv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return u, v vector components from heading and magnitude.</p>
@@ -416,6 +463,103 @@ clockwise by setting <cite>rotate_by</cite> in degrees.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.lonlat2distances">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">lonlat2distances</code><span class="sig-paren">(</span><em class="sig-param">lon</em>, <em class="sig-param">lat</em>, <em class="sig-param">meters_per_unit=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.lonlat2distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get distance between points of a GPS track.</p>
+<p>Distances are returned in meters by default. This
+can be adjusted by setting the <cite>meters_per_unit</cite>
+parameter (e.g. 1000 for km).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon, lat</strong> (<em>1D array</em>) – Plate carree coordinates to process.</p></li>
+<li><p><strong>meters_per_unit</strong> (<em>float</em>) – Number of meters in the desired output unit of distance.</p></li>
+<li><p><strong>kwargs</strong> (<em>keyword arguments</em>) – Passed to <cite>pyroj.Geod</cite> .</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>distances</strong> – Separating the input coordinates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.lonlat2distancefrom">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">lonlat2distancefrom</code><span class="sig-paren">(</span><em class="sig-param">lon</em>, <em class="sig-param">lat</em>, <em class="sig-param">lon_0</em>, <em class="sig-param">lat_0</em>, <em class="sig-param">meters_per_unit=1</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.lonlat2distancefrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get distance between GPS track and a fixed coordinate.</p>
+<p>Distances are returned in meters by default. This
+can be adjusted by setting the <cite>meters_per_unit</cite>
+parameter (e.g. 1000 for km).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon, lat</strong> (<em>1D array</em>) – Plate carree coordinates of GPS track.</p></li>
+<li><p><strong>lon_0, lat_0</strong> (<em>1D array</em>) – Plate carree coordinates of fixed coordinate.</p></li>
+<li><p><strong>meters_per_unit</strong> (<em>float</em>) – Number of meters in the desired output unit of distance.</p></li>
+<li><p><strong>kwargs</strong> (<em>keyword arguments</em>) – Passed to <cite>pyroj.Geod</cite> .</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>distances</strong> – Separating the input coordinates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.lonlat2heading">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">lonlat2heading</code><span class="sig-paren">(</span><em class="sig-param">lon</em>, <em class="sig-param">lat</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.lonlat2heading" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get forward azimuth from GPS track.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon, lat</strong> (<em>1D array</em>) – Plate carree coordinates to process.</p></li>
+<li><p><strong>kwargs</strong> (<em>keyword arguments</em>) – Passed to <cite>pyroj.Geod</cite> .</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>heading</strong> – Forward azimuth.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mxtoolbox.process.convert.lonlat2speed">
+<code class="sig-prename descclassname">mxtoolbox.process.convert.</code><code class="sig-name descname">lonlat2speed</code><span class="sig-paren">(</span><em class="sig-param">lon</em>, <em class="sig-param">lat</em>, <em class="sig-param">time</em>, <em class="sig-param">heading=None</em>, <em class="sig-param">top_speed=None</em>, <em class="sig-param">meters_per_unit=1</em>, <em class="sig-param">seconds_per_unit=1</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.process.convert.lonlat2speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert GPS track u, v and speed.</p>
+<p>Speeds are returned in meters per second by default, but
+this can be adjusted using the <cite>meters_per_unit</cite> and
+<cite>seconds_per_unit</cite> optional paramters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon, lat</strong> (<em>1D array</em>) – Plate carree coordinates to process.</p></li>
+<li><p><strong>time</strong> (<em>1D array of np.datetime64</em>) – Must convertible to <cite>datetime64[s]</cite>.</p></li>
+<li><p><strong>heading</strong> (<em>1D array</em>) – Forward azimuth vector. Calculated if not specified.</p></li>
+<li><p><strong>top_speed</strong> (<em>float</em>) – Filter out speeds greater than this value.</p></li>
+<li><p><strong>meters_per_unit</strong> (<em>float</em>) – Number of meters in the desired output unit of distance.</p></li>
+<li><p><strong>seconds_per_unit</strong> (<em>float</em>) – Number of seconds in the desired output unit of time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u, v</strong> (<em>1D array</em>) – Eastward and northward velocity components.</p></li>
+<li><p><strong>speed</strong> (<em>1D array</em>) – Magnitude of velocity.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
