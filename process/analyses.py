@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from scipy.optimize import leastsq
+from scipy.signal import find_peaks
 from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
+from .convert import dt2epoch
 
 __all__ = ['pca',
            'pd_pca',
@@ -430,7 +432,7 @@ def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
 def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
     """
     Compute cross correlation between DataArrays dataarray_a and dataarray_b.
-    
+
     The two input arrays can contain NaN values and be of different
     lengths but they must have the same coordinate resolution
     and coordinates must match on overlap. Resample prior to
@@ -455,10 +457,10 @@ def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
         Cross correlation vector.
 
     """
-    a = dataarray_a.values.copy() 
+    a = dataarray_a.values.copy()
     b = dataarray_b.values.copy()
     t = dataarray_b[coord].values.copy()
-    
+
     # Missing values to zero
     amask, bmask = np.isnan(a), np.isnan(b)
     a[amask] = 0
@@ -492,57 +494,60 @@ def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
     return tau, r2, dataarray_c, cc
 
 
-def xr_time_aht(sl, h='h', period=12.40):
-    '''
-    Function xr_t_aht summary:
+def xr_time_aht(dataset, field='h', period=12.4166):
+    """
+    Add time after high tide variable to dataset.
 
-    A much simplified version of libmx.physics.ocn.t_aht_ast
+    The cleaner the input time series, the cleaner the
+    ouptut values will be. Before using consider,
 
-    Serves as validation of the aforementioned code and as a fast
-    way to get time aht from a libmx.physics.xri.sealev xarray
-    object.
+       * Sorting by times.
+       * Removing duplicate times.
+       * Replacing missing values with harmonic analysis.
+       * Interpolating to regular time.
 
-    Parameters:
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Data structure to operate on.
+    field : str
+        Name of sea level variable.
+    period : float
+        Number of hours in one tidal cycle.
 
-    sl: sealev object
-    h: either 'h' or 'hp' to use measure or predicted sea level
-    period: defaults to 12.40 hours (semidiurnal). This adjusts
-    the required distance between high tides as well as the filtering
-    frequency.
-    '''
-    # regularise time grid
-    sl = xr_unique(sl, 'time')
-    sl['hp'] = sl.hp.interpolate_na(dim='time')
-    sl['h'] = sl.h.where(np.isfinite(sl.h), sl.hp)
-    dt = np.median(np.diff(sl.time.values.tolist()) / 10**9)
-    t_grid = pd.date_range(start=sl.time.values[0],
-                           end=sl.time.values[-1], freq='%ds' % dt)
-    sl = sl.interp(time=t_grid)
+    Returns
+    -------
+    xarray.Dataset
+        Data structure with the added `aht` variable (h).
+    1D array
+        Index values of high tides in input time array.
 
-    # Filter and find high tide indices
-    hflt = xrflt(sl.time, sl[h] - sl[h].mean(), 10
-                 / (period * 3600), btype='low')
-    I_pks, _ = find_peaks(hflt, distance=int(0.8*period*3600/dt))
+    """
+    # Get median time step
+    time = dt2epoch(dataset.time.values, div=3600)
+    step = np.median(np.diff(time))
+    period_steps = int(period / step)
 
-    # Remove peaks within 1 period of dataset borders
-    d_period = int(period * 3600 / dt)
-    I = np.flatnonzero(np.logical_and(I_pks > d_period/2,
-                                      I_pks < sl.time.size - d_period/2))
-    I_pks = I_pks[I]
+    # Peak finding
+    locs, _ = find_peaks(dataset[field].values, distance=period_steps/2)
+
+    # Remove peaks within 1/2 period of dataset borders
+    locs = locs[(locs > period_steps / 4) & (locs < time.size - period_steps / 4)]
 
     # Numerical values of time after first high tide
-    aht = (np.array((sl.time-sl.time[I_pks[0]]).values.tolist())
-           / (3600 * 10**9))
-    sl['aht'] = ('time', aht)
+    aht = time - time[0]
 
     # Subtract time of the previous high tide
-    for (start, end) in zip(I_pks[0:-1], I_pks[1:]):
-        sl.aht[start: end] = sl.aht[start: end] - sl.aht[start]
+    for (start, end) in zip(locs[:-1], locs[1:]):
+        aht[start: end] = aht[start: end] - aht[start]
 
     # Manage data before first high tide
-    sl.aht[0: I_pks[0]] = (sl.aht[0: I_pks[0]] + period) % period
+    aht[:locs[0]] = period - time[locs[0]] + time[:locs[0]]
 
     # Manage data after last high tide
-    sl.aht[I_pks[-1]:] = sl.aht[I_pks[-1]:] - sl.aht[I_pks[-1]]
+    aht[locs[-1]:] = aht[locs[-1]:] - aht[locs[-1]]
 
-    return sl, I_pks
+    # Add to dataset and return
+    dataset['aht'] = (['time'], aht)
+
+    return dataset, locs
