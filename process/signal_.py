@@ -8,6 +8,7 @@ import xarray as xr
 import scipy.signal as signal
 from .math_ import xr_time_step
 from .convert import binc2edge
+import warnings
 
 __all__ = ['pd_bin',
            'xr_bin',
@@ -81,10 +82,14 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
     # Save attributes
     attributes = dataset.attrs
 
-    # Bin averaging
-    output = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
-               .reduce(func, dim=dim)
-               .rename({dim+'_bins': dim}))
+    # Avoids printing mean of empty slice warning
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=RuntimeWarning)
+
+        # Bin reduction 
+        output = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
+                   .reduce(func, dim=dim)
+                   .rename({dim+'_bins': dim}))
 
     # Restore attributes
     output.attrs = attributes
