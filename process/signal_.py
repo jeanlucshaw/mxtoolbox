@@ -48,22 +48,24 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
     return dataset.to_dataframe().reset_index().set_index(index_names)
 
 
-def xr_bin(dataset, dim, binc, func=np.nanmean):
+def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
     '''
     Bin dataset along `dim`.
 
     Convenience wrapper for the groupby_bins xarray method. Meant for
     simply binning xarray `dataset` to the values of dimension `dim`, and
-    return values at bin centers `binc`.
+    return values at bin centers (or edges) `bins`.
 
     Parameters
     ----------
-    dataset : xarray.Dataset
+    dataset : xarray.Dataset or xarray.DataArray
         Dataset to operate on.
     dim: str
         Name of dimension along which to bin.
-    binc: array_like
-        Bin centers.
+    bins: array_like
+        Bin centers or edges if `centers` is False.
+    centers: bool
+        Parameter `bins` is the centers, otherwise it is the edges.
     func: Object
         Function used to reduce bin groups.
 
@@ -72,15 +74,21 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
     xarray.Dataset
         Dataset binned at `binc` along `dim`.
     '''
-    edge = binc2edge(binc)
+    # Bin type management
+    if centers:
+        edge = binc2edge(bins)
+    else:
+        edge = bins
 
-    # Save dimension orders for each variable
-    dim_dict = dict()
-    for key in dataset.keys():
-        dim_dict[key] = dataset[key].dims
+    # Skip for compatibility with DataArray
+    if isinstance(dataset, xr.core.dataset.Dataset):
+        # Save dimension orders for each variable
+        dim_dict = dict()
+        for key in dataset.keys():
+            dim_dict[key] = dataset[key].dims
 
-    # Save attributes
-    attributes = dataset.attrs
+        # Save attributes
+        attributes = dataset.attrs
 
     # Avoids printing mean of empty slice warning
     with warnings.catch_warnings():
@@ -91,15 +99,17 @@ def xr_bin(dataset, dim, binc, func=np.nanmean):
                    .reduce(func, dim=dim)
                    .rename({dim+'_bins': dim}))
 
-    # Restore attributes
-    output.attrs = attributes
+    # Skip for compatibility with DataArray
+    if isinstance(dataset, xr.core.dataset.Dataset):
+        # Restore attributes
+        output.attrs = attributes
 
-    # Restore dimension order to each variable
-    for key, dim_tuple in dim_dict.items():
-        if dim not in dim_tuple:
-            output[key] = dataset[key]
-        else:
-            output[key] = output[key].transpose(*dim_tuple)
+        # Restore dimension order to each variable
+        for key, dim_tuple in dim_dict.items():
+            if dim not in dim_tuple:
+                output[key] = dataset[key]
+            else:
+                output[key] = output[key].transpose(*dim_tuple)
 
     return output
 
