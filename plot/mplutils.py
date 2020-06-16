@@ -35,7 +35,7 @@ def axlabel_doy2months(axes):
     axes.tick_params(axis='x', which='minor', top=False, bottom=False)
 
 
-def axlabel_woy2months(axes, align='center', ycoord=-10, ltype='abbr'):
+def axlabel_woy2months(axes, place='tick', labels=True, ycoord=-10, ltype='abbr', **kwargs):
     """
     Change x axis labels from week of year to month abbreviation.
 
@@ -53,8 +53,12 @@ def axlabel_woy2months(axes, align='center', ycoord=-10, ltype='abbr'):
     weeks = days/7 + 1
     weeks[0] = 1
     axes.set(xticks=weeks, xticklabels=[], xlabel=None)
-    for (week, mon, delta) in zip(weeks[:-1], mons[:-1], np.diff(weeks)):
-        axes.text(week + delta/2, ycoord, mon, ha=align)
+    if labels:
+        for (week, mon, delta) in zip(weeks[:-1], mons[:-1], np.diff(weeks)):
+            if place == 'center':
+                axes.text(week + delta/2, ycoord, mon, **kwargs)
+            else:
+                axes.text(week, ycoord, mon, **kwargs)
     # axes.set_xticklabels(mons, ha=align)
     axes.tick_params(axis='x', which='minor', top=False, bottom=False)
 
