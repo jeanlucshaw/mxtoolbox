@@ -1,6 +1,7 @@
 
-# Emacs backups
+# Emacs and vim backups
 *~
+*.swp
 
 # Python cache directories
 *pycache*
