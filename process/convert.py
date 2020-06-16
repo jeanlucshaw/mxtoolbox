@@ -16,6 +16,8 @@ __all__ = ['anomaly2rgb',
            'bine2center',
            'dd2dms',
            'dms2dd',
+           'degrees_180_to_360',
+           'degrees_360_to_180',
            'dt2epoch',
            'hd2uv',
            'lonlat2distances',
@@ -23,7 +25,7 @@ __all__ = ['anomaly2rgb',
            'lonlat2heading',
            'lonlat2speed',
            'pd_add_seasons',
-           'tetha2hd',
+           'theta2hd',
            'uv2hd',
            'xr_SA_CT_pden',
            'dayofyear2dt']
@@ -254,6 +256,44 @@ def dd2dms(degrees_decimal):
     minutes = np.int16((degrees_decimal - degrees) * 60.)
     seconds = (degrees_decimal - degrees - minutes / 60.) * 3600.
     return (degrees, abs(minutes), abs(seconds))
+
+
+def degrees_180_to_360(angles):
+    """
+    Change degree range: (-180, 180) -> (0, 360)
+
+    Parameters
+    ----------
+    angles : 1D array
+        The angles to convert.
+
+    Returns
+    -------
+        Converted angles.
+
+    """
+    I = angles < 0
+    angles[I] = angles[I] + 360
+    return angles
+
+
+def degrees_360_to_180(angles):
+    """
+    Change degree range: (0, 360) -> (-180, 180)
+
+    Parameters
+    ----------
+    angles : 1D array
+        The angles to convert.
+
+    Returns
+    -------
+        Converted angles.
+
+    """
+    I = angles > 180
+    angles[I] = angles[I] - 360
+    return angles
 
 
 def dt2epoch(datetimes, div=1):
@@ -521,42 +561,58 @@ def pd_add_seasons(dataframe, time='time', stype='astro'):
     return dataframe
 
 
-def tetha2hd(angle):
-    """ Function tta2hd usage :           output    = tta2hd(angle)
+def theta2hd(theta):
+    """
+    Convert angles: (E=0, N=90) to (E=90, N=0).
 
-    Takes as angle angle vector in cartesian coordinates running counter-
-    clockwise from 0 (east) to 360 degrees and transforms it into a heading
-    vector running clockwise from 0 to the north to 360 degrees. 
+    Parameters
+    ----------
+    theta : 1D array
+        Angle in x,y reference frame.
+
+    Returns
+    -------
+    1D array
+        Angle as read on compass.
 
     """
+    theta = theta - 90
+    theta = 360 - theta
+    theta[theta < 0] = theta[theta < 0] + 360
+    bearing = theta % 360
+    return bearing
 
 
-    angle            = angle - 90;
-    angle            = 360 - angle ;
-    angle[angle < 0] = angle[angle < 0] + 360 ;
-    output           = angle % 360 ;
-    return output
-
-
-def uv2hd(u,v):
-    """ Function uv2hd usage :          nm, hd      = uv2hd(u,v)
-
-    Converts vector components (u in the abscissa and v in the ordinates) of a 2D space
-    to a heading angle 'hd' in degrees with 0 towards positive y and 90 towards positive x.
-    Also returns the norm of vector (u,v) to variable 'nm'.
-
+def uv2hd(u, v):
     """
-    I       = np.logical_and(np.isfinite(u), np.isfinite(v))
-    out     = np.nan*np.ones(u.shape)
+    Convert 2D cartesian (u, v) vectors to polar (r, bearing).
 
-    hd      = np.arctan2(v[I],u[I])
-    hd      = hd*180/np.pi
-    hd      = r1802360(hd)
-    hd      = tta2hd(hd)
-    out[I]  = hd
-    nm      = np.sqrt(u**2+v**2)
+    The returned polar coordinates are distance from 0 and
+    angle in degrees with 0 at north and 90 at east.
 
-    return nm, out
+    Parameters
+    ----------
+    u, v : 1D arrays
+        Data in cartesian form.
+
+    Returns
+    -------
+    r, bearing : 1D arrays
+        Data in polar form.
+    """
+    # Handle missing values
+    I = np.isfinite(u) & np.isfinite(v)
+    bearing = np.nan * np.ones(u.shape)
+
+    hd = 180 * np.arctan2(v[I], u[I]) / np.pi   # Values in degrees
+    hd = degrees_180_to_360(hd)                 # Change degree range
+    hd = theta2hd(hd)                           # Theta to compass
+    bearing[I] = hd
+
+    # Calculate vector norms
+    r = np.sqrt(u ** 2 + v ** 2)
+
+    return r, bearing
 
 
 def xr_SA_CT_pden(dataset,
