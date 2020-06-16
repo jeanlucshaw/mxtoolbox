@@ -129,6 +129,49 @@ def _get_lon_lat_converter(filename):
 
     return to_lon_lat
 
+def _get_lon_lat_range(fname):
+    """
+    Get max and min Plate carree coordinates of shapefile.
+
+    Parameters
+    ----------
+    fname : str
+        Name of shapefile (.shp)
+
+    Returns
+    -------
+    lon_range, lat_range : 1D array
+        Arrays containing range values (min, max).
+
+    """
+    # Read polygon data
+    shapes = shapefile.Reader(fname).shapes()
+
+    # Loop over polygons
+    x_range = np.array([0, 0])
+    y_range = np.array([0, 0])
+    for shape in shapes:
+
+        # Extract coordinate data
+        points = np.array(shape.points)
+        x_max, y_max = points.max(axis=0)
+        x_min, y_min = points.min(axis=0)
+
+        # Stretch ranges
+        x_range[1] = max(x_max, x_range[1])
+        x_range[0] = min(x_min, x_range[0])
+        y_range[1] = max(y_max, y_range[1])
+        y_range[0] = min(y_min, y_range[0])
+
+    # Convert ranges to lon lat
+    to_lon_lat = _get_lon_lat_converter(fname)
+    if to_lon_lat:
+        lon_range, lat_range = to_lon_lat(x_range, y_range)
+    else:
+        lon_range, lat_range = x_range, y_range
+
+    return lon_range, lat_range
+
 
 def _get_polygon_lon_lat(shape, to_lon_lat, separate=False):
     """
@@ -769,7 +812,18 @@ def _show_cis_summary(fname):
               'SGD_CT', 'SGD_CA', 'SGD_CB', 'SGD_CC',
               'SGD_SA', 'SGD_SB', 'SGD_SC',
               'SGD_FA', 'SGD_FB', 'SGD_FC']
+
+    # Get coordinate ranges
+    lon, lat = _get_lon_lat_range(fname)
+
+    # Header
+    print('\n' + 30 * '#' +'\n')
     print(fname)
+    print(30 * '#' +'\n')
+    print('Longitude range: (%.3f, %.3f)' % lon)
+    print('Latitude range: (%.3f, %.3f)' % lat)
+
+    # Possible field values
     for f in fields:
         try:
             _show_cis_field(fname, f)
