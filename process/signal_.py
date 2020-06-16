@@ -11,6 +11,7 @@ from .convert import binc2edge
 import warnings
 
 __all__ = ['pd_bin',
+           'xr_at_var_max',
            'xr_bin',
            'xr_bin_where',
            'xr_filtfilt',
@@ -46,6 +47,51 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
     dataset = dataframe.reset_index().set_index(dim).to_xarray()
     dataset = xr_bin(dataset, dim, binc, func=func)
     return dataset.to_dataframe().reset_index().set_index(index_names)
+
+
+def xr_at_var_max(dataset, variable, dim=None):
+    """
+    Return values of all others at variable max.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        On which to operate.
+    variable : str
+        Name of the selector variable.
+    dim : str
+        Dimension along which to get maximum.
+
+    Returns
+    -------
+    xarray.Dataset
+        Reduced input dataset.
+
+    """
+    # Avoid modifying original dataset
+    output = dataset.copy()
+
+    # Reduce to specified dimension
+    if dim:
+        # Remove any labels where variable is all NaN
+        for d in output[variable].dims:
+            output = output.dropna(dim=d, how='all', subset=[variable])
+
+        # Index max of variable along dim 
+        index = output[variable].argmax(dim=dim)
+
+        # Reduce dataset to values at max for relevant dimsensions
+        for key, value in output.data_vars.items():
+            if dim in output[key].dims:
+                output[key] = output[key].isel({dim: index})
+
+    # Reduce to maximum point value
+    else:
+        # Run successively over all dimensions
+        for d in dataset[variable].dims:
+            output = xr_at_var_max(output, variable, dim=d)
+
+    return output
 
 
 def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
