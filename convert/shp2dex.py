@@ -70,6 +70,7 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from termcolor import cprint, colored
 from mxtoolbox.process.math_ import in_polygon, consecutive_duplicates
 
 
@@ -769,7 +770,7 @@ def _separate_wrapping_polygons(x, y, decimals=5):
     return polygons_x, polygons_y, wrap_index
 
 
-def _show_cis_field(fname, field):
+def _show_cis_field(fname, field, tc, bc):
     """
     Print possible values of shapefile field.
 
@@ -779,6 +780,13 @@ def _show_cis_field(fname, field):
         Shapefile path and name (.shp).
     field : str
         Name of field to detail.
+    tc, bc : str
+        Fore and background colors of this line.
+
+    Returns
+    -------
+    tc, bc : str
+        Fore and background colors of next line.
 
     """
     sf = shapefile.Reader(fname)
@@ -790,10 +798,14 @@ def _show_cis_field(fname, field):
         dicto = dict(zip(fld[1:], record))
         output = {*output, dicto[field]}
 
-    print(field, ': possible values :', output)
+    text_ = '%-12s : %68s' % (field, str(output))
+    line_ = colored(text_, '%s' % tc, 'on_%s' % bc)
+    cprint(line_)
+
+    return bc, tc
 
 
-def _show_cis_summary(fname):
+def _show_cis_summary(fname, tc, bc):
     """
     Print possible values of egg code data in shapefile.
 
@@ -801,7 +813,18 @@ def _show_cis_summary(fname):
     ----------
     fname : str
         Shapefile path and name (.shp).
+    tc, bc : str
+        Fore and background colors of printed fields.
+
     """
+    def _acprint(text, state):
+        """ Cleans up the alternating color prints code block. """
+        if state:
+            line_ = colored(text, tc, 'on_%s' % bc)
+        else:
+            line_ = colored(text, bc, 'on_%s' % tc)
+        cprint(line_)
+
     fields = ['A_LEGEND', 'POLY_TYPE', 'SGD_POLY_T',
               'CT', 'CA', 'CB', 'CC',
               'SA', 'SB', 'SC',
@@ -815,20 +838,26 @@ def _show_cis_summary(fname):
 
     # Get coordinate ranges
     lon, lat = _get_lon_lat_range(fname)
+    lon_str = '(%.3f, %.3f)' % tuple(lon)
+    lat_str = '(%.3f, %.3f)' % tuple(lat)
 
     # Header
-    print('\n' + 30 * '#' +'\n')
-    print(fname)
-    print(30 * '#' +'\n')
-    print('Longitude range: (%.3f, %.3f)' % lon)
-    print('Latitude range: (%.3f, %.3f)' % lat)
+    print('\n')
+    _acprint('%-83s' % '', False)
+    _acprint('%-20s : %60s' % ('Filename', fname), True)
+    _acprint('%-20s : %60s' % ('Longitude range', lon_str), False)
+    _acprint('%-20s : %60s' % ('Latitude range', lat_str), True)
+    _acprint('%-83s' % '', False)
+    _acprint('%-83s' % 'Contains the following egg code fields and values,', True)
+    _acprint('%-83s' % '', False)
 
     # Possible field values
-    for f in fields:
+    for i, f in enumerate(fields):
         try:
-            _show_cis_field(fname, f)
+            tc, bc = _show_cis_field(fname, f, tc, bc)
         except:
             pass
+    print('\n')
 
 
 def _shp2dex(sname,
@@ -911,23 +940,6 @@ def _shp2dex(sname,
 
     # Read projection file
     to_lon_lat = _get_lon_lat_converter(sname)
-#    if os.path.exists(sname[0:-4]+".prj"):
-#        _, lat0, lon0, std1, std2, a, ifp = _parse_prj(sname[0:-4] + ".prj")
-#
-#        # Datum
-#        b = a * (ifp - 1) / ifp
-#        globe = ccrs.Globe(semimajor_axis=a, semiminor_axis=b)
-#        lcc = ccrs.LambertConformal(standard_parallels=(std1, std2),
-#                                    globe=globe,
-#                                    central_latitude=lat0,
-#                                    central_longitude=lon0)
-#        def to_lon_lat(x, y):
-#            transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
-#            return transformed[:, 0], transformed[:, 1]
-#
-#        prjfile = True
-#    else:
-#        prjfile = False
 
     # Read shapefile
     df_records, empty = load_cis_shp(sname)
@@ -1094,7 +1106,7 @@ if __name__ == '__main__':
     # Show egg code summary
     if args.summary:
         for shp in args.shapefiles:
-            _show_cis_summary(shp)
+            _show_cis_summary(shp, 'white', 'red')
 
     # Plot egg code polygons
     elif args.plot:
