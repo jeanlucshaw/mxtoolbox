@@ -145,31 +145,33 @@ def _get_lon_lat_range(fname):
         Arrays containing range values (min, max).
 
     """
+    # Convert ranges to lon lat
+    to_lon_lat = _get_lon_lat_converter(fname)
+
     # Read polygon data
     shapes = shapefile.Reader(fname).shapes()
 
     # Loop over polygons
-    x_range = np.array([0, 0])
-    y_range = np.array([0, 0])
     for shape in shapes:
 
         # Extract coordinate data
         points = np.array(shape.points)
-        x_max, y_max = points.max(axis=0)
-        x_min, y_min = points.min(axis=0)
+        lon, lat = to_lon_lat(points[:, 0], points[:, 1])
+        coords = np.array([lon, lat]).T
+
+        # Find extreme values
+        lon_max, lat_max = coords.max(axis=0)
+        lon_min, lat_min = coords.min(axis=0)
 
         # Stretch ranges
-        x_range[1] = max(x_max, x_range[1])
-        x_range[0] = min(x_min, x_range[0])
-        y_range[1] = max(y_max, y_range[1])
-        y_range[0] = min(y_min, y_range[0])
-
-    # Convert ranges to lon lat
-    to_lon_lat = _get_lon_lat_converter(fname)
-    if to_lon_lat:
-        lon_range, lat_range = to_lon_lat(x_range, y_range)
-    else:
-        lon_range, lat_range = x_range, y_range
+        try:
+            lon_range[1] = max(lon_max, lon_range[1])
+            lon_range[0] = min(lon_min, lon_range[0])
+            lat_range[1] = max(lat_max, lat_range[1])
+            lat_range[0] = min(lat_min, lat_range[0])
+        except:
+            lon_range = np.array([lon_min, lon_max])
+            lat_range = np.array([lat_min, lat_max])
 
     return lon_range, lat_range
 
