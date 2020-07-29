@@ -121,6 +121,7 @@ def _get_lon_lat_converter(filename):
                                     globe=globe,
                                     central_latitude=lat0,
                                     central_longitude=lon0)
+
         def to_lon_lat(x, y):
             transformed = ccrs.PlateCarree().transform_points(lcc, x, y)
             return transformed[:, 0], transformed[:, 1]
@@ -129,6 +130,7 @@ def _get_lon_lat_converter(filename):
         to_lon_lat = None
 
     return to_lon_lat
+
 
 def _get_lon_lat_range(fname):
     """
@@ -251,7 +253,7 @@ def load_cis_shp(name, ascending=True):
     rcd[rcd == ''] = 'X'
 
     # Load to pandas dataframe
-    dataframe = pd.DataFrame(rcd, columns = fld[1:])
+    dataframe = pd.DataFrame(rcd, columns=fld[1:])
 
     # Flag as empty if not enough fields
     empty = dataframe.shape[1] < 11
@@ -260,7 +262,8 @@ def load_cis_shp(name, ascending=True):
     if not empty:
         dataframe['shapes'] = shp
         dataframe['AREA'] = np.float64(dataframe.AREA.values)
-        dataframe = dataframe.sort_values('AREA', ascending=ascending, ignore_index=True)
+        dataframe = dataframe.sort_values(
+            'AREA', ascending=ascending, ignore_index=True)
 
     return dataframe, empty
 
@@ -402,7 +405,7 @@ def _manage_shapefile_types(dataframe):
 
     # Type D
     elif all([key in dataframe.keys() for key in ['POLY_TYPE', 'CT', 'E_CT']]):
-    # Rename columns
+        # Rename columns
         mapper = {'POLY_TYPE': 'LEGEND'}
         dataframe = dataframe.rename(mapper, axis=1)
 
@@ -457,7 +460,7 @@ def _newegg_2_oldegg(egg_dict, sname, i):
             '01': 'X',
             '02': 'X'}
 
-    dsta = {'X' : 'X',
+    dsta = {'X': 'X',
             '-9': 'X',
             '9-': 'X',
             '99': 'X',
@@ -553,9 +556,9 @@ def _newegg_2_oldegg(egg_dict, sname, i):
             '95': '7.',
             '96': '8.',
             '97': '9.',
-            '98': '98'}  #  Kept from SIGRID-3, leads to icebergs exception
+            '98': '98'}  # Kept from SIGRID-3, leads to icebergs exception
 
-    dfor = {'X' : 'X',
+    dfor = {'X': 'X',
             '-9': 'X',
             '9-': 'X',
             '99': 'X',
@@ -569,7 +572,7 @@ def _newegg_2_oldegg(egg_dict, sname, i):
             '07': '7',
             '08': '8',
             '09': '9',
-            '10': '10'}  #  Kept from SIGRID-3, leads to icebergs exception
+            '10': '10'}  # Kept from SIGRID-3, leads to icebergs exception
 
     # Translate
     for key in egg_dict.keys():
@@ -581,7 +584,8 @@ def _newegg_2_oldegg(egg_dict, sname, i):
             elif key in ['E_FA', 'E_FB', 'E_FC']:
                 egg_dict[key] = dfor[egg_dict[key]]
         except KeyError as e:
-            print("KeyError : %s for key %s, file: %s, polygon number %d" % (e, key, sname, i))
+            print("KeyError : %s for key %s, file: %s, polygon number %d" %
+                  (e, key, sname, i))
             egg_dict[key] = 'X'
 
     return egg_dict
@@ -610,7 +614,7 @@ def plot_cis_shp(sname):
     colors = dict({'I': 'm',
                    'L': 'lightgray',
                    'W': 'b',
-                   'N': 'k',
+                   'N': 'r',
                    'F': 'c'})
 
     # Manage map projection
@@ -627,7 +631,8 @@ def plot_cis_shp(sname):
         lon, lat = _get_polygon_lon_lat(shape, to_lon_lat, separate=True)
 
         # Add to plot
-        plt.fill(lon, lat, fc=colors[df_managed.iloc[i].LEGEND], ec='k', linestyle='-')
+        plt.fill(
+            lon, lat, fc=colors[df_managed.iloc[i].LEGEND], ec='k', linestyle='-')
         plt.text(lon.mean(), lat.mean(), df_managed.iloc[i].LEGEND)
 
     plt.show()
@@ -755,7 +760,8 @@ def _separate_wrapping_polygons(x, y, decimals=5):
     a = np.vstack((x, y)).T
 
     # Find wrapping points indices
-    arr, inv, cnt = np.unique(a, axis=0, return_inverse=True, return_counts=True)
+    arr, inv, cnt = np.unique(
+        a, axis=0, return_inverse=True, return_counts=True)
     wrap_index = np.nonzero(cnt[inv] > 1)[0]
 
     # Make list of polygons
@@ -961,7 +967,8 @@ def _shp2dex(sname,
             else:
 
                 # Get polygon coordinates
-                lon, lat = _get_polygon_lon_lat(shape, to_lon_lat, separate=True)
+                lon, lat = _get_polygon_lon_lat(
+                    shape, to_lon_lat, separate=True)
 
                 # Only check unassigned grid points in the smallest polygon containing lat-lon box
                 condition = '%f < lon < %f & %f < lat < %f & not assigned'
@@ -976,7 +983,6 @@ def _shp2dex(sname,
                                     lon,
                                     lat)
                 target_index = df_candidates.loc[inside].index.values
-
 
                 # Index of points to write
                 if target_index.size > 0:
@@ -1068,8 +1074,8 @@ def _shp2dex(sname,
     df_output['lon'] *= sign
 
     # Prepend formated longitude and latitudes to dex string
-    df_output['printable'] = (df_output['lon'].apply(lambda x : '%07.3f' % x) + " " +
-                              df_output['lat'].apply(lambda x : '%05.2f' % x) + " " +
+    df_output['printable'] = (df_output['lon'].apply(lambda x: '%07.3f' % x) + " " +
+                              df_output['lat'].apply(lambda x: '%05.2f' % x) + " " +
                               df_output['printable'])
 
     return df_output[['lon', 'lat', 'LEGEND', *egg_strs, 'printable']]
@@ -1079,7 +1085,7 @@ def _shp2dex(sname,
 if __name__ == '__main__':
 
     # Set up parser
-    parser  = argparse.ArgumentParser(usage=__doc__)
+    parser = argparse.ArgumentParser(usage=__doc__)
 
     # Define arguments
     parser.add_argument('shapefiles',
@@ -1141,4 +1147,5 @@ if __name__ == '__main__':
             df_dex = _shp2dex(shp, grid, **{'fill_dataframe': False, **kwargs})
 
             # Write to output
-            df_dex.to_csv('%s.dex' % shp[0:-4], columns=['printable'], header=False, index=False)
+            df_dex.to_csv(
+                '%s.dex' % shp[0:-4], columns=['printable'], header=False, index=False)
