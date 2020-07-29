@@ -3,6 +3,26 @@ Get geographical outer limit of CIS SIGRID3 polygons.
 
 Setting the `-o` option to plot visualizes the domain
 over the file polygons instead of printing to file.
+
+Other options and this help message can be displayed by calling,
+
+.. code::
+
+   $ ExtractCIS-Domain -h
+
+The following example would create a domain files in the directory
+called masks,
+
+.. code::
+
+   $ ExtractCIS-Domain GEC_H_YYYYMMDD.shp -o ./masks
+
+Command line functionality depends on a simple wrapper script,
+
+.. code::
+
+   /usr/local/bin/ExtractCIS-Domain
+
 """
 import shapefile
 import numpy as np

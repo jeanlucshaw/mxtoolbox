@@ -16,7 +16,27 @@ To specify mask float format use the following syntax,
 
     (percent)(pad char).(number decimals)f
 
-when setting the -f option.
+when setting the -f option. Other options and this help message can be
+displayed by calling,
+
+.. code::
+
+   $ ExtractCIS-Landmask -h
+
+The following example would create the mask files in the directory
+called masks,
+
+.. code::
+
+   $ ExtractCIS-Landmask GEC_H_YYYYMMDD.shp -o ./masks
+
+Command line functionality depends on a simple wrapper script,
+
+.. code::
+
+   /usr/local/bin/ExtractCIS-Landmask
+
+
 """
 import argparse
 import pandas as pd

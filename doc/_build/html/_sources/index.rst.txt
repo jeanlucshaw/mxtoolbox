@@ -11,6 +11,7 @@ Package documentation
    :caption: Contents:
 
    source/mxtoolbox.convert
+   source/mxtoolbox.create
    source/mxtoolbox.plot
    source/mxtoolbox.process
    source/mxtoolbox.read

@@ -1,3 +1,6 @@
+"""
+Python functions to access/manipulate world ocean database ragged arrays.
+"""
 import xarray as xr
 from numpy import isfinite, nan, ones_like
 import gsw
@@ -11,7 +14,7 @@ def wod_cast_n(rag_arr,
                do_qc=True,
                do_teos10=True):
     """
-    Get an individual cast from WOD ragged array
+    Get an individual cast from WOD ragged array.
 
     If do_qc is true, data are filtered keeping only those with
     quality flags of 0 or 1. Refused data are returned as NaN. Some
@@ -19,41 +22,39 @@ def wod_cast_n(rag_arr,
     and here are the meaning of the quality flags they produce.
 
     Profile quality flag missing
-        -> Profile flag = -1
-        -> value flags = -1
+    -> Profile flag = -1
+    -> value flags = -1
 
     Profile quality flag exists but is not accepted
-        -> Profile flag = passed from original file
-        -> Value flags = -2
+    -> Profile flag = passed from original file
+    -> Value flags = -2
 
     Profile quality flag exists and is accepted, but value flags are missing
-        -> Profile flag = passed from original file
-        -> Value flags = -3
+    -> Profile flag = passed from original file
+    -> Value flags = -3
 
-    Input:
+    Parameters
+    ----------
+    rag_arr: xarray.Dataset or straight
+        Path to a WOD netCDF file containing a CTD ragged array or named
+        it is read into.
+    n: int
+        Cast number to return as xarray Dataset.
+    var_names: list of str
+        Names of the variables to extract. Defaults to ['Temperature', 'Salinity'].
+    anc_names: list of str
+        Names of the ancillary data variables to extract. Defaults to None.
+    do_qc: bool
+        If True keep only data with WOD quality flags 0 or 1. Defaults to True.
+        This also passes the WOD quality flags to the child cast.
+    do_teos10: bool
+        If True calculate CT, SA and sigma0 using the gsw package, implementing
+        TEOS10. Defaults to True.
 
-    rag_arr: either xarray Dataset or path to a WOD netCDF file
-             containing a CTD ragged array.
-
-    n: [int], cast number to return as xarray Dataset
-
-    var_names: [list of strings], names of the variables to extract.
-               Defaults to ['Temperature', 'Salinity']
-
-    anc_names: [list of strings], names of the ancillary data variables
-               to extract. Defaults to None.
-
-    do_qc: [bool], if True keep only data with WOD quality flags 0 or 1.
-           Defaults to True. This also passes the WOD quality flags to
-           the child cast.
-
-    do_teos10: [bool], if True calculate CT, SA and sigma0 using the
-               gsw package, implementing TEOS10. Defaults to True.
-
-
-    Returns:
-
-    xarray Dataset
+    Returns
+    -------
+    xarray.Dataset
+        The isolated nth cast of the ragged array.
     """
     # Read netcdf or pass xarray
     if isinstance(rag_arr, str):

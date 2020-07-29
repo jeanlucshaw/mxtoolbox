@@ -1,9 +1,10 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>convert subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -12,10 +13,10 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="plot subpackage" href="mxtoolbox.plot.html" />
+    <link rel="next" title="create subpackage" href="mxtoolbox.create.html" />
     <link rel="prev" title="Package documentation" href="../index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -28,12 +29,13 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="mxtoolbox.plot.html" title="plot subpackage"
+          <a href="mxtoolbox.create.html" title="create subpackage"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../index.html" title="Package documentation"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">convert subpackage</a></li> 
       </ul>
     </div>  
 
@@ -69,6 +71,56 @@ file called <code class="code docutils literal notranslate"><span class="pre">ad
 at <code class="code docutils literal notranslate"><span class="pre">/usr/local/bin/</span></code> containing the following lines,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/path/to/bash</span>
 <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">python</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mxtoolbox</span><span class="o">/</span><span class="n">convert</span><span class="o">/</span><span class="n">adcp2nc</span><span class="o">.</span><span class="n">py</span> <span class="s2">&quot;$@&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="module-mxtoolbox.convert.ExtractCIS_Domain">
+<span id="extractcis-domain-module"></span><h2>ExtractCIS_Domain module<a class="headerlink" href="#module-mxtoolbox.convert.ExtractCIS_Domain" title="Permalink to this headline">¶</a></h2>
+<p>Get geographical outer limit of CIS SIGRID3 polygons.</p>
+<p>Setting the <cite>-o</cite> option to plot visualizes the domain
+over the file polygons instead of printing to file.</p>
+<p>Other options and this help message can be displayed by calling,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ExtractCIS-Domain -h
+</pre></div>
+</div>
+<p>The following example would create a domain files in the directory
+called masks,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ExtractCIS-Domain GEC_H_YYYYMMDD.shp -o ./masks
+</pre></div>
+</div>
+<p>Command line functionality depends on a simple wrapper script,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">ExtractCIS</span><span class="o">-</span><span class="n">Domain</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="module-mxtoolbox.convert.ExtractCIS_Landmask">
+<span id="extractcis-landmask-module"></span><h2>ExtractCIS_Landmask module<a class="headerlink" href="#module-mxtoolbox.convert.ExtractCIS_Landmask" title="Permalink to this headline">¶</a></h2>
+<p>Make column file for each closed land polygon in CIS SIGRID3 shapefile.</p>
+<p>Specify one shapefile as positional argument 1 to make mask files. If
+argument 1 is an expression for multiple files, they are assumed to be
+mask files and are plotted.</p>
+<p>Mask files have longitude east in column 1 and latitude in column 2
+separated by spaces. The size scale of each polygon is shown in km
+before .mask extension. Scale is determined by the square root of
+the polygon area. For simplicity, scales are discretized to smaller
+than 10, 100, 1000 and 10000 km. Features larger than this are marked
+.LARGE.mask .</p>
+<p>To specify mask float format use the following syntax,</p>
+<blockquote>
+<div><p>(percent)(pad char).(number decimals)f</p>
+</div></blockquote>
+<p>when setting the -f option. Other options and this help message can be
+displayed by calling,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ExtractCIS-Landmask -h
+</pre></div>
+</div>
+<p>The following example would create the mask files in the directory
+called masks,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ExtractCIS-Landmask GEC_H_YYYYMMDD.shp -o ./masks
+</pre></div>
+</div>
+<p>Command line functionality depends on a simple wrapper script,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">ExtractCIS</span><span class="o">-</span><span class="n">Landmask</span>
 </pre></div>
 </div>
 </div>
@@ -133,33 +185,9 @@ at <code class="code docutils literal notranslate"><span class="pre">/usr/local/
 </ul>
 </div></blockquote>
 </div>
-<dl class="function">
-<dt id="mxtoolbox.convert.shp2dex.load_cis_shp">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ascending=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read CIS shapefile to dataframe and polygon list.</p>
-<p>Creates a pandas DataFrame with records from the <cite>.dbf</cite>
-companion file as rows and the field names as columns. The
-dataframe is also sorted by polygon area as this is needed
-further down the processing chain. For uniformity, empty
-strings in records are replaced by ‘X’. A reference to the
-shape object of each record is found in column <cite>shapes</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Path and name to input shapefile (.shp).</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Shapefile record and field information.</p></li>
-<li><p><strong>empty</strong> (<em>bool</em>) – True if missing fields essential for processing.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._get_lon_lat_converter">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_lon_lat_converter</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_lon_lat_converter" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_lon_lat_converter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_lon_lat_converter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return conversion function from map coordinates to longitudes and latitudes.</p>
 <p>When a projection string file (.prj) is present next to the
 analysed shapefile, use the Cartopy package to define a conversion
@@ -180,9 +208,9 @@ coordinates.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._get_polygon_lon_lat">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_polygon_lon_lat</code><span class="sig-paren">(</span><em class="sig-param">shape</em>, <em class="sig-param">to_lon_lat</em>, <em class="sig-param">separate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_polygon_lon_lat" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_get_polygon_lon_lat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shape</span></em>, <em class="sig-param"><span class="n">to_lon_lat</span></em>, <em class="sig-param"><span class="n">separate</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._get_polygon_lon_lat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return poly lon, lat for a single shape object.</p>
 <p>Setting the converter function to_lon_lat to None
 indicates coordinates are already in Plate carree
@@ -204,106 +232,9 @@ projection and are simply read from file.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="mxtoolbox.convert.shp2dex._shp2dex">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param">sname</em>, <em class="sig-param">gname</em>, <em class="sig-param">lwest=True</em>, <em class="sig-param">skipland=True</em>, <em class="sig-param">fill_dataframe=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
-<p>Conversion from map coordinates to decimal degrees
-is carried out by the cartopy library. Point in polygon
-querying is done using the matplotlib library.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sname</strong> (<em>string</em>) – The shapefile (.shp) path and name.</p></li>
-<li><p><strong>gname</strong> (<em>string</em>) – Path and name of the text file containing
-the queried coordinates. This is expected to be
-a two column file containing [lon lat] points
-separated by spaces.</p></li>
-<li><p><strong>lwest</strong> (<em>bool</em>) – Return longitude as negative west, defaults
-to True.</p></li>
-<li><p><strong>skipland</strong> (<em>bool</em>) – Skip polygons marked as land if this is True.
-Defaults to True. Skipping land will be faster.
-If it is not known if the grid has points
-on land and you wish to mark land points, set
-to false.</p></li>
-<li><p><strong>fill_dataframe</strong> (<em>bool</em>) – If False return an empty dataframe but a full
-printable string column. False reduces computation
-time by half and is the default when this module
-is called from command line.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>A dataframe with columns,</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li><p>Longitude (west)</p></li>
-<li><p>Latitude</p></li>
-<li><p>Legend</p></li>
-<li><p>Total ice concentration</p></li>
-<li><p>Partial ice concentration (thickest ice)</p></li>
-<li><p>Stage of developpment (thickest ice)</p></li>
-<li><p>Form of ice (thickest ice)</p></li>
-<li><p>Partial ice concentration (second thickest ice)</p></li>
-<li><p>Stage of developpment (second thickest ice)</p></li>
-<li><p>Form of ice (second thickest ice)</p></li>
-<li><p>Partial ice concentration (third thickest ice)</p></li>
-<li><p>Stage of developpment (third thickest ice)</p></li>
-<li><p>Form of ice (third thickest ice)</p></li>
-<li><p>Printable dex strings</p></li>
-</ol>
-</div></blockquote>
-</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>pandas.Dataframe</p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">math_.in_polygon()</span></code></dt><dd><p>Point in polygon querying.</p>
-</dd>
-</dl>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="mxtoolbox.convert.shp2dex._parse_prj">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_parse_prj</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._parse_prj" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse shapefile (.prj) for projection parameters.</p>
-<p>Geographical projection information for shapefile data is
-contained in a companion file with the extension <cite>.prj</cite>. The
-Basemap class instance needs this information to convert
-polygon coordinates from map units (m) to longitudes and
-latitudes.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Name of the projection file.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>proj</strong> (<em>str</em>) – Projection name abbreviated for input to Basemap.</p></li>
-<li><p><strong>lat0</strong> (<em>float</em>) – Latitude of origin.</p></li>
-<li><p><strong>lon0</strong> (<em>float</em>) – Longitude of origin.</p></li>
-<li><p><strong>std1</strong> (<em>float</em>) – Standard parallel 1 used by LCC projection.</p></li>
-<li><p><strong>std2</strong> (<em>float</em>) – Standard parallel 2 used by LCC projection.</p></li>
-<li><p><strong>a</strong> (<em>float</em>) – Datum semi-major radius.</p></li>
-<li><p><strong>ifp</strong> (<em>float</em>) – Inverse flattening parameter. Used to obtain the Datum
-semi-minor radius.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For the moment, only Lambert conformal conic projections
-are supported.</p>
-</div>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._manage_shapefile_types">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_manage_shapefile_types</code><span class="sig-paren">(</span><em class="sig-param">dataframe</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._manage_shapefile_types" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_manage_shapefile_types</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataframe</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._manage_shapefile_types" title="Permalink to this definition">¶</a></dt>
 <dd><p>Funnel shapefiles types to uniform labels.</p>
 <p>Labels of the information inside CIS shapefiles
 that this module processes have changed several times
@@ -401,9 +332,9 @@ label differences between types are summarized below.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._newegg_2_oldegg">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_newegg_2_oldegg</code><span class="sig-paren">(</span><em class="sig-param">egg_dict</em>, <em class="sig-param">sname</em>, <em class="sig-param">i</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._newegg_2_oldegg" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_newegg_2_oldegg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">egg_dict</span></em>, <em class="sig-param"><span class="n">sname</span></em>, <em class="sig-param"><span class="n">i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._newegg_2_oldegg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert new more precise egg code to older more general values.</p>
 <p>Two different systems of egg code values exist in the CIS files. The
 most recent offers the possibility of increased precision but is
@@ -427,9 +358,43 @@ new format egg code is translated back via this routine.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="mxtoolbox.convert.shp2dex._parse_prj">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_parse_prj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._parse_prj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse shapefile (.prj) for projection parameters.</p>
+<p>Geographical projection information for shapefile data is
+contained in a companion file with the extension <cite>.prj</cite>. The
+Basemap class instance needs this information to convert
+polygon coordinates from map units (m) to longitudes and
+latitudes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Name of the projection file.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>proj</strong> (<em>str</em>) – Projection name abbreviated for input to Basemap.</p></li>
+<li><p><strong>lat0</strong> (<em>float</em>) – Latitude of origin.</p></li>
+<li><p><strong>lon0</strong> (<em>float</em>) – Longitude of origin.</p></li>
+<li><p><strong>std1</strong> (<em>float</em>) – Standard parallel 1 used by LCC projection.</p></li>
+<li><p><strong>std2</strong> (<em>float</em>) – Standard parallel 2 used by LCC projection.</p></li>
+<li><p><strong>a</strong> (<em>float</em>) – Datum semi-major radius.</p></li>
+<li><p><strong>ifp</strong> (<em>float</em>) – Inverse flattening parameter. Used to obtain the Datum
+semi-minor radius.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the moment, only Lambert conformal conic projections
+are supported.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._separate_wrapping_polygons">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_separate_wrapping_polygons</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">decimals=5</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._separate_wrapping_polygons" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_separate_wrapping_polygons</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">decimals</span><span class="o">=</span><span class="default_value">5</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._separate_wrapping_polygons" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find wrapping points of polygon sequence stored in vectors <cite>x</cite> and <cite>y</cite>.</p>
 <p>The CIS shapefiles contain complex polygons with ‘holes’, which are often other
 polygons of the data set. The encompassing polygon is the first to be defined in
@@ -453,34 +418,131 @@ wrapping points.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex._show_cis_field">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_field</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_field" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_field</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">field</span></em>, <em class="sig-param"><span class="n">tc</span></em>, <em class="sig-param"><span class="n">bc</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_field" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print possible values of shapefile field.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p></li>
 <li><p><strong>field</strong> (<em>str</em>) – Name of field to detail.</p></li>
+<li><p><strong>tc, bc</strong> (<em>str</em>) – Fore and background colors of this line.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>tc, bc</strong> – Fore and background colors of next line.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="mxtoolbox.convert.shp2dex._show_cis_summary">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">tc</span></em>, <em class="sig-param"><span class="n">bc</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print possible values of egg code data in shapefile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p></li>
+<li><p><strong>tc, bc</strong> (<em>str</em>) – Fore and background colors of printed fields.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="mxtoolbox.convert.shp2dex._show_cis_summary">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_show_cis_summary</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._show_cis_summary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print possible values of egg code data in shapefile.</p>
+<dl class="py function">
+<dt id="mxtoolbox.convert.shp2dex._shp2dex">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">_shp2dex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sname</span></em>, <em class="sig-param"><span class="n">gname</span></em>, <em class="sig-param"><span class="n">lwest</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">skipland</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">fill_dataframe</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex._shp2dex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract egg code data from CIS ESRI shapefiles.</p>
+<p>Conversion from map coordinates to decimal degrees
+is carried out by the cartopy library. Point in polygon
+querying is done using the matplotlib library.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – Shapefile path and name (.shp).</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sname</strong> (<em>string</em>) – The shapefile (.shp) path and name.</p></li>
+<li><p><strong>gname</strong> (<em>string</em>) – Path and name of the text file containing
+the queried coordinates. This is expected to be
+a two column file containing [lon lat] points
+separated by spaces.</p></li>
+<li><p><strong>lwest</strong> (<em>bool</em>) – Return longitude as negative west, defaults
+to True.</p></li>
+<li><p><strong>skipland</strong> (<em>bool</em>) – Skip polygons marked as land if this is True.
+Defaults to True. Skipping land will be faster.
+If it is not known if the grid has points
+on land and you wish to mark land points, set
+to false.</p></li>
+<li><p><strong>fill_dataframe</strong> (<em>bool</em>) – If False return an empty dataframe but a full
+printable string column. False reduces computation
+time by half and is the default when this module
+is called from command line.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A dataframe with columns,</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Longitude (west)</p></li>
+<li><p>Latitude</p></li>
+<li><p>Legend</p></li>
+<li><p>Total ice concentration</p></li>
+<li><p>Partial ice concentration (thickest ice)</p></li>
+<li><p>Stage of developpment (thickest ice)</p></li>
+<li><p>Form of ice (thickest ice)</p></li>
+<li><p>Partial ice concentration (second thickest ice)</p></li>
+<li><p>Stage of developpment (second thickest ice)</p></li>
+<li><p>Form of ice (second thickest ice)</p></li>
+<li><p>Partial ice concentration (third thickest ice)</p></li>
+<li><p>Stage of developpment (third thickest ice)</p></li>
+<li><p>Form of ice (third thickest ice)</p></li>
+<li><p>Printable dex strings</p></li>
+</ol>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.Dataframe</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">math_.in_polygon()</span></code></dt><dd><p>Point in polygon querying.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="mxtoolbox.convert.shp2dex.load_cis_shp">
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">load_cis_shp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">ascending</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.load_cis_shp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read CIS shapefile to dataframe and polygon list.</p>
+<p>Creates a pandas DataFrame with records from the <cite>.dbf</cite>
+companion file as rows and the field names as columns. The
+dataframe is also sorted by polygon area as this is needed
+further down the processing chain. For uniformity, empty
+strings in records are replaced by ‘X’. A reference to the
+shape object of each record is found in column <cite>shapes</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Path and name to input shapefile (.shp).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Shapefile record and field information.</p></li>
+<li><p><strong>empty</strong> (<em>bool</em>) – True if missing fields essential for processing.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.convert.shp2dex.plot_cis_shp">
-<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param">sname</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.convert.shp2dex.</code><code class="sig-name descname">plot_cis_shp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sname</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.shp2dex.plot_cis_shp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot polygons of a CIS ice shapefile.</p>
 <p>Polygons are plotted from large to small. Color
 meanings are,</p>
@@ -504,6 +566,7 @@ meanings are,</p>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -513,6 +576,8 @@ meanings are,</p>
   <ul>
 <li><a class="reference internal" href="#">convert subpackage</a><ul>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.adcp2nc">adcp2nc module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.convert.ExtractCIS_Domain">ExtractCIS_Domain module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.convert.ExtractCIS_Landmask">ExtractCIS_Landmask module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.shp2dex">shp2dex module</a></li>
 </ul>
 </li>
@@ -522,8 +587,8 @@ meanings are,</p>
   <p class="topless"><a href="../index.html"
                         title="previous chapter">Package documentation</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="mxtoolbox.plot.html"
-                        title="next chapter">plot subpackage</a></p>
+  <p class="topless"><a href="mxtoolbox.create.html"
+                        title="next chapter">create subpackage</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -555,17 +620,18 @@ meanings are,</p>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="mxtoolbox.plot.html" title="plot subpackage"
+          <a href="mxtoolbox.create.html" title="create subpackage"
              >next</a> |</li>
         <li class="right" >
           <a href="../index.html" title="Package documentation"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">convert subpackage</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Jean-Luc Shaw.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
     </div>
   </body>
 </html>

@@ -1,9 +1,10 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>read subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -12,7 +13,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="process subpackage" href="mxtoolbox.process.html" /> 
@@ -29,7 +30,8 @@
         <li class="right" >
           <a href="mxtoolbox.process.html" title="process subpackage"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">read subpackage</a></li> 
       </ul>
     </div>  
 
@@ -42,9 +44,9 @@
 <h1>read subpackage<a class="headerlink" href="#read-subpackage" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-mxtoolbox.read.adcp">
 <span id="adcp-module"></span><h2>adcp module<a class="headerlink" href="#module-mxtoolbox.read.adcp" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.adcp.adcp_init">
-<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_init</code><span class="sig-paren">(</span><em class="sig-param">Nz</em>, <em class="sig-param">Nt</em>, <em class="sig-param">Nb</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_init" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_init</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Nz</span></em>, <em class="sig-param"><span class="n">Nt</span></em>, <em class="sig-param"><span class="n">Nb</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_init" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return empty xarray shell in standardized format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -63,9 +65,9 @@
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.adcp.adcp_qc">
-<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_qc</code><span class="sig-paren">(</span><em class="sig-param">di</em>, <em class="sig-param">amp_th=30</em>, <em class="sig-param">pg_th=80</em>, <em class="sig-param">corr_th=0.6</em>, <em class="sig-param">roll_th=20</em>, <em class="sig-param">pitch_th=20</em>, <em class="sig-param">vel_th=5</em>, <em class="sig-param">iv=None</em>, <em class="sig-param">gpsfile=None</em>, <em class="sig-param">sl=None</em>, <em class="sig-param">depth=None</em>, <em class="sig-param">R=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_qc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">adcp_qc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">di</span></em>, <em class="sig-param"><span class="n">amp_th</span><span class="o">=</span><span class="default_value">30</span></em>, <em class="sig-param"><span class="n">pg_th</span><span class="o">=</span><span class="default_value">80</span></em>, <em class="sig-param"><span class="n">corr_th</span><span class="o">=</span><span class="default_value">0.6</span></em>, <em class="sig-param"><span class="n">roll_th</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">pitch_th</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">vel_th</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">iv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">gpsfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sl</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">R</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.adcp_qc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform ADCP quality control.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -87,9 +89,9 @@ contamination. Set to either <cite>dep</cite> or <cite>bt</cite>.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.adcp.load_rdi_binary">
-<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">load_rdi_binary</code><span class="sig-paren">(</span><em class="sig-param">files</em>, <em class="sig-param">adcptype</em>, <em class="sig-param">force_dw=False</em>, <em class="sig-param">force_up=False</em>, <em class="sig-param">mindep=0</em>, <em class="sig-param">selected=None</em>, <em class="sig-param">clip=0</em>, <em class="sig-param">t_offset=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.load_rdi_binary" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.adcp.</code><code class="sig-name descname">load_rdi_binary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span></em>, <em class="sig-param"><span class="n">adcptype</span></em>, <em class="sig-param"><span class="n">force_dw</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">force_up</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mindep</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">selected</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">clip</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">t_offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.adcp.load_rdi_binary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read Teledyne RDI binary ADCP data to xarray.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -114,16 +116,16 @@ contamination. Set to either <cite>dep</cite> or <cite>bt</cite>.</p></li>
 <div class="section" id="module-mxtoolbox.read.text">
 <span id="text-module"></span><h2>text module<a class="headerlink" href="#module-mxtoolbox.read.text" title="Permalink to this headline">¶</a></h2>
 <p>Read text files of known formats into python variables</p>
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.text.list2cm">
-<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">list2cm</code><span class="sig-paren">(</span><em class="sig-param">array_file</em>, <em class="sig-param">N: integer = 256</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.list2cm" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">list2cm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">array_file</span></em>, <em class="sig-param"><span class="n">N</span><span class="p">:</span> <span class="n">integer</span> <span class="o">=</span> <span class="default_value">256</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.list2cm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a N step colormap object generated from the RGB
 triplets in array_file.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.text.pd_cat_column_files">
-<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">pd_cat_column_files</code><span class="sig-paren">(</span><em class="sig-param">path_list</em>, <em class="sig-param">cols</em>, <em class="sig-param">index_cols</em>, <em class="sig-param">sep='\\s+'</em>, <em class="sig-param">axis=1</em>, <em class="sig-param">parse_dates=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.pd_cat_column_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">pd_cat_column_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_list</span></em>, <em class="sig-param"><span class="n">cols</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">'\\s+'</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">parse_dates</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.pd_cat_column_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge ascii column files to dataframe.</p>
 <p>Takes as input a list of file paths pointing to ascii
 column data with the same columns, but not necessarily the
@@ -141,9 +143,9 @@ will be extracted from the file name.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.read.text.pd_read_odf">
-<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">pd_read_odf</code><span class="sig-paren">(</span><em class="sig-param">FNAME</em>, <em class="sig-param">sep='\\s+'</em>, <em class="sig-param">col_name='WMO_CODE'</em>, <em class="sig-param">missing_values=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.pd_read_odf" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.read.text.</code><code class="sig-name descname">pd_read_odf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">FNAME</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">'\\s+'</span></em>, <em class="sig-param"><span class="n">col_name</span><span class="o">=</span><span class="default_value">'WMO_CODE'</span></em>, <em class="sig-param"><span class="n">missing_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.text.pd_read_odf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read ocean data format (odf) files and return a pandas
 dataframe. Column names are determined by reading the header. By
 default, the WMO_CODE field of the parameter headings is used to
@@ -154,50 +156,52 @@ option.</p>
 </div>
 <div class="section" id="module-mxtoolbox.read.wod">
 <span id="wod-module"></span><h2>wod module<a class="headerlink" href="#module-mxtoolbox.read.wod" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
+<p>Python functions to access/manipulate world ocean database ragged arrays.</p>
+<dl class="py function">
 <dt id="mxtoolbox.read.wod.wod_cast_n">
-<code class="sig-prename descclassname">mxtoolbox.read.wod.</code><code class="sig-name descname">wod_cast_n</code><span class="sig-paren">(</span><em class="sig-param">rag_arr, n, var_names=['Temperature', 'Salinity'], anc_names=None, do_qc=True, do_teos10=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.wod.wod_cast_n" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an individual cast from WOD ragged array</p>
+<code class="sig-prename descclassname">mxtoolbox.read.wod.</code><code class="sig-name descname">wod_cast_n</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rag_arr</span></em>, <em class="sig-param"><span class="n">n</span></em>, <em class="sig-param"><span class="n">var_names</span><span class="o">=</span><span class="default_value">['Temperature', 'Salinity']</span></em>, <em class="sig-param"><span class="n">anc_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">do_qc</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">do_teos10</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.read.wod.wod_cast_n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an individual cast from WOD ragged array.</p>
 <p>If do_qc is true, data are filtered keeping only those with
 quality flags of 0 or 1. Refused data are returned as NaN. Some
 profiles do not have quality flags. There are three possible cases
 and here are the meaning of the quality flags they produce.</p>
-<dl class="simple">
-<dt>Profile quality flag missing</dt><dd><p>-&gt; Profile flag = -1
+<p>Profile quality flag missing
+-&gt; Profile flag = -1
 -&gt; value flags = -1</p>
-</dd>
-<dt>Profile quality flag exists but is not accepted</dt><dd><p>-&gt; Profile flag = passed from original file
+<p>Profile quality flag exists but is not accepted
+-&gt; Profile flag = passed from original file
 -&gt; Value flags = -2</p>
-</dd>
-<dt>Profile quality flag exists and is accepted, but value flags are missing</dt><dd><p>-&gt; Profile flag = passed from original file
+<p>Profile quality flag exists and is accepted, but value flags are missing
+-&gt; Profile flag = passed from original file
 -&gt; Value flags = -3</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rag_arr</strong> (<em>xarray.Dataset or straight</em>) – Path to a WOD netCDF file containing a CTD ragged array or named
+it is read into.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – Cast number to return as xarray Dataset.</p></li>
+<li><p><strong>var_names</strong> (<em>list of str</em>) – Names of the variables to extract. Defaults to [‘Temperature’, ‘Salinity’].</p></li>
+<li><p><strong>anc_names</strong> (<em>list of str</em>) – Names of the ancillary data variables to extract. Defaults to None.</p></li>
+<li><p><strong>do_qc</strong> (<em>bool</em>) – If True keep only data with WOD quality flags 0 or 1. Defaults to True.
+This also passes the WOD quality flags to the child cast.</p></li>
+<li><p><strong>do_teos10</strong> (<em>bool</em>) – If True calculate CT, SA and sigma0 using the gsw package, implementing
+TEOS10. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The isolated nth cast of the ragged array.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
 </dd>
 </dl>
-<p>Input:</p>
-<dl class="simple">
-<dt>rag_arr: either xarray Dataset or path to a WOD netCDF file</dt><dd><p>containing a CTD ragged array.</p>
-</dd>
-</dl>
-<p>n: [int], cast number to return as xarray Dataset</p>
-<dl class="simple">
-<dt>var_names: [list of strings], names of the variables to extract.</dt><dd><p>Defaults to [‘Temperature’, ‘Salinity’]</p>
-</dd>
-<dt>anc_names: [list of strings], names of the ancillary data variables</dt><dd><p>to extract. Defaults to None.</p>
-</dd>
-<dt>do_qc: [bool], if True keep only data with WOD quality flags 0 or 1.</dt><dd><p>Defaults to True. This also passes the WOD quality flags to
-the child cast.</p>
-</dd>
-<dt>do_teos10: [bool], if True calculate CT, SA and sigma0 using the</dt><dd><p>gsw package, implementing TEOS10. Defaults to True.</p>
-</dd>
-</dl>
-<p>Returns:</p>
-<p>xarray Dataset</p>
 </dd></dl>
 
 </div>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -249,12 +253,13 @@ the child cast.</p>
         <li class="right" >
           <a href="mxtoolbox.process.html" title="process subpackage"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">read subpackage</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Jean-Luc Shaw.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
     </div>
   </body>
 </html>

@@ -9,6 +9,22 @@ adcp2nc module
    :undoc-members:
    :show-inheritance:
 
+ExtractCIS_Domain module
+------------------------
+
+.. automodule:: mxtoolbox.convert.ExtractCIS_Domain
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ExtractCIS_Landmask module
+--------------------------
+
+.. automodule:: mxtoolbox.convert.ExtractCIS_Landmask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 shp2dex module
 --------------
 

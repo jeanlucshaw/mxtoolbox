@@ -1,9 +1,10 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>plot subpackage &#8212; mxtoolbox April 2020 documentation</title>
     <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -12,11 +13,11 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="process subpackage" href="mxtoolbox.process.html" />
-    <link rel="prev" title="convert subpackage" href="mxtoolbox.convert.html" /> 
+    <link rel="prev" title="create subpackage" href="mxtoolbox.create.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -31,9 +32,10 @@
           <a href="mxtoolbox.process.html" title="process subpackage"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="mxtoolbox.convert.html" title="convert subpackage"
+          <a href="mxtoolbox.create.html" title="create subpackage"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">plot subpackage</a></li> 
       </ul>
     </div>  
 
@@ -47,9 +49,9 @@
 <div class="section" id="module-mxtoolbox.plot.cputils">
 <span id="cputils-module"></span><h2>cputils module<a class="headerlink" href="#module-mxtoolbox.plot.cputils" title="Permalink to this headline">¶</a></h2>
 <p>Functions to streamline work when using cartopy</p>
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.cputils.cp_map_ruler">
-<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_map_ruler</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">x_start</em>, <em class="sig-param">y_start</em>, <em class="sig-param">length</em>, <em class="sig-param">bearing</em>, <em class="sig-param">interval=10</em>, <em class="sig-param">n_minor=4</em>, <em class="sig-param">size=1</em>, <em class="sig-param">space=1</em>, <em class="sig-param">units='km'</em>, <em class="sig-param">text_side='east'</em>, <em class="sig-param">text_rot=0</em>, <em class="sig-param">text_kw=None</em>, <em class="sig-param">line_kw=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_map_ruler" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_map_ruler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">x_start</span></em>, <em class="sig-param"><span class="n">y_start</span></em>, <em class="sig-param"><span class="n">length</span></em>, <em class="sig-param"><span class="n">bearing</span></em>, <em class="sig-param"><span class="n">interval</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">n_minor</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">space</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">units</span><span class="o">=</span><span class="default_value">'km'</span></em>, <em class="sig-param"><span class="n">text_side</span><span class="o">=</span><span class="default_value">'east'</span></em>, <em class="sig-param"><span class="n">text_rot</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">text_kw</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">line_kw</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_map_ruler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw a distance ruler on a cartopy map.</p>
 <p>Each tick is found iteratively by travelling <cite>interval</cite> along
 a great circle line starting at the previous tick towards
@@ -87,7 +89,7 @@ Call just before showing/plotting for best results.</p></li>
 </div>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.cputils.cp_mercator_panel">
 <code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_mercator_panel</code><span class="sig-paren">(</span><em class="sig-param">axes: array of subplots</em>, <em class="sig-param">preset: GSL or WA = None</em>, <em class="sig-param">loc: array position of panel as iterable = None</em>, <em class="sig-param">**m_kwargs</em><span class="sig-paren">)</span> &#x2192; GeoAxes<a class="headerlink" href="#mxtoolbox.plot.cputils.cp_mercator_panel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a Mercator projection map panel to an existing multipanel figure.</p>
@@ -97,9 +99,9 @@ input along with the index of the panel to replace with this map as parameter
 loc.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.cputils.cp_proj_panel">
-<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_proj_panel</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">proj</em>, <em class="sig-param">loc=None</em>, <em class="sig-param">**m_kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_proj_panel" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.cputils.</code><code class="sig-name descname">cp_proj_panel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">proj</span></em>, <em class="sig-param"><span class="n">loc</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">m_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.cputils.cp_proj_panel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transform one panel of subplot array to a cartopy map projection.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -124,9 +126,9 @@ loc.</p>
 <div class="section" id="module-mxtoolbox.plot.mplutils">
 <span id="mplutils-module"></span><h2>mplutils module<a class="headerlink" href="#module-mxtoolbox.plot.mplutils" title="Permalink to this headline">¶</a></h2>
 <p>Tweak details of matplotlib.</p>
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.axlabel_doy2months">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_doy2months</code><span class="sig-paren">(</span><em class="sig-param">axes</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_doy2months" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_doy2months</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_doy2months" title="Permalink to this definition">¶</a></dt>
 <dd><p>Change x axis labels from day of year to month abbreviation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -135,9 +137,9 @@ loc.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.axlabel_woy2months">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_woy2months</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">align='center'</em>, <em class="sig-param">ycoord=-10</em>, <em class="sig-param">ltype='abbr'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_woy2months" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">axlabel_woy2months</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">place</span><span class="o">=</span><span class="default_value">'tick'</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ycoord</span><span class="o">=</span><span class="default_value">- 10</span></em>, <em class="sig-param"><span class="n">ltype</span><span class="o">=</span><span class="default_value">'abbr'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.axlabel_woy2months" title="Permalink to this definition">¶</a></dt>
 <dd><p>Change x axis labels from week of year to month abbreviation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -146,9 +148,9 @@ loc.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.colorbar">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">colorbar</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">mappable</em>, <em class="sig-param">label=None</em>, <em class="sig-param">pad_size=0.05</em>, <em class="sig-param">cbar_size=0.05</em>, <em class="sig-param">**cbar_kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.colorbar" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">colorbar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">mappable</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pad_size</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">cbar_size</span><span class="o">=</span><span class="default_value">0.05</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">cbar_kw</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.colorbar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add colorbar to axes.</p>
 <p>Out of the box, pyplot’s colorbar presents two inconvenients,</p>
 <ul class="simple">
@@ -182,7 +184,7 @@ be the left axes.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.colorline">
 <code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">colorline</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">z=None</em>, <em class="sig-param">cmap=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;</em>, <em class="sig-param">norm=&lt;matplotlib.colors.Normalize object&gt;</em>, <em class="sig-param">linewidth=3</em>, <em class="sig-param">alpha=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.colorline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a colored line with coordinates x and y
@@ -190,9 +192,9 @@ Optionally specify colors in the array z
 Optionally specify a colormap, a norm function and a line width</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.labeled_colorbar">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">labeled_colorbar</code><span class="sig-paren">(</span><em class="sig-param">position</em>, <em class="sig-param">col_arr</em>, <em class="sig-param">lab_array</em>, <em class="sig-param">fig</em>, <em class="sig-param">txt_w=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.labeled_colorbar" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">labeled_colorbar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">position</span></em>, <em class="sig-param"><span class="n">col_arr</span></em>, <em class="sig-param"><span class="n">lab_array</span></em>, <em class="sig-param"><span class="n">fig</span></em>, <em class="sig-param"><span class="n">txt_w</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.labeled_colorbar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a discrete colorbar with labels on the colors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -207,9 +209,9 @@ Optionally specify a colormap, a norm function and a line width</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.move_axes">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">move_axes</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">ud=0</em>, <em class="sig-param">rl=0</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.move_axes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">move_axes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">ud</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">rl</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.move_axes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves axes ud upwards and rl right-wards.</p>
 <p>Handy when plt.subplots gets you 99% to what you want but
 needs a final nudge here and there.</p>
@@ -224,9 +226,9 @@ needs a final nudge here and there.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.mplutils.text_array">
-<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">text_array</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">xpts</em>, <em class="sig-param">ypts</em>, <em class="sig-param">labels</em>, <em class="sig-param">fmt=None</em>, <em class="sig-param">xoffset=None</em>, <em class="sig-param">yoffset=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.text_array" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.mplutils.</code><code class="sig-name descname">text_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">xpts</span></em>, <em class="sig-param"><span class="n">ypts</span></em>, <em class="sig-param"><span class="n">labels</span></em>, <em class="sig-param"><span class="n">fmt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xoffset</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yoffset</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.mplutils.text_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add multiple text annotations to plot in one call.</p>
 <p>To add a single text label, use <cite>axes.text</cite>. This function
 is a wrapper around it that accepts arrays of coordinates
@@ -253,9 +255,9 @@ of xpts and ypts.</p></li>
 <span id="plots-module"></span><h2>plots module<a class="headerlink" href="#module-mxtoolbox.plot.plots" title="Permalink to this headline">¶</a></h2>
 <p>Streamline making typical plots for time series analysis, and
 physical oceanography.</p>
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.plots.anomaly_bar">
-<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">anomaly_bar</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">coord</em>, <em class="sig-param">anomaly</em>, <em class="sig-param">box_labels=None</em>, <em class="sig-param">bar_label=None</em>, <em class="sig-param">bar_label_pos='bottom'</em>, <em class="sig-param">pad_size=0.1</em>, <em class="sig-param">bar_size=0.25</em>, <em class="sig-param">orientation='vertical'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.anomaly_bar" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">anomaly_bar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">coord</span></em>, <em class="sig-param"><span class="n">anomaly</span></em>, <em class="sig-param"><span class="n">box_labels</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bar_label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bar_label_pos</span><span class="o">=</span><span class="default_value">'bottom'</span></em>, <em class="sig-param"><span class="n">pad_size</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">bar_size</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">orientation</span><span class="o">=</span><span class="default_value">'vertical'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.anomaly_bar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add anomaly side bar to current + climatology plot.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -282,28 +284,9 @@ are also accepted values.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="mxtoolbox.plot.plots.ts_diagram">
-<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">ts_diagram</code><span class="sig-paren">(</span><em class="sig-param">axes</em>, <em class="sig-param">t_min=-2</em>, <em class="sig-param">t_max=20</em>, <em class="sig-param">s_min=32</em>, <em class="sig-param">s_max=37</em>, <em class="sig-param">lab_curve_exp=1</em>, <em class="sig-param">levels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.ts_diagram" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draw density contours as background of a TS plot.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>axes</strong> (<em>pyplot.Axes</em>) – Axes on which to operate.</p></li>
-<li><p><strong>t_min</strong> (<em>float</em>) – Minimum temperature to display.</p></li>
-<li><p><strong>t_max</strong> (<em>float</em>) – Maximum temperature to display.</p></li>
-<li><p><strong>s_min</strong> (<em>float</em>) – Minimum salinity to display.</p></li>
-<li><p><strong>s_max</strong> (<em>float</em>) – Maximum salinity to display.</p></li>
-<li><p><strong>lab_curve_exp</strong> (<em>float</em>) – Move labels towards the top right (&gt;1) or bottom left (&lt;1) corner.</p></li>
-<li><p><strong>levels</strong> (<em>1D array</em>) – Density contours to draw. Defaults to (5, 36).</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.plots.scorecard">
-<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">scorecard</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">field</em>, <em class="sig-param">ax</em>, <em class="sig-param">side_label=''</em>, <em class="sig-param">color_displays='anomaly'</em>, <em class="sig-param">value_displays='value'</em>, <em class="sig-param">anomaly_color_levels=4</em>, <em class="sig-param">units_label=''</em>, <em class="sig-param">cbar_label=''</em>, <em class="sig-param">averages=False</em>, <em class="sig-param">colorbar=False</em>, <em class="sig-param">hide_xlabels=False</em>, <em class="sig-param">sub_na=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.scorecard" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">scorecard</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">field</span></em>, <em class="sig-param"><span class="n">ax</span></em>, <em class="sig-param"><span class="n">side_label</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">color_displays</span><span class="o">=</span><span class="default_value">'anomaly'</span></em>, <em class="sig-param"><span class="n">value_displays</span><span class="o">=</span><span class="default_value">'value'</span></em>, <em class="sig-param"><span class="n">anomaly_color_levels</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">units_label</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">cbar_label</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">averages</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">colorbar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">hide_xlabels</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sub_na</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.scorecard" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make AZMP-like monthly/yearly scorecard plots.</p>
 <p>Takes as input a pandas dataframe with one of the columns named
 time and expected to be type numpy datetime64[ns]. Aesthetics are of
@@ -335,14 +318,33 @@ deviation of the whole time series, or the actual value.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="mxtoolbox.plot.plots.scorecard_bottom_monthly">
-<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">scorecard_bottom_monthly</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">field</em>, <em class="sig-param">ax</em>, <em class="sig-param">value_displays='anomaly'</em>, <em class="sig-param">xlimits=False</em>, <em class="sig-param">xlabels=True</em>, <em class="sig-param">ylabel=False</em>, <em class="sig-param">year_labels=False</em>, <em class="sig-param">y0_adjust=0</em>, <em class="sig-param">minor_ticks=False</em>, <em class="sig-param">major_ticks=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.scorecard_bottom_monthly" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">scorecard_bottom_monthly</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">field</span></em>, <em class="sig-param"><span class="n">ax</span></em>, <em class="sig-param"><span class="n">value_displays</span><span class="o">=</span><span class="default_value">'anomaly'</span></em>, <em class="sig-param"><span class="n">xlimits</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">xlabels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">ylabel</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">year_labels</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">y0_adjust</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">minor_ticks</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">major_ticks</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.scorecard_bottom_monthly" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="mxtoolbox.plot.plots.ts_diagram">
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">ts_diagram</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axes</span></em>, <em class="sig-param"><span class="n">t_min</span><span class="o">=</span><span class="default_value">- 2</span></em>, <em class="sig-param"><span class="n">t_max</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">s_min</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">s_max</span><span class="o">=</span><span class="default_value">37</span></em>, <em class="sig-param"><span class="n">lab_curve_exp</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">levels</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.ts_diagram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw density contours as background of a TS plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>pyplot.Axes</em>) – Axes on which to operate.</p></li>
+<li><p><strong>t_min</strong> (<em>float</em>) – Minimum temperature to display.</p></li>
+<li><p><strong>t_max</strong> (<em>float</em>) – Maximum temperature to display.</p></li>
+<li><p><strong>s_min</strong> (<em>float</em>) – Minimum salinity to display.</p></li>
+<li><p><strong>s_max</strong> (<em>float</em>) – Maximum salinity to display.</p></li>
+<li><p><strong>lab_curve_exp</strong> (<em>float</em>) – Move labels towards the top right (&gt;1) or bottom left (&lt;1) corner.</p></li>
+<li><p><strong>levels</strong> (<em>1D array</em>) – Density contours to draw. Defaults to (5, 36).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="mxtoolbox.plot.plots.xr_plot_pm_patch">
-<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">xr_plot_pm_patch</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">xcoord</em>, <em class="sig-param">base</em>, <em class="sig-param">interval</em>, <em class="sig-param">ax</em>, <em class="sig-param">color='lightskyblue'</em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.xr_plot_pm_patch" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">mxtoolbox.plot.plots.</code><code class="sig-name descname">xr_plot_pm_patch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ds</span></em>, <em class="sig-param"><span class="n">xcoord</span></em>, <em class="sig-param"><span class="n">base</span></em>, <em class="sig-param"><span class="n">interval</span></em>, <em class="sig-param"><span class="n">ax</span></em>, <em class="sig-param"><span class="n">color</span><span class="o">=</span><span class="default_value">'lightskyblue'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.plot.plots.xr_plot_pm_patch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Draw a patch of +- interval width around time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -362,6 +364,7 @@ deviation of the whole time series, or the actual value.</p></li>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -378,8 +381,8 @@ deviation of the whole time series, or the actual value.</p></li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="mxtoolbox.convert.html"
-                        title="previous chapter">convert subpackage</a></p>
+  <p class="topless"><a href="mxtoolbox.create.html"
+                        title="previous chapter">create subpackage</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="mxtoolbox.process.html"
                         title="next chapter">process subpackage</a></p>
@@ -417,14 +420,15 @@ deviation of the whole time series, or the actual value.</p></li>
           <a href="mxtoolbox.process.html" title="process subpackage"
              >next</a> |</li>
         <li class="right" >
-          <a href="mxtoolbox.convert.html" title="convert subpackage"
+          <a href="mxtoolbox.create.html" title="create subpackage"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">mxtoolbox April 2020 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">plot subpackage</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Jean-Luc Shaw.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
     </div>
   </body>
 </html>
