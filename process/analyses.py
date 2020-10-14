@@ -4,6 +4,7 @@ Complex analyses transforming data into other data.
 import numpy as np
 import pandas as pd
 import xarray as xr
+import statsmodels.api as sm
 from scipy.optimize import leastsq
 from scipy.signal import find_peaks
 from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
@@ -15,7 +16,9 @@ __all__ = ['pca',
            'gaussian_smoothing',
            'lsq_curve_fit',
            'pd_regression_statistics',
+           'sm_lin_fit',
            'xr_2D_to_1D_interp',
+           'xr_2D_to_2D_interp',
            'xr_cross_correlate',
            'xr_time_aht']
 
@@ -317,7 +320,7 @@ def lsq_curve_fit(model, x, y, *parameters):
         return y - _model(x, *parameters)
 
     # Perform fit
-    fit_parameters, _ = leastsq(_residuals, parameters, args=(y, x))
+    fit_parameters, _ = leastsq(residuals, parameters, args=(y, x))
 
     # Calculate fit y values
     fit_values = _model(x, *fit_parameters)
@@ -403,6 +406,55 @@ def pd_regression_statistics(dataframe, xname, yname):
                                             'xx'))
 
 
+def sm_lin_fit(dataframe, x, y, xfit=None):
+    """
+    Fit x,y data linearly with statsmodels.
+
+    For more info on the model results type
+
+       model.summary()
+
+    Other fit parameters can be accessed via the model output
+    variable, for example:
+
+       model.pvalues
+       model.params
+
+    Parameters
+    ----------
+    dataframe: pandas.DataFrame
+        Where to look for x, y variables.
+    x, y: str
+        Names of independent and dependent variables.
+
+    Returns
+    -------
+    model
+        Result of statsmodels.api.OLS.fit().
+    fit: pandas.Series or 1D array
+        Least squares fit of dependent variable.
+    rsquared: float
+        Variance in y explained by x.
+    """
+    # Clean
+    dataframe = dataframe.query('~%s.isnull() & ~%s.isnull()' % (x, y))
+    
+    # Set up variables
+    dependent = dataframe[y]
+    independent = sm.add_constant(dataframe[x])
+
+    # Fit
+    model = sm.OLS(dependent, independent).fit()
+    if xfit is None:
+        independent_fit = dataframe[x].values
+    else:
+        independent_fit = xfit
+    yfit = model.params[0] + model.params[1] * independent_fit 
+    fit = pd.DataFrame({'x': independent_fit, 'y': yfit})
+
+    return model, fit, model.rsquared 
+
+
 def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
     """
     Interpolate 2D field along arbitrary track.
@@ -427,6 +479,39 @@ def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
     da_x = xr.DataArray(x, dims=name)
     da_y = xr.DataArray(y, dims=name)
     return dataset.interp({xcoord: da_x, ycoord: da_y})
+
+
+def xr_2D_to_2D_interp(dataarray, xx, yy, dims):
+    """
+    Interpolate regular 2D data to irregular grid.
+
+    Parameters
+    ----------
+    dataarray: xarray.DataArray
+        Original data to interpolate from.
+    xx, yy: 2D array
+        New horizontal and vertical coordinate grids.
+    dims: 2-iterable
+        Ordered names of original dimensions.
+
+    Returns
+    -------
+    2D array
+        Data interpolated to new coordinates.
+
+    """
+    # Set up new coordinates as DataArrays
+    x_i = xr.DataArray(xx,
+                         dims=['x', 'y'],
+                         coords={'x': np.arange(xx.shape[0]),
+                                 'y': np.arange(xx.shape[1])})
+    y_i = xr.DataArray(yy,
+                         dims=['x', 'y'],
+                         coords={'x': np.arange(yy.shape[0]),
+                                 'y': np.arange(yy.shape[1])})
+    
+    # Interpolate
+    return dataarray.interp(**{dims[0]: x_i, dims[1]: y_i}).values
 
 
 def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):

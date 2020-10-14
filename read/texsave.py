@@ -2,10 +2,12 @@
 Save variable values for LaTeX document writing.
 """
 import os
+import re
 from termcolor import colored, cprint
 
 
-__all__ = ['tex_write',
+__all__ = ['_int_to_roman',
+           'tex_write',
            'tex_print']
 
 
@@ -45,6 +47,10 @@ def tex_write(signature, results, mode='w'):
 
     # Write output
     with open(fname, mode) as ofile:
+
+        # Transform numbers in fname for TeX command compatibility
+        regex = re.compile(r"\d+")
+        signature = regex.sub(lambda x: _int_to_roman(int(x.group(0))), signature)
 
         # Write saved values to file
         for i, (value, comment, fmt, unit) in enumerate(results):

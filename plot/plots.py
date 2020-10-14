@@ -5,16 +5,29 @@ physical oceanography.
 import gsw
 import matplotlib.pyplot as plt
 import numpy as np
+import xarray as xr
+import pandas as pd
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 from scipy.interpolate import interp1d
-from .mplutils import text_array
+from matplotlib.ticker import FormatStrFormatter
+from .mplutils import text_array, colorbar
+from .cputils import cp_proj, cp_ticks
 from ..process.math_ import xr_abs
 from ..read.text import list2cm
-from ..process.convert import anomaly2rgb, binc2edge
+from ..process.convert import anomaly2rgb, binc2edge, dd2dms
 
 __all__ = ['anomaly_bar',
            'ts_diagram',
+           'correlation_text',
+           'gebco_bathy',
+           'gebco_bathy_contour',
+           'gsl_bathy_contourf',
+           'gsl_map',
+           'gsl_temperature_cast',
            'scorecard',
            'scorecard_bottom_monthly',
+           'wa_map',
            'xr_plot_pm_patch']
 
 
@@ -138,6 +151,298 @@ def anomaly_bar(axes,
     anomaly_ax.set(ylim=axes.get_ylim(), xticklabels=[], yticklabels=[])
 
     return anomaly_ax
+
+
+def correlation_text(axes, x, y, b, a, r2, fmt='%.2f', p=None, **text_kw):
+    """
+    Describe linear fit resutls on graph.
+
+    Parameters
+    ----------
+    axes: matplotlib.Axes
+        On which to plot.
+    x, y: float
+        Left side of text in data coordinates.
+    b, a: float
+        Power 0 and 1 coefficients of linear fit.
+    r2: float
+        Variance explained by independent variable.
+    fmt: str
+        Text format of floats.
+    p: float
+        Significance threshold.
+    **text_kw: dict
+        Passed to axes.text .
+
+    """
+    if b > 0:
+        b_sign = ' + '
+    else:
+        b_sign = ' '
+        
+    interpolator = 'R$^2$ = '+fmt+', y = '+fmt+' x' + b_sign + fmt
+    _text = interpolator % (r2, a, b)
+
+    axes.text(x, y, _text, clip_on=False, **text_kw)
+
+
+def gebco_bathy():
+    dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic.nc')
+    bathy = dataset.elevation * -1
+    return bathy
+
+
+def gebco_bathy_contour(axes, isobaths, xarray=True, step=1, **ctr_kw):
+    """
+    Add bathymetric contours to the map in `axes`.
+
+    Parameters
+    ----------
+    axes: cartopy.GeoAxes or matplotlib.Axes
+        Panel to operate on.
+    isobaths: 1D array
+        Levels of bathymetry to draw.
+    step: int
+        Coarsen Gebco bathymetry by this factor.
+    xarray: bool
+        If true read gebco netcdf file. This allows plotting of any depth,
+        but is slower than reading precalculated contours for 50, 100, 150
+        200, 300, 400, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, and
+        4500 metres.
+    **ctr_kw: dict
+        Keyword arguments passed to `contour`.
+
+    Returns
+    -------
+    qcs: matplotlib.QuadContourSet or None
+        The contour collections plotted.
+
+    """
+    # Defaul contourf parameters
+    ctr_kw = {'transform': ccrs.PlateCarree(), **ctr_kw}
+
+    if xarray:
+        # Load data
+        dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic.nc')
+        bathy = dataset.elevation * -1
+
+        # Limit to current plot area
+        lon_min, lon_max, lat_min, lat_max = axes.get_extent(crs=ccrs.PlateCarree())
+        bathy = bathy.loc[lat_min: lat_max, lon_min: lon_max]
+
+        # Coarsen
+        bathy = bathy[::step, ::step]
+
+        # Plot
+        qcs = bathy.plot.contour(levels=isobaths, ax=axes, **ctr_kw)
+    else:
+        for iso in isobaths:
+            ctr = pd.read_csv('/data/atlas/gebco/GSL_%d.dat' % iso,
+                              names=['lat', 'lon'],
+                              sep='\s+',
+                              na_values=-99.99)
+            axes.plot(ctr.lon, ctr.lat, **ctr_kw)
+        qcs = None
+
+    return qcs
+
+
+def gsl_temperature_cast(axes, temp, z, lon_lat=None, time=None, **plot_kw):
+    """
+    Plot a Gulf of St. Lawrence temperature profile.
+
+    For all the information to appear clearly, input an axes instance with
+    the `figsize` parameter set to (4, 5).
+
+    Parameters
+    ----------
+    axes: matplotlib.Axes
+        Where to plot the profile.
+    temp: 1D array or array-like
+        Temperature data to plot.
+    z: 1D array or array like.
+        Depth coordinate of temperature data.
+    lon_lat: 2-tuple
+        Position of the CTD cast.
+    time: numpy.datetime64
+        Date and time of CTD cast
+
+    Returns
+    -------
+    cartopy.Geoaxes or None
+        Geoaxes object of inset map.
+
+    """
+    # Profile
+    axes.plot(temp, z, **plot_kw)
+
+    # Plot parameters
+    axes.set(xlabel=r'T ($^\circ$C)', ylabel='Depth (m)')
+    axes.set(xlim=(-2, 22), ylim=(0, z.max() + 10), xticks=np.arange(-2, 24, 2))
+    axes.invert_yaxis()
+
+    # Map inset
+    if lon_lat is not None:
+        inset = axes.figure.add_axes([0.5, 0.2, 0.35, 0.35])
+        inset, cp_kw = cp_proj(inset, 'PlateCarree')
+        inset.plot(lon_lat[0], lon_lat[1], 'o', mfc='r', mec='r', ms=2)
+        inset.set(ylim=(44, 54), xlim=(-69, -56))
+        inset.coastlines(resolution='50m', color='gray')
+
+        
+        axes.text(0.45, 0.55, 'Lon.: %.0f %.0f\' %.0f"' % dd2dms(lon_lat[0]) , transform=axes.transAxes)
+        axes.text(0.45, 0.5, 'Lat.: %.0f %.0f\' %.0f"' % dd2dms(lon_lat[1]) , transform=axes.transAxes)
+    else:
+        inset = None
+
+    # Annotations
+    if time is not None:
+        axes.text(0.45, 0.6, 'Date: %s' % str(time)[:10], transform=axes.transAxes)
+
+    return inset
+
+
+def gsl_bathy_contourf(axes, isobaths, add_cbar=False, step=1, **ctrf_kw):
+    """
+    Add filled bathymetric contours to the map in `axes`.
+
+    Parameters
+    ----------
+    axes: cartopy.GeoAxes or matplotlib.Axes
+        Panel to operate on.
+    isobaths: 1D array
+        Levels of bathymetry to draw.
+    add_cbar: bool
+        Add a colorbar mapped to depth on top of plot.
+    step: int
+        Coarsen Gebco bathymetry by this factor.
+    **ctrf_kw: dict
+        Keyword arguments passed to `xarray.DataArray.plot.contourf`.
+
+    Returns
+    -------
+    qcs: matplotlib.QuadContourSet
+        The contour collections plotted.
+    cbar: matplotlib.Colorbar
+        The colorbar object created.
+
+    """
+    # Defaul contourf parameters
+    ctrf_kw = {'cmap': 'Blues', 'add_colorbar': False, 'transform': ccrs.PlateCarree(), **ctrf_kw}
+
+    # Load data
+    dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic.nc')
+    bathy = dataset.elevation * -1
+
+    # Limit to current plot area
+    lon_min, lon_max, lat_min, lat_max = axes.get_extent(crs=ccrs.PlateCarree())
+    bathy = bathy.loc[lat_min: lat_max, lon_min: lon_max]
+
+    # Coarsen
+    bathy = bathy[::step, ::step]
+
+    # Saturate
+    bathy = bathy.where(bathy < np.max(isobaths), np.max(isobaths))
+    bathy = bathy.where(bathy > np.min(isobaths), np.min(isobaths))
+
+    # Plot
+    qcs = bathy.plot.contourf(levels=isobaths, ax=axes, **ctrf_kw)
+
+    # Add colorbar if requested
+    if add_cbar:
+        cbar_kw = {'orientation': 'horizontal', 'format': FormatStrFormatter('%dm')}
+        cbar, _ = colorbar(axes, qcs, pad_size=0.075, loc='top', **cbar_kw)
+        cbar.ax.tick_params(labelsize=8)
+        cbar.minorticks_off()
+    else:
+        cbar = None
+
+    return qcs, cbar
+
+
+def gsl_map(axes,
+            resolution='intermediate',
+            crs='PlateCarree',
+            landcolor='oldlace',
+            watercolor='lightgray',
+            extent=[-71, -55, 44, 52],
+            tick_x_maj=np.arange(-70, -50, 5),
+            tick_y_maj=np.arange(42, 54, 1),
+            tick_x_min=np.arange(-71, -50, 1),
+            tick_y_min=np.arange(42, 54, 0.2)):
+    """
+    Plot Gulf of St Lawrence map in axes.
+
+    Parameters
+    ----------
+    axes: matplotlib.Axes
+        Axes to replace with GSL map.
+    resolution: str
+        GSHHS features resolution. Can be one of `coarse`, `low`,
+        `intermediate`, `high` or `full`.
+    crs: str
+        Name of cartopy.crs projection class to use.
+    landcolor: str
+        Continent and islands filled with this color.
+    watercolor: str
+        Rivers and lakes filled with this color.
+    extent: 4-list
+        Longitude and latitude limits of map.
+    tick_x_maj, tick_y_maj: 1D array
+        Longitude and latidude of major ticks and labels.
+    tick_x_min, tick_y_min: 1D array
+        Longitude and latitude of minor ticks.
+
+    Returns
+    -------
+    geoax
+        GeoAxes instance of map panel.
+
+    """
+    # Replace normal Axes with geoAxes
+    geoax, _ = cp_proj(axes, crs)
+    geoax.set_extent(extent)
+
+    # Most features are fine in GSHHS
+    coast = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[1],
+                                  facecolor=landcolor,
+                                  edgecolor='k',
+                                  linewidth=0.25)
+    lakes = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[2],
+                                  facecolor=watercolor,
+                                  edgecolor=watercolor)
+    islands = cfeature.GSHHSFeature(scale=resolution,
+                                    levels=[3],
+                                    facecolor=landcolor,
+                                    edgecolor=landcolor)
+    ponds = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[4],
+                                  facecolor=watercolor,
+                                  edgecolor=watercolor)
+
+    # Add GSHHS features
+    geoax.add_feature(coast)
+    geoax.add_feature(lakes)
+    geoax.add_feature(islands)
+    geoax.add_feature(ponds)
+
+    # Rivers are not in GSHHS
+    RIVERS = pd.read_csv('/data/atlas/gmt/gulff-rivers-all.lon_lat',
+                         names=['lon', 'lat'],
+                         sep=r'\s+',
+                         na_values=-99.000)
+    geoax.plot(-RIVERS.lon.values,
+               RIVERS.lat.values,
+               color='lightskyblue',
+               transform=ccrs.PlateCarree())
+
+    # Ticks
+    cp_ticks(geoax, tick_x_maj, tick_y_maj, labels=True, size=3)
+    cp_ticks(geoax, tick_x_min, tick_y_min, labels=False, size=1.5)
+
+    return geoax
 
 
 def scorecard(df,
@@ -458,7 +763,8 @@ def ts_diagram(axes,
                s_min=32,
                s_max=37,
                lab_curve_exp=1,
-               levels=None):
+               levels=None,
+               **clabel_kw):
     """
     Draw density contours as background of a TS plot.
 
@@ -478,6 +784,8 @@ def ts_diagram(axes,
         Move labels towards the top right (>1) or bottom left (<1) corner.
     levels : 1D array
         Density contours to draw. Defaults to (5, 36).
+    **clabel_kw : dict
+        Arguments passed to `pyplot.clabel`.
 
     """
     # Parameters
@@ -515,12 +823,96 @@ def ts_diagram(axes,
             label_pos.append((s_loc, t_loc))
 
     # Draw contour labels
-    plt.clabel(sigma_ctr, fmt='%d', manual=label_pos)
+    plt.clabel(sigma_ctr, manual=label_pos, **clabel_kw)
 
     # Set axis limits to input TS limits
     axes.set(xlim=(s_min, s_max), ylim=(t_min, t_max))
 
+def wa_map(axes,
+           resolution='intermediate',
+           crs='PlateCarree',
+           landcolor='oldlace',
+           watercolor='lightgray',
+           extent=[-70, -40, 35, 54],
+           tick_x_maj=np.arange(-70, -35, 5),
+           tick_y_maj=np.arange(35, 58, 2),
+           tick_x_min=np.arange(-71, -39, 1),
+           tick_y_min=np.arange(35, 56, 1)):
+    """
+    Plot West Atlantic map in axes.
 
+    Parameters
+    ----------
+    axes: matplotlib.Axes
+        Axes to replace with GSL map.
+    resolution: str
+        GSHHS features resolution. Can be one of `coarse`, `low`,
+        `intermediate`, `high` or `full`.
+    crs: str
+        Name of cartopy.crs projection class to use.
+    landcolor: str
+        Continent and islands filled with this color.
+    watercolor: str
+        Rivers and lakes filled with this color.
+    extent: 4-list
+        Longitude and latitude limits of map.
+    tick_x_maj, tick_y_maj: 1D array
+        Longitude and latidude of major ticks and labels.
+    tick_x_min, tick_y_min: 1D array
+        Longitude and latitude of minor ticks.
+
+    Returns
+    -------
+    geoax
+        GeoAxes instance of map panel.
+
+    """
+    # Replace normal Axes with geoAxes
+    geoax, _ = cp_proj(axes, crs)
+    geoax.set_extent(extent)
+
+    # Most features are fine in GSHHS
+    coast = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[1],
+                                  facecolor=landcolor,
+                                  edgecolor='k',
+                                  linewidth=0.25)
+    lakes = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[2],
+                                  facecolor=watercolor,
+                                  edgecolor=watercolor)
+    islands = cfeature.GSHHSFeature(scale=resolution,
+                                    levels=[3],
+                                    facecolor=landcolor,
+                                    edgecolor=landcolor)
+    ponds = cfeature.GSHHSFeature(scale=resolution,
+                                  levels=[4],
+                                  facecolor=watercolor,
+                                  edgecolor=watercolor)
+
+    # Add GSHHS features
+    geoax.add_feature(coast)
+    geoax.add_feature(lakes)
+    geoax.add_feature(islands)
+    geoax.add_feature(ponds)
+
+    # Rivers are not in GSHHS
+    RIVERS = pd.read_csv('/data/atlas/gmt/gulff-rivers-all.lon_lat',
+                         names=['lon', 'lat'],
+                         sep=r'\s+',
+                         na_values=-99.000)
+    geoax.plot(-RIVERS.lon.values,
+               RIVERS.lat.values,
+               color='lightskyblue',
+               transform=ccrs.PlateCarree())
+
+    # Ticks
+    cp_ticks(geoax, tick_x_maj, tick_y_maj, labels=True, size=3)
+    cp_ticks(geoax, tick_x_min, tick_y_min, labels=False, size=1.5)
+
+    return geoax
+
+    
 def xr_plot_pm_patch(ds, xcoord, base, interval, ax, color='lightskyblue'):
     """
     Draw a patch of +- interval width around time series.

@@ -1,16 +1,21 @@
 """
 Mathematical, geometrical and simple matrix operations.
 """
+import matplotlib.pyplot as plt
 import numpy as np
 # from math import radians, cos, sin, asin, sqrt
 import shapely.speedups
 # from mpl_toolkits.basemap import Basemap
 from shapely.geometry import Point, Polygon
 from scipy.interpolate import interp1d
+# import mxtoolbox.process.convert.crs2crs as crs2crs
 import matplotlib.path as mpltPath
+import cartopy.crs as ccrs
 shapely.speedups.enable()
 
-__all__ = ['broadcastable',
+__all__ = ['array_corners',
+           'array_outline',
+           'broadcastable',
            'circular_distance',
            'consecutive_duplicates',
            'destination_point',
@@ -21,14 +26,56 @@ __all__ = ['broadcastable',
            'increase_resolution',
            'in_polygon',
            'get_contour_xy',
+           'lonlat_rectangle',
+           'perpendicular_line',
            'project_to_line',
+           'proj_grid',
            'proximity_group',
            'polygon_area',
            'rotate_frame',
+           'square_dimensions',
            'xr_abs',
+           'xr_contour',
            'xr_time_step',
            'xr_unique',
            'mxy2abc']
+
+
+def array_outline(array):
+    """
+    Select outer limits of numpy array.
+
+    Parameters
+    ----------
+    array: 2D array
+        The data from which to extract an outline.
+
+    Returns
+    -------
+    1D array
+        Outer limits of the input array.
+
+    """
+    return np.hstack((array[:-1, 0], array[-1, :-1], array[::-1, -1], array[0, ::-1]))
+
+
+def array_corners(a):
+    """
+    Select corners of numpy array.
+
+    Parameters
+    ----------
+    array: 2D array
+        The data from which to extract corners.
+
+    Returns
+    -------
+    1D array of size 4
+        Corners of the input array.
+
+    """
+    return np.array([a[0, 0], a[-1, 0], a[0, -1], a[-1, -1]])
+
 
 def broadcastable(a, b):
     """
@@ -99,30 +146,30 @@ def circular_distance(a1, a2, units='rad'):
         Angular distance between `a1` and `a2`.
 
     '''
-    if units=='deg':
-        a1  =   np.pi*a1/180
-        a2  =   np.pi*a2/180
+    if units == 'deg':
+        a1 = np.pi*a1/180
+        a2 = np.pi*a2/180
 
     if np.isscalar(a1) and np.isscalar(a2):
-        v1  =   np.array([np.cos(a1),np.sin(a1)])
-        v2  =   np.array([np.cos(a2),np.sin(a2)])
-        dot =   np.dot(v1,v2)
+        v1 = np.array([np.cos(a1), np.sin(a1)])
+        v2 = np.array([np.cos(a2), np.sin(a2)])
+        dot = np.dot(v1, v2)
     elif not np.isscalar(a1) and np.isscalar(a2):
-        a2  =   np.tile(a2,a1.size)
-        v1  =   np.array([np.cos(a1),np.sin(a1)]).T
-        v2  =   np.array([np.cos(a2),np.sin(a2)]).T
+        a2 = np.tile(a2, a1.size)
+        v1 = np.array([np.cos(a1), np.sin(a1)]).T
+        v2 = np.array([np.cos(a2), np.sin(a2)]).T
 #        dot =   np.diag( v1 @ v2.T )
-        dot =   (v1 * v2).sum(-1)
+        dot = (v1 * v2).sum(-1)
     else:
-        v1=np.array([np.cos(a1),np.sin(a1)]).T
-        v2=np.array([np.cos(a2),np.sin(a2)]).T
+        v1 = np.array([np.cos(a1), np.sin(a1)]).T
+        v2 = np.array([np.cos(a2), np.sin(a2)]).T
 #        dot =   np.diag( v1 @ v2.T )
-        dot =   (v1 * v2).sum(-1)
+        dot = (v1 * v2).sum(-1)
 
-    res =   np.arccos( np.clip( dot, -1., 1.) )
+    res = np.arccos(np.clip(dot, -1., 1.))
 
-    if units=='deg':
-        res =   180*res/np.pi
+    if units == 'deg':
+        res = 180*res/np.pi
 
     return res
 
@@ -149,7 +196,8 @@ def consecutive_duplicates(x_pts, y_pts):
 
     """
     index = np.arange(x_pts.size)
-    duplicate = np.array([False, *((np.diff(index) == 1) & (np.diff(x_pts) == 0) & (np.diff(y_pts) == 0))])
+    duplicate = np.array(
+        [False, *((np.diff(index) == 1) & (np.diff(x_pts) == 0) & (np.diff(y_pts) == 0))])
     x_nd, y_nd = x_pts[~duplicate], y_pts[~duplicate]
 
     return x_nd, y_nd, duplicate
@@ -204,12 +252,13 @@ def destination_point(x0, y0, distance, bearing, meters_per_unit=1000):
     """
     # Unit conversions
     delta = meters_per_unit * distance / 6371008.8
-    phi_0 = y0 * np.pi / 180 
+    phi_0 = y0 * np.pi / 180
     lbd_0 = x0 * np.pi / 180
     theta = bearing * np.pi / 180
 
     # Destination latitude in radians
-    phi_f = np.arcsin(np.sin(phi_0) * np.cos(delta) + np.cos(phi_0) * np.sin(delta) * np.cos(theta))
+    phi_f = np.arcsin(np.sin(phi_0) * np.cos(delta) +
+                      np.cos(phi_0) * np.sin(delta) * np.cos(theta))
 
     # Destination longitude in radians
     arg_y = np.sin(theta) * np.sin(delta) * np.cos(phi_0)
@@ -291,7 +340,7 @@ def f_gaussian(x, a_1, a_2, a_3, a_4):
        y = a_1 \\exp\\left(-\\frac{(x - a_2)^2}{a_3}\\right) + a_4
 
     """
-    return a_1 * np.exp(-(x - a_2) **2 / a_3) + a_4
+    return a_1 * np.exp(-(x - a_2) ** 2 / a_3) + a_4
 
 
 def f_sine(x, a_1, a_2, a_3, a_4):
@@ -358,15 +407,15 @@ def haversine(lon1, lat1, lon2, lat2):
         Distance between coordinates2 and coordinate1 (meters).
 
     """
-    # convert decimal degrees to radians 
+    # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
 
-    # haversine formula 
+    # haversine formula
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     a = np.arcsin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
     c = 2 * np.arcsin(np.sqrt(a))
-    r = 6371000 # Radius of earth in kilometers. Use 3956 for miles
+    r = 6371000  # Radius of earth in kilometers. Use 3956 for miles
     return c * r
 
 
@@ -409,7 +458,7 @@ def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
         poly = mpltPath.Path([[xp, yp] for (xp, yp) in zip(x_poly, y_poly)])
 
         # Bool vector
-        boolean =  poly.contains_points(pts)
+        boolean = poly.contains_points(pts)
 
     return boolean
 
@@ -461,6 +510,84 @@ def increase_resolution(xpts, ypts, N, offset_idx=0):
     dout -= dout[origin]
 
     return xout, yout, dout
+
+
+def lonlat_rectangle(lon_0, lat_0, bearing, box_len_a, box_wid_a, box_len_b=None, box_wid_b=None, axes=None):
+    """
+    Draw an almost rectangular polygon in plate carree coordinates.
+
+    Parameters
+    ----------
+    lon_0, lat_0: float
+        The origin of the rectangle.
+    bearing: float
+        The rectangle's tilt eastward from north (degrees).
+    box_len_a, box_len_b: float
+        Long dimensions of the rectangle (km).
+    box_wid_a, box_wid_b: float
+        Short dimensions of the rectangle (km).
+    axes: cartopy.GeoAxes
+        Plot to these axes if supplied.
+
+    Returns
+    -------
+    lon_box, lat_box: 1D array
+        Rectangle vertices.
+    lon_center, lat_center: 1D array
+        Vectices `a` and `b`.
+
+    Note
+    ----
+    For definitions of the input dimensions refer to the following diagram.
+
+    ..code::
+
+       e -bwa- b --bwb-- f
+       |       |         |
+       |       |         |
+       |      blb        |
+       |       |         |
+       | ----- 0 ------- |
+       |       |         |
+       |      bla        |
+       |       |         |
+       c -bwa- a --bwb-- d
+               |
+               V
+            bearing
+
+    """
+    def _get_vertex(lon_0, lat_0, bearing, distance, name):
+        lon_v, lat_v = destination_point(lon_0, lat_0, distance, bearing)
+        if axes is not None:
+            axes.plot(lon_v, lat_v, '.', transform=ccrs.PlateCarree())
+            axes.text(lon_v, lat_v, name, transform=ccrs.PlateCarree())
+        return lon_v, lat_v
+
+    # Default has same dimensions both sides of the origin
+    box_len_b = box_len_b or box_len_a
+    box_wid_b = box_wid_b or box_wid_a
+
+    # Get the individual vertices
+    lon_a, lat_a = _get_vertex(lon_0, lat_0, bearing, box_len_a, 'a')
+    lon_b, lat_b = _get_vertex(lon_0, lat_0, bearing - 180, box_len_b, 'b')
+    lon_c, lat_c = _get_vertex(lon_a, lat_a, bearing + 90, box_wid_a, 'c')
+    lon_d, lat_d = _get_vertex(lon_a, lat_a, bearing - 90, box_wid_b, 'd')
+    lon_e, lat_e = _get_vertex(lon_b, lat_b, bearing - 90, box_wid_b, 'e')
+    lon_f, lat_f = _get_vertex(lon_b, lat_b, bearing + 90, box_wid_a, 'f')
+
+    # Format vertices for output
+    lon_box = np.array([lon_c, lon_d, lon_e, lon_f, lon_c])
+    lat_box = np.array([lat_c, lat_d, lat_e, lat_f, lat_c])
+    lon_center = np.array([lon_a, lon_b])
+    lat_center = np.array([lat_a, lat_b])
+
+    # Plot polygon if requested
+    if axes is not None:
+        axes.plot(lon_box, lat_box, 'k', transform=ccrs.PlateCarree())
+        axes.plot([lon_a, lon_b], [lat_a, lat_b], 'k--', transform=ccrs.PlateCarree())
+
+    return lon_box, lat_box, lon_center, lat_center
 
 
 def polygon_area(xpts, ypts, lonlat=False, pos=True):
@@ -561,6 +688,84 @@ def _distance(xpts, ypts, x0, y0):
     return np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
 
 
+def perpendicular_line(m, x, y):
+    """
+    Find slope and intercept of perpendicular line.
+
+    Parameters
+    ----------
+    m: float
+        Slope of original line.
+    x, y: float
+        Coordinates of one point along original line.
+
+    Returns
+    -------
+    float
+        Perpendicular line slope.
+    float
+        Perpendicular line intercept.
+
+    """
+    slope = -1 / m
+    intercept = y + (x / m)
+    return slope, intercept
+
+
+def proj_grid(lon_0, lat_0, dx, nx, ny, bearing, dy=None):
+    """
+    Define a regular grid over geographical space.
+
+    Parameters
+    ----------
+    lon_0, lat_0: float
+        PlateCarree coordinates of mean grid position.
+    dx, dy: float
+        Horizontal and vertical resolutions in meters.
+    nx, ny: int
+        Horizontal and vertical number of grid points.
+    bearing: float
+        Compass orientation of horizontal dimension.
+
+    Returns
+    -------
+    2D array
+        Horizontal and vertical grid coordinates.
+    cartopy.crs
+        Coordinate reference system in which grid is defined.
+
+    """
+    def _crs2crs(x, y, target, origin=ccrs.PlateCarree()):
+        """
+        Using the version in convert results in a circular import.
+        """
+        x, y = np.array([x, x]), np.array([y, y])
+        transformed = target.transform_points(origin, x, y)
+        x_dest, y_dest = transformed[0, 0], transformed[0, 1]
+        return x_dest, y_dest
+
+    # Default to equal spacing in both directions
+    dy = dy or dx
+
+    # Get equal area projection
+    pj_sine = ccrs.Sinusoidal(central_longitude=lon_0)
+    x_g = np.arange(0, (nx + 1) * dx, dx)
+    y_g = np.arange(0, (ny + 1) * dy, dy)
+    XG, YG = np.meshgrid(x_g, y_g)
+
+    # Set to required center
+    x_0, y_0 = _crs2crs(lon_0, lat_0, pj_sine)
+    
+
+    XG = XG - XG.mean() + x_0
+    YG = YG - YG.mean() + y_0
+
+    # Rotate
+    XG, YG = rotate_frame(XG, YG, (90 - bearing) * np.pi / 180, inplace=True) 
+
+    return XG, YG, pj_sine
+
+
 def proximity_group(array, distance):
     """
     Group consecutive array values by proximity.
@@ -611,7 +816,7 @@ def proximity_group(array, distance):
     return gid, gn, gindex
 
 
-def rotate_frame(u, v, angle, units='rad'):
+def rotate_frame(u, v, angle, units='rad', inplace=False):
     """
     Return 2D data in rotated frame of reference.
 
@@ -628,6 +833,8 @@ def rotate_frame(u, v, angle, units='rad'):
         Rotate the frame of reference by this value.
     units : str ('deg' or 'rad')
         Units of `angle`.
+    inplace : bool
+        Rotate around mean instead of origin.
 
     Returns
     -------
@@ -636,7 +843,7 @@ def rotate_frame(u, v, angle, units='rad'):
 
     """
     # Size errors
-    if u.shape==v.shape:
+    if u.shape == v.shape:
         (sz) = u.shape
     else:
         raise ValueError("u and v must be of same size")
@@ -645,9 +852,15 @@ def rotate_frame(u, v, angle, units='rad'):
     u = u.flatten()
     v = v.flatten()
 
+    if inplace:
+        o_u, o_v = np.nanmean(u), np.nanmean(v)
+        u -= o_u
+        v -= o_v
+
     # Handle deg/rad opts and build rotation matrix
-    angle = angle if units=='rad' else np.pi * angle / 180
-    B = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+    angle = angle if units == 'rad' else np.pi * angle / 180
+    B = np.array([[np.cos(angle), np.sin(angle)],
+                  [-np.sin(angle), np.cos(angle)]])
 
     # Rotate
     ur = (B @ np.array([u, v]))[0, :]
@@ -657,7 +870,60 @@ def rotate_frame(u, v, angle, units='rad'):
     ur = np.reshape(ur, sz)
     vr = np.reshape(vr, sz)
 
+    if inplace:
+        ur += o_u
+        vr += o_v
+
     return ur, vr
+
+
+def square_dimensions(xx, yy):
+    """
+    Print euclinian dimensions of polygon `abcd`.
+
+    b -- c
+    |    |
+    a -- d
+
+    Parameters
+    ----------
+    xx, yy: 1D array
+        Ordered coordinates of points `abcd`.
+    """
+    x_a, x_b, x_c, x_d = xx[0, 0], xx[0, -1], xx[-1, -1], xx[-1, 0]
+    y_a, y_b, y_c, y_d = yy[0, 0], yy[0, -1], yy[-1, -1], yy[-1, 0]
+
+    def _d(_x_a, _y_a, _x_b, _y_b):
+        return np.sqrt((_x_b - _x_a) ** 2 + (_y_b - _y_a) ** 2)
+
+    print('From a to b: %.0f' % (_d(x_a, y_a, x_b, y_b)))
+    print('From a to d: %.0f' % (_d(x_a, y_a, x_d, y_d)))
+    print('From b to c: %.0f' % (_d(x_b, y_b, x_c, y_c)))
+    print('From c to d: %.0f' % (_d(x_c, y_c, x_d, y_d)))
+
+
+def xr_contour(dataarray, levels):
+    """
+    Calculate contours without plotting.
+
+    Parameters
+    ----------
+    dataarray: xarray.DataArray
+        Assumed to be a 2D array on which the contours are found.
+    levels: 1D array
+        Levels for which to find coordinates in `dataarray`.
+
+    Returns
+    -------
+    matplotlib.QuadContourSet
+        Contains the contours at levels.
+
+    """
+    dummy = plt.axes(label='dummy')
+    qcs = dataarray.plot.contour(ax=dummy, levels=levels)
+    plt.close(dummy.figure)
+
+    return qcs
 
 
 def xr_abs(dataset, field):

@@ -6,7 +6,9 @@ import gsw
 import numpy as np
 import pandas as pd
 import xarray as xr
+import cartopy.crs as ccrs
 from pyproj import Geod
+from shapely.geometry import LineString, Point, Polygon
 from scipy.interpolate import interp1d
 from datetime import datetime, timezone, timedelta
 from .math_ import broadcastable, rotate_frame
@@ -14,16 +16,20 @@ from .math_ import broadcastable, rotate_frame
 __all__ = ['anomaly2rgb',
            'binc2edge',
            'bine2center',
+           'crs2crs',
            'dd2dms',
            'dms2dd',
            'degrees_180_to_360',
            'degrees_360_to_180',
            'dt2epoch',
+           'gsw_SA_CT_rho_sigma0',
            'hd2uv',
+           'lonlat2area',
            'lonlat2distances',
            'lonlat2distancefrom',
            'lonlat2heading',
            'lonlat2speed',
+           'lonlat2perimeter',
            'pd_add_seasons',
            'theta2hd',
            'uv2hd',
@@ -85,7 +91,7 @@ def anomaly2rgb(values, normal=0.5):
         elif -2.0 < value <= -1.0:
             col = [0.875, 0.875, 1.000]
 
-        # White 
+        # White
         elif -1.0 < value < 1.0:
             col = [1.0, 1.0, 1.0]
 
@@ -198,6 +204,45 @@ def bine2center(bine):
        * convert.binc2edge
     """
     return bine[:-1] + np.diff(bine) / 2
+
+
+def crs2crs(x, y, target, origin=ccrs.PlateCarree()):
+    """
+    Tranform coordinates between coordinate reference systems.
+
+    Note that CRS instances provided to the target and orgin
+    parameters must both be called `()`.
+
+    Parameters
+    ----------
+    x, y: 1D array
+        Coordinates in origin CRS.
+    target: cartopy.crs
+        Destination CRS.
+    origin: cartopy.crs
+        Original CRS.
+
+    Returns
+    -------
+    1D array
+        Horizontal coordinate in desitination CRS.
+    1D array
+        Vertical coordinate in desitination CRS.
+
+    """
+    if np.array(x).size == 1:
+        x, y = np.array([x, x]), np.array([y, y])
+        transformed = target.transform_points(origin, x, y)
+        x_dest, y_dest = transformed[0, 0], transformed[0, 1]
+    elif len(x.shape) <= 1:
+        transformed = target.transform_points(origin, x, y)
+        x_dest, y_dest = transformed[:, 0], transformed[:, 1]
+    else:
+        shape = np.array(x).shape
+        transformed = target.transform_points(origin, x.flatten(), y.flatten())
+        x_dest, y_dest = transformed[:, 0].reshape(shape), transformed[:, 1].reshape(shape)
+
+    return x_dest, y_dest
 
 
 def dms2dd(degrees, minutes, seconds):
@@ -323,6 +368,54 @@ def dt2epoch(datetimes, div=1):
     return datetimes.astype('datetime64[s]').astype('int') / div
 
 
+def gsw_SA_CT_rho_sigma0(temperature,
+                         salinity,
+                         pressure,
+                         lon=-60,
+                         lat=47):
+    """
+    Get abs. sal., cons. temp, in situ and potential densities.
+
+    Parameters
+    ----------
+    temperature: float or array
+        In situ temperature [degreeC].
+    salinity: float or array
+        Practical salinity [PSU].
+    pressure: float or array
+        Sea pressure or depth [m or decibars].
+    lon: float or array
+        Longitude of measurement [degrees+east].
+    lat: float or array
+        Latitude of measurement [degrees+north].
+
+    Returns
+    -------
+    float or array
+        Absolute salinity.
+    float or array
+        Conservative temperature.
+    float or array
+        In situ density.
+    float or array
+        Potential density.
+
+    """
+    # Get absolute salinity
+    SA = gsw.SA_from_SP(salinity, pressure, lon, lat)
+
+    # Get conservative temperature
+    CT = gsw.CT_from_t(SA, temperature, pressure)
+
+    # Get in situ density
+    rho = gsw.rho(SA, CT, pressure)
+
+    # Get density anomaly
+    sigma0 = gsw.density.sigma0(SA, CT)
+
+    return SA, CT, rho, sigma0
+
+
 def hd2uv(heading, magnitude, rotate_by=0):
     """
     Return u, v vector components from heading and magnitude.
@@ -346,11 +439,38 @@ def hd2uv(heading, magnitude, rotate_by=0):
         Vector components in chosen frame of reference.
 
     """
-    u = magnitude * np.sin(np.pi * heading /180)
+    u = magnitude * np.sin(np.pi * heading / 180)
     v = magnitude * np.cos(np.pi * heading / 180)
     u, v = rotate_frame(u, v, -rotate_by, units='deg')
 
     return u, v
+
+
+def lonlat2area(lon, lat, sq_meters_per_unit=10**6):
+    """
+    Calculate area of lon, lat polygon using PROJ4.
+
+    Parameters
+    ----------
+    lon, lat: 1D array
+        Coordinates of the polygon.
+    sq_meters_per_unit: float
+        Number of square meters per output unit (e.g., 10 ** 6 for km^2).
+
+    Returns
+    -------
+    float
+        Area of the polygon.
+    """
+    # Format as shapely geometry
+    plist = [Point(lon_, lat_) for lon_, lat_ in zip(lon, lat)]
+    polygon = Polygon(LineString(plist))
+
+    # Calculate area
+    geod = Geod(ellps='WGS84')
+    area, _ = geod.geometry_area_perimeter(polygon)
+
+    return np.abs(area / sq_meters_per_unit)
 
 
 def lonlat2distances(lon, lat, meters_per_unit=1, **kwargs):
@@ -443,11 +563,10 @@ def lonlat2heading(lon, lat, **kwargs):
     _geod = Geod(**kwargs)
 
     heading = np.array([_geod.inv(lon1, lat1, lon2, lat2)
-                          for (lon1, lat1, lon2, lat2)
-                          in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 0]
+                        for (lon1, lat1, lon2, lat2)
+                        in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 0]
 
     return heading
-
 
 
 def lonlat2speed(lon,
@@ -504,10 +623,12 @@ def lonlat2speed(lon,
     time_centered = time[:-1] + time_delta / 2
 
     # Interpolate to input time grid
-    dataarray = xr.DataArray(speed, dims=['time'], coords={'time': time_centered})
+    dataarray = xr.DataArray(speed, dims=['time'], coords={
+                             'time': time_centered})
     if top_speed:
         dataarray = dataarray.where(dataarray < top_speed)
-    speed = dataarray.interp(time=time, kwargs=dict(fill_value='extrapolate')).values
+    speed = dataarray.interp(time=time, kwargs=dict(
+        fill_value='extrapolate')).values
 
     # Compute heading
     if heading is None:
@@ -517,6 +638,33 @@ def lonlat2speed(lon,
     u, v = hd2uv(heading, speed)
 
     return u, v, speed
+
+
+def lonlat2perimeter(lon, lat, meters_per_unit=10**3):
+    """
+    Calculate perimeter of lon, lat polygon using PROJ4.
+
+    Parameters
+    ----------
+    lon, lat: 1D array
+        Coordinates of the polygon.
+    meters_per_unit: float
+        Number of meters per output unit (e.g., 10 ** 3 for km).
+
+    Returns
+    -------
+    float
+        Perimeter of the polygon.
+    """
+    # Format as shapely geometry
+    plist = [Point(lon_, lat_) for lon_, lat_ in zip(lon, lat)]
+    polygon = Polygon(LineString(plist))
+
+    # Calculate area
+    geod = Geod(ellps='WGS84')
+    _, perimeter = geod.geometry_area_perimeter(polygon)
+
+    return np.abs(perimeter / meters_per_unit)
 
 
 def pd_add_seasons(dataframe, time='time', stype='astro'):
@@ -576,10 +724,17 @@ def theta2hd(theta):
         Angle as read on compass.
 
     """
-    theta = theta - 90
-    theta = 360 - theta
-    theta[theta < 0] = theta[theta < 0] + 360
-    bearing = theta % 360
+    if np.array(theta).size > 1:
+        theta = theta - 90
+        theta = 360 - theta
+        theta[theta < 0] = theta[theta < 0] + 360
+        bearing = theta % 360
+    else:
+        theta = theta - 90
+        theta = 360 - theta
+        if theta < 0:
+            theta = theta + 360
+        bearing = theta % 360
     return bearing
 
 

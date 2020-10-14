@@ -1,14 +1,18 @@
 """
 Read text files of known formats into python variables
 """
+import dateparser
 import os
+import re
+import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 
 
 __all__ = ['list2cm',
            'pd_cat_column_files',
-           'pd_read_odf']
+           'pd_read_odf',
+           'read_odf_metadata']
 
 
 def list2cm(array_file, N: 'integer' = 256):
@@ -21,11 +25,12 @@ def list2cm(array_file, N: 'integer' = 256):
 
 
 def pd_cat_column_files(path_list,
-                     cols,
-                     index_cols,
-                     sep=r'\s+',
-                     axis=1,
-                     parse_dates=True):
+                        cols,
+                        index_cols,
+                        sep=r'\s+',
+                        axis=1,
+                        parse_dates=True,
+                        **rc_kw):
     """
     Merge ascii column files to dataframe.
 
@@ -67,9 +72,11 @@ def pd_cat_column_files(path_list,
                             sep=sep,
                             names=col_names,
                             index_col=index_cols,
+                            skiprows=1,
                             parse_dates=parse_dates,
                             infer_datetime_format=True,
-                            usecols=col_names)
+                            usecols=col_names,
+                            **rc_kw)
 
     # Make a new column for every other file
     for path in path_list[1:]:
@@ -94,9 +101,11 @@ def pd_cat_column_files(path_list,
                                     sep=sep,
                                     names=col_names,
                                     index_col=index_cols,
+                                    skiprows=1,
                                     parse_dates=parse_dates,
                                     infer_datetime_format=True,
-                                    usecols=col_names)
+                                    usecols=col_names,
+                                    **rc_kw)
 
         # Concatenate
         dataframe = pd.concat((dataframe, new_dataframe), axis=axis)
@@ -106,15 +115,38 @@ def pd_cat_column_files(path_list,
 
 
 def pd_read_odf(FNAME,
-           sep=r'\s+',
-           col_name='WMO_CODE',
-           missing_values=None):
+                sep=r'\s+',
+                col_name='WMO_CODE',
+                usecols=None,
+                missing_values=None,
+                header_depth=False):
     """
-    Read ocean data format (odf) files and return a pandas
-    dataframe. Column names are determined by reading the header. By
-    default, the WMO_CODE field of the parameter headings is used to
-    choose column names but this can be changed by setting the col_name
-    option.
+    Read ocean data format (odf) files into pandas dataframe.
+
+    Parameters
+    ----------
+    FNAME: str
+        Path and name of odf file.
+    sep: str
+        Data delimiter of odf file. Default is whitespace.
+    col_name: str
+        Header line to use as column name. Typical choices are 'NAME',
+        'CODE' or 'WMO_CODE'.
+    usecols: list of int
+        Index of columns to extract from odf file. Passed to pd.read_csv.
+        By default all columns are returned.
+    missing_values: str or float
+        Expression to evaluate as missing_values. Passed to pd.read_csv.
+    header_depth: bool
+        Add column with depth read in the odf header. Disabled by default.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe containing the requested data columns of the odf file.
+        Column names are `col_name [unit]` read directly from the odf file
+        header.
+
     """
     LINES = open(FNAME, 'r', errors='replace').readlines()
 
@@ -138,7 +170,8 @@ def pd_read_odf(FNAME,
         if re.search('PARAMETER_HEADER', L):
             SEEK_NAME, SEEK_UNIT = True, True
         if SEEK_NAME and re.search(col_name, L):
-            NAME = PAR_STRING.findall(L.split('=')[-1])[0]
+            # NAME = PAR_STRING.findall(L.split('=')[-1])[0]
+            NAME = ' '.join(PAR_STRING.findall(L.split('=')[-1]))
             NAMES.append(NAME)
             if 'SYTM' in NAME:
                 NAMES[-1] = 'SYTM'
@@ -157,16 +190,94 @@ def pd_read_odf(FNAME,
             HEADER_LINES = LN + 1
             break
 
+    # Merge variable names and units
+    COLUMNS = ['%s [%s]' % (NAME, UNIT) for NAME, UNIT in zip(NAMES, UNITS)]
+
+    # Manually mangle duplicate names
+    for index, name in enumerate(COLUMNS):
+        if name in COLUMNS[:index]:
+            COLUMNS[index] = name + 'duplicate'
+    
+    # Select columns to read
+    if usecols is None:
+        usecols = list(range(len(COLUMNS)))
+
     # Read the data
     DF = pd.read_csv(FNAME,
                      skiprows=HEADER_LINES,
                      sep=sep,
-                     names=NAMES,
+                     usecols=usecols,
+                     names=COLUMNS,
                      parse_dates=PARSE_DATES,
                      na_values=missing_values)
 
     # Add depth column if specified
-    if not DEPTH is None:
-        DF['z'] = DEPTH * np.ones(DF.shape[0])
+    if header_depth:
+        DF['header depth'] = DEPTH * np.ones(DF.shape[0])
 
     return DF
+
+
+def read_odf_metadata(fname, vnames, dtype=None):
+    """
+    Get info from odf file header.
+
+    Common examples of `vnames` for the trawl CTD dataset are the
+    following:
+
+    'INITIAL_LATITUDE'
+    'INITIAL_LONGITUDE'
+    'START_DATE_TIME'
+    'END_DATE_TIME'
+    'SAMPLING_INTERVAL'
+
+    Parameters
+    ----------
+    fname: str
+        Name of odf file to read.
+    vnames: list of str
+        Names of variables to extract. Text left of the `=` sign
+        with all space characters removed.
+    dtype: list of Class or None
+        If specified must be an iterable of type class constructors
+        the same length as `vnames`. If unspecified, all variables
+        are returned as strings.
+
+    Returns
+    -------
+    list
+        Ordered list of queried metadata information.
+
+    """
+    
+    # Open file
+    LINES = open(fname, 'r', errors='replace').read().splitlines()
+
+    # Init data structure
+    results =  ['' for _ in range(len(vnames))]
+
+    # Loop over header lines
+    for L in LINES:
+        # Parse line
+        PARAMETER = L.replace(" ", "").split('=')[0]
+        VALUE = L.replace(",", "").split('=')[-1]
+
+        # Keep if requested
+        if PARAMETER in vnames:
+            position = vnames.index(PARAMETER)
+            results[position] = VALUE
+
+        # Break if data section reached
+        if re.search('-- DATA --', L):
+            break
+
+    # Convert if requested
+    for i, (r, t) in enumerate(zip(results, dtype)):
+        # Parse datestrings before datetime conversions
+        if t == np.datetime64:
+            r = dateparser.parse(r)
+
+        # Type conversion
+        results[i] = t(r)
+    
+    return results

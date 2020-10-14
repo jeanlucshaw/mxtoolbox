@@ -8,14 +8,18 @@ import numpy as np
 from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from ..process.math_ import xr_abs
-
+from ..read.text import list2cm
 
 __all__ = ['axlabel_doy2months',
            'axlabel_woy2months',
            'colorbar',
            'colorline',
+           'contour_n_largest',
+           'data_to_axis_coordinates',
+           'divergent',
            'labeled_colorbar',
            'move_axes',
+           'sequential',
            'text_array']
 
 
@@ -68,6 +72,7 @@ def colorbar(axes,
              label=None,
              pad_size=0.05,
              cbar_size=0.05,
+             loc='bottom',
              **cbar_kw):
     """
     Add colorbar to axes.
@@ -108,7 +113,7 @@ def colorbar(axes,
 
     """
     # Orientation is vertical if otherwise not specified
-    cbar_kw = {**dict(orientation='vertical'), **cbar_kw}
+    cbar_kw = {'orientation': 'vertical', **cbar_kw}
 
     # Save axes position
     if type(axes) is np.ndarray:
@@ -129,10 +134,16 @@ def colorbar(axes,
                     cbar_size * width,
                     height)
     else:
-        cbar_pos = (left,
-                    bottom - height * cbar_size - pad_size * width,
-                    width,
-                    height * cbar_size)
+        if loc == 'top':
+            cbar_pos = (left,
+                        bottom + height + pad_size * width,
+                        width,
+                        height * cbar_size)
+        else:
+            cbar_pos = (left,
+                        bottom - height * cbar_size - pad_size * width,
+                        width,
+                        height * cbar_size)
 
     # Create axes for colorbar
     cax = plt.axes(cbar_pos)
@@ -147,6 +158,10 @@ def colorbar(axes,
             cax.set_ylabel(label)
         else:
             cax.set_xlabel(label)
+
+    if loc == 'top' or loc == 'bottom':
+        cax.xaxis.set_ticks_position(loc)
+        cax.xaxis.set_label_position(loc)
 
     return cbar, cax
 
@@ -175,6 +190,81 @@ def colorline(x, y, z=None, cmap=plt.get_cmap('copper'),
     ax.add_collection(lc)
 
     return lc
+
+
+def contour_n_largest(qcs, n):
+    """
+    Return n largest contours for each level of a QuadContourSet.
+
+    Parameters
+    ----------
+    qcs: matplotlib.QuadContourSet
+        As output by pyplot.contour.
+    n: int
+        Number of contours to keep for each level.
+
+    Returns
+    -------
+    tuple
+        The number of items in the tuple depends on the number of levels. Each
+        level item contains n contours.
+    """
+    # Init output
+    results = tuple()
+
+    # Loop over levels
+    for c in qcs.collections:
+
+        # Get path sizes
+        paths = c.get_paths()
+        sizes = np.ones(len(paths)) * np.nan
+
+        # Loop over paths and get sizes
+        for i, p in enumerate(paths):
+            sizes[i] = p.vertices.size
+
+        # Sort paths largest first
+        sort_index = np.argsort(sizes)[::-1]
+
+        # Get n largest paths
+        paths_kept = [paths[sort_i].vertices for sort_i in sort_index[:n]]
+
+        # Add n largest contours list for this level
+        results += paths_kept,
+
+    return results
+
+
+def data_to_axis_coordinates(axes, xdata, ydata):
+    """
+    Transform coordinates from data to axis.
+
+    Parameters
+    ----------
+    axes: pyplot.Axes
+        Axes on which to operate.
+    xdata, ydata: 1D array
+        Horizontal and vertical coordinates to transform.
+
+    Returns
+    -------
+    xaxes, yaxes: 1D array
+        Coordinates in axis reference.
+    """
+    # Prepare input to transform function
+    data_points = [(x, y) for x, y in zip(xdata, ydata)]
+
+    # Define transformation
+    data_to_axis = axes.transData + axes.transAxes.inverted()
+
+    # Transform points
+    axes_points = data_to_axis.transform(data_points)
+
+    # Prepare output
+    xaxes = np.array(axes_points)[:, 0]
+    yaxes = np.array(axes_points)[:, 1]
+
+    return xaxes, yaxes
 
 
 def labeled_colorbar(position, col_arr, lab_array, fig, txt_w=None):
@@ -222,6 +312,24 @@ def labeled_colorbar(position, col_arr, lab_array, fig, txt_w=None):
                 yticks=[])
 
 
+def divergent(N=256):
+    """
+    Return Peter's RdBu colormap in N steps.
+
+    Parameters
+    ----------
+    N: int
+        Number of levels.
+
+    Returns
+    -------
+    matplotlib.LinearSegmentedColormap
+        For passing to color coding plot function.
+
+    """
+    return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/DivergentPalette', N=N)
+
+
 def make_segments(x, y):
     '''
     Create list of line segments from x and y coordinates, in the correct format for LineCollection:
@@ -257,7 +365,23 @@ def move_axes(axes, ud=0, rl=0):
     box.y1 += ud
     axes.set_position(box)
 
+def sequential(N=256):
+    """
+    Return the TSAT colormap in N steps.
 
+    Parameters
+    ----------
+    N: int
+        Number of levels.
+
+    Returns
+    -------
+    matplotlib.LinearSegmentedColormap
+        For passing to color coding plot function.
+
+    """
+    return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/TsatPalette', N=N)
+    
 def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, **kwargs):
     """
     Add multiple text annotations to plot in one call.

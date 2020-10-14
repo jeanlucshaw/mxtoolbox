@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import scipy.signal as signal
 from .math_ import xr_time_step
-from .convert import binc2edge
+from .convert import binc2edge, bine2center
 import warnings
 
 __all__ = ['pd_bin',
@@ -46,7 +46,10 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
     index_names = dataframe.index.names
     dataset = dataframe.reset_index().set_index(dim).to_xarray()
     dataset = xr_bin(dataset, dim, binc, func=func)
-    return dataset.to_dataframe().reset_index().set_index(index_names)
+    try:
+        return dataset.to_dataframe().reset_index().set_index(index_names)
+    except:
+        return dataset.to_dataframe().reset_index()
 
 
 def xr_at_var_max(dataset, variable, dim=None):
@@ -90,7 +93,6 @@ def xr_at_var_max(dataset, variable, dim=None):
         # Run successively over all dimensions
         for d in dataset[variable].dims:
             output = xr_at_var_max(output, variable, dim=d)
-
     return output
 
 
@@ -123,8 +125,10 @@ def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
     # Bin type management
     if centers:
         edge = binc2edge(bins)
+        labels = bins
     else:
         edge = bins
+        labels = bine2center(bins)
 
     # Skip for compatibility with DataArray
     if isinstance(dataset, xr.core.dataset.Dataset):
@@ -141,7 +145,7 @@ def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
         warnings.simplefilter('ignore', category=RuntimeWarning)
 
         # Bin reduction 
-        output = (dataset.groupby_bins(dataset[dim], bins=edge, labels=binc)
+        output = (dataset.groupby_bins(dataset[dim], bins=edge, labels=labels)
                    .reduce(func, dim=dim)
                    .rename({dim+'_bins': dim}))
 

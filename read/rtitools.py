@@ -8,6 +8,7 @@ from tqdm import tqdm
 from rti_python.Codecs.BinaryCodec import BinaryCodec
 from rti_python.Ensemble.EnsembleData import *
 from mxtoolbox.read.adcp import adcp_init
+from mxtoolbox.process.signal_ import xr_bin
 
 __all__ = ['index_rtb_data',
            'load_rtb_binary',
@@ -72,8 +73,8 @@ def load_rtb_binary(files):
     """
     Read Rowetech RTB binary ADCP data to xarray.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     files : str or list of str
         File name or expression designating .ENS files, or list or file names.
 
@@ -92,8 +93,19 @@ def load_rtb_binary(files):
 
     # Make xarray from file list
     if len(adcp_files) > 1:
-        xarray_datasets = [read_rtb_file(f) for f in adcp_files if f[-3:]=='ENS']
+        # xarray_datasets = [read_rtb_file(f) for f in adcp_files if f[-3:]=='ENS']
+        xarray_datasets = [read_rtb_file(f) for f in adcp_files]
         ds = xr.concat(xarray_datasets, dim='time')
+
+        # Find average depths by bin
+        bins = np.arange(0, ds.z.max() + ds.binSize, ds.binSize)
+        lbb = bins - 0.5 * ds.binSize
+        ubb = bins + 0.5 * ds.binSize
+        z_bins = np.array([ds.z.where((ds.z < ub) & (ds.z > lb)).mean().values for lb, ub in zip(lbb, ubb)])
+        z_bins = z_bins[np.isfinite(z_bins)]
+
+        # Bin to these depths for uniformity
+        ds = xr_bin(ds, 'z', z_bins)
     else:
         ds = read_rtb_file(*adcp_files)
 

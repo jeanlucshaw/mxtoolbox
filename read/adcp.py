@@ -35,6 +35,7 @@ def adcp_init(Nz, Nt, Nb):
                      'v': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
                      'w': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
                      'e': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
+                     'flags': (['z', 'time'], np.zeros((Nz, Nt))),
                      'temp': (['time'], np.nan * np.ones(Nt)),
                      'dep': (['time'], np.nan * np.ones(Nt)),
                      'Roll': (['time'], np.nan * np.ones(Nt)),
@@ -64,7 +65,7 @@ def adcp_init(Nz, Nt, Nb):
 
 def adcp_qc(di,
             amp_th=30,
-            pg_th=80,
+            pg_th=90,
             corr_th=0.6,
             roll_th=20,
             pitch_th=20,
@@ -73,7 +74,8 @@ def adcp_qc(di,
             gpsfile=None,
             sl=None,
             depth=None,
-            R=None):
+            R=None,
+            C=None):
     """
     Perform ADCP quality control.
 
@@ -101,7 +103,28 @@ def adcp_qc(di,
     depth : float
         Fixed depth used for removing side lobe contamination.
     R : float
-        Horizontally rotate velocity vectors by this value (radians).
+        Horizontally rotate velocity after motion correction by this value.
+    C : float
+        Horizontally rotate velocity before motion correction by this value.
+
+
+    Note
+    ----
+
+       Quality control flags follow those used by DAISS for ADCP
+       data at Maurice-Lamontagne Institute. Meaning of the flagging
+       values is the following.
+
+       * 0: no quality control
+       * 1: datum seems good
+       * 3: datum seems questionable
+       * 4: datum seems bad
+       * 9: datum is missing
+
+       Data are marked as questionable if they fail only the 4beam
+       transformation test. If they fail the 4beam test and any other
+       non-critical tests they are marked as bad. Data likely to be
+       biased from sidelobe interference are also marked as bad.
 
     """
     # Work on copy
@@ -116,32 +139,46 @@ def adcp_qc(di,
         except:
             raise NameError("GPS file not found...!")
 
-    # Set up conditions
+    # Acoustics conditions
+    corr_condition = np.abs( ds.corr ) < corr_th
+    pg_condition = np.abs( ds.pg ) < pg_th
+    amp_condition = np.abs( ds.amp ) < amp_th
+
+    # Motion conditions
     roll_mean = circmean(ds.Roll.values, low=-180, high=180)
-    roll_condition = np.abs(ps.circular_distance(ds.Roll.values, roll_mean, units='deg')) < roll_th
-
+    roll_condition = np.abs(ps.circular_distance(ds.Roll.values, roll_mean, units='deg')) > roll_th
     pitch_mean = circmean(ds.pitch.values, low=-180, high=180)
-    pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) < pitch_th
+    pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) > pitch_th
+    motion_condition = roll_condition & pitch_condition
 
-    velocity_condition = (np.less(abs(ds.u.values), vel_th, where=np.isfinite(ds.u.values)) |
-                          np.less(abs(ds.v.values), vel_th, where=np.isfinite(ds.v.values)))
-    bottom_track_condition = (np.less(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
-                              np.less(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
+    # Outiler conditions
+    horizontal_velocity = np.sqrt(ds.u ** 2 + ds.v ** 2)
+    # velocity_condition = (np.greater(abs(ds.u.values), vel_th, where=np.isfinite(ds.u.values)) |
+    #                       np.greater(abs(ds.v.values), vel_th, where=np.isfinite(ds.v.values)))
+    velocity_condition = np.greater(horizontal_velocity.values, vel_th, where=np.isfinite(ds.u.values))
+    bottom_track_condition = (np.greater(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
+                              np.greater(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
+
+    # Missing condition
+    missing_condition = (~np.isfinite(ds.u) | ~np.isfinite(ds.v) | ~np.isfinite(ds.w)).values
+
+    # Boolean summary of non-critical tests
+    ncrit_condition = corr_condition | amp_condition | motion_condition | velocity_condition
 
     # Remove side lob influence according to a fixed depths (e.g. Moorings)
     if sl == 'dep':
         # Dowward looking
         if ds.attrs['looking'] == 'down':
             if depth != None:
-                sidelobe_condition = (ds.z < ds.dep.values.mean()
+                sidelobe_condition = (ds.z > ds.dep.values.mean()
                                       * (1 - np.cos(np.pi * ds.attrs['angle'] / 180))
-                                      + depth*np.cos(np.pi*ds.attrs['angle'] / 180))
+                                      + depth * np.cos(np.pi * ds.attrs['angle'] / 180))
             else:
                 raise Warning("Can not correct for side lobes, depth not provided.")
 
         # Upward looking
         elif ds.attrs['looking']=='up':
-            sidelobe_condition = ds.z > ds.dep.values.mean()*(1-np.cos(np.pi*ds.attrs['angle']/180))
+            sidelobe_condition = ds.z < ds.dep.values.mean()*(1-np.cos(np.pi*ds.attrs['angle']/180))
 
         # Orientation unknown 
         else:
@@ -154,35 +191,42 @@ def adcp_qc(di,
 
     # Do not perform side lobe removal
     else:
-        sidelobe_condition = np.ones_like(ds.u.values, dtype='bool')
+        sidelobe_condition = np.zeros_like(ds.u.values, dtype='bool')
 
     # Apply condition to bottom track velocities
     for field in ['u_bt', 'v_bt', 'w_bt']:
         ds[field] = ds[field].where( bottom_track_condition )
 
-    # Apply conditions to velocity components
+    # Determine quality flags
+    ds['flags'] = 1
+    ds['flags'] = xr.where(pg_condition, 3, ds.flags)
+    ds['flags'] = xr.where(pg_condition & ncrit_condition, 4, ds.flags)
+    ds['flags'] = xr.where(sidelobe_condition, 4, ds.flags)
+    ds['flags'] = xr.where(missing_condition, 9, ds.flags)
+
+    # First optional rotation to correct compass misalignment
+    if C not in [None, 0]:
+        u, v = ps.rotate_frame(ds.u.values, ds.v.values, C, units='deg')
+        ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
+        u_bt, v_bt = ps.rotate_frame(ds.u_bt.values, ds.v_bt.values, C, units='deg')
+        ds['u_bt'], ds['v_bt'] = (('z', 'time'), u_bt), (('z', 'time'), v_bt)
+
+    # Correct for platform motion
     for field in ['u', 'v', 'w', 'e']:
-        ds[field] = ds[field].where( np.abs( ds.corr ) > corr_th )
-        ds[field] = ds[field].where( np.abs( ds.pg ) > pg_th )
-        ds[field] = ds[field].where( np.abs( ds.amp > amp_th ) )
-        ds[field] = ds[field].where( roll_condition )
-        ds[field] = ds[field].where( pitch_condition )
-        ds[field] = ds[field].where( sidelobe_condition )
-        ds[field] = ds[field].where( velocity_condition )
 
         # No bottom track for error velocity
         if field in ['u', 'v', 'w']:
             # Bottom track correction in 3D
             if iv=='bt':
-                ds[field] += ds['%s_bt' % field].values
+                ds[field] -= ds['%s_bt' % field].values
 
             # GPS velocity correction in 2D
             elif iv=='gps' and (field in ['u', 'v']):
-                ds[field] -= np.tile(gps[field].where(np.isfinite(gps.lon.values), 0), (ds.z.size, 1))
+                ds[field] += np.tile(gps[field].where(np.isfinite(gps.lon.values), 0), (ds.z.size, 1))
 
-    # Rotate
+    # Second optional rotation to place in chosen reference frame
     if R not in [None, 0]:
-        u, v = ps.rotate_frame(ds.u.values, ds.v.values, R, units='rad')
+        u, v = ps.rotate_frame(ds.u.values, ds.v.values, R, units='deg')
         ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
 
     return ds

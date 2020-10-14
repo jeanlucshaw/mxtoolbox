@@ -43,6 +43,7 @@ See Also
 from mxtoolbox.read.adcp import *
 from mxtoolbox.read.rtitools import load_rtb_binary
 from mxtoolbox.process.signal_ import xr_bin
+import xarray as xr
 import numpy as np
 import os
 import argparse
@@ -84,6 +85,12 @@ if __name__ == '__main__':
                         metavar='',
                         type=float,
                         help='Correlation threshold (0-255). Defaults to 64.')
+    parser.add_argument('-C', '--compass-adjustment',
+                        metavar='',
+                        type=float,
+                        help='''Rotate velocities (and bottom track velocities) by
+                        this angle (degrees) before adding them for motion correction.
+                        Use this option to correct for compass misalignment.''')
     parser.add_argument('-d', '--depth',
                         metavar='',
                         type=float,
@@ -91,6 +98,9 @@ if __name__ == '__main__':
     parser.add_argument('-D', '--force-dw',
                         action='store_true',
                         help='Force downward looking processing.')
+    parser.add_argument('-f', '--fill-na',
+                        action='store_true',
+                        help='Interpolate velocity vertically and marke as changed (5).')
     parser.add_argument('-g', '--gps-file',
                         metavar='',
                         help='GPS netcdf file path and name.')
@@ -137,9 +147,9 @@ if __name__ == '__main__':
     parser.add_argument('-R', '--rot-ang',
                         type=float,
                         metavar='',
-                        help='''Anti-clockwise positive angle in degrees by which to
-                        rotate the frame of reference.
-                        (-360 to 360).''')
+                        help='''Rotate velocities clockwise (and bottom track velocities) by
+                        this angle (degrees) motion correction. Use this option to place data
+                        in a preferred reference frame.''')
     parser.add_argument('-s', '--sl-mode',
                         metavar='',
                         help='''Side lobe rejection mode. Default is None. If given `bt`,
@@ -148,6 +158,10 @@ if __name__ == '__main__':
                         provided for downward looking data. If data is upward looking,
                         the average depth of the instrument is used as distance to
                         boundary.''')
+    parser.add_argument('-S', '--flag-sparse',
+                        action='store_true',
+                        help='''Flag data beyond depths where 10% of the data are good as
+                        seeming like bad data (4).''')
     parser.add_argument('-T', '--mindep',
                         metavar='',
                         type=float,
@@ -178,10 +192,12 @@ if __name__ == '__main__':
                        gpsfile=None,
                        pitch_th=20,
                        roll_th=20,
+                       vel_th=2,
                        R=0,
+                       C=0,
                        sl=None,
                        depth=None,
-                       pg_th=80)
+                       pg_th=90)
 
     # Brand dependent quality control defaults
     rti_qc_defaults = dict(amp_th=20,
@@ -208,7 +224,9 @@ if __name__ == '__main__':
     if args.roll_thres:
         user_qc_kw['vel_th'] = args.velocity_thres
     if args.rot_ang:
-        user_qc_kw['R'] = np.pi * args.rot_ang / 180
+        user_qc_kw['R'] = args.rot_ang
+    if args.compass_adjustment:
+        user_qc_kw['C'] = args.compass_adjustment
     if args.sl_mode:
         user_qc_kw['sl'] = args.sl_mode
     if args.depth:
@@ -249,25 +267,37 @@ if __name__ == '__main__':
     if qc:
         ds = adcp_qc(ds, **qc_kw)
 
+    # Find maximum depth where 10% of data is good
+    u_good = ds.u.where(ds.flags < 2).values
+    Ng = np.asarray([np.isfinite(u_good[ii, :]).sum()
+                     for ii in range(ds.z.size)])
+    z_max = ds.z.values[np.argmin(np.abs(Ng.max() * 0.1 - Ng))]
+
     # Interpolate to z grid
     if gridf:
-        # Find maximum depth where 10% of data is good
-        Ng = np.asarray([np.isfinite(ds.u.values[ii, :]).sum()
-                         for ii in range(ds.z.size)])
-        z_max = ds.z.values[np.argmin(np.abs(Ng.max() * 0.1 - Ng))]
-
         # Bin to z grid
         z_grid = np.loadtxt(gridf)
         ds = xr_bin(ds, 'z', z_grid)
 
-        # Remove sparse data
-        cond = ds.z < z_max if ds.looking == 'down' else ds.z > z_max
-        ds.u.values = ds.u.where(cond)
-        ds.v.values = ds.v.where(cond)
-        ds.w.values = ds.w.where(cond)
-        ds.e.values = ds.e.where(cond)
+        # Interpolate velocities vertically and mark as changed (5)
+        if args.fill_na:
+            _nan_before = np.isnan(ds.u) | np.isnan(ds.v) | np.isnan(ds.w)
+            
+            ds['u'] = ds.u.interpolate_na(dim='z')
+            ds['v'] = ds.v.interpolate_na(dim='z')
+            ds['w'] = ds.w.interpolate_na(dim='z')
+            _finite_after = np.isfinite(ds.u) | np.isfinite(ds.v) | np.isfinite(ds.w)
+            ds['flags'] = xr.where(_nan_before & _finite_after, 5, ds.flags)
 
-    # Manage temperature data
+        # Bins outside data range flags should be missing (9)
+        ds['flags'] = ds.flags.where(np.isfinite(ds.flags), 9)
+
+    # Remove sparse data
+    if args.flag_sparse:
+        cond = ds.z < z_max if ds.looking == 'down' else ds.z > z_max
+        ds['flags'] = ds.flags.where(cond, 4)
+
+    # manage temperature data
     if args.include_temp:
         ds['temp'].values = np.asarray([data.temperature[selected]])
     # else:
