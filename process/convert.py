@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import cartopy.crs as ccrs
+import warnings
 from pyproj import Geod
 from shapely.geometry import LineString, Point, Polygon
 from scipy.interpolate import interp1d
@@ -550,14 +551,14 @@ def lonlat2heading(lon, lat, **kwargs):
     Parameters
     ----------
     lon, lat : 1D array
-        Plate carree coordinates to process.
+        Plate carree coordinates to process. Length m.
     kwargs : keyword arguments
         Passed to `pyroj.Geod` .
 
     Returns
     -------
     heading : 1D array
-        Forward azimuth.
+        Forward azimuth. Length m-1.
     """
     kwargs = {'ellps': 'WGS84', **kwargs}
     _geod = Geod(**kwargs)
@@ -607,17 +608,20 @@ def lonlat2speed(lon,
     """
 
     # Convert to datetime
-    time = time.astype('datetime64[s]')
+    time = time.astype('datetime64[ns]')
 
     # Compute dx
     distances = lonlat2distances(lon, lat, meters_per_unit=meters_per_unit)
 
     # Compute dt
-    time_delta = np.diff(time)
+    time_delta = np.diff(time) / 10 ** 9
     dt_seconds = np.float64(time_delta)
 
     # Compute speed
-    speed = distances / dt_seconds * seconds_per_unit
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=RuntimeWarning)
+
+        speed = distances / dt_seconds * seconds_per_unit
 
     # Compute centered time vector
     time_centered = time[:-1] + time_delta / 2
@@ -625,10 +629,6 @@ def lonlat2speed(lon,
     # Interpolate to input time grid
     dataarray = xr.DataArray(speed, dims=['time'], coords={
                              'time': time_centered})
-    if top_speed:
-        dataarray = dataarray.where(dataarray < top_speed)
-    speed = dataarray.interp(time=time, kwargs=dict(
-        fill_value='extrapolate')).values
 
     # Compute heading
     if heading is None:
@@ -637,7 +637,13 @@ def lonlat2speed(lon,
     # Compute velocity components
     u, v = hd2uv(heading, speed)
 
-    return u, v, speed
+    # Interpolate to input time vector
+    dataset = xr.Dataset({'u': ('time', u), 'v': ('time', v), 'spd': ('time', speed)}, coords={'time': time_centered})
+    dataset = dataset.interp(time=time, kwargs=dict(fill_value='extrapolate'))
+    if top_speed:
+        dataset = dataset.where(dataset.spd < top_speed)
+    
+    return dataset.u.values, dataset.v.values, dataset.spd.values
 
 
 def lonlat2perimeter(lon, lat, meters_per_unit=10**3):

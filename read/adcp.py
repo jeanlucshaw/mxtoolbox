@@ -209,7 +209,7 @@ def adcp_qc(di,
         u, v = ps.rotate_frame(ds.u.values, ds.v.values, C, units='deg')
         ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
         u_bt, v_bt = ps.rotate_frame(ds.u_bt.values, ds.v_bt.values, C, units='deg')
-        ds['u_bt'], ds['v_bt'] = (('z', 'time'), u_bt), (('z', 'time'), v_bt)
+        ds['u_bt'], ds['v_bt'] = (('time'), u_bt), (('time'), v_bt)
 
     # Correct for platform motion
     for field in ['u', 'v', 'w', 'e']:

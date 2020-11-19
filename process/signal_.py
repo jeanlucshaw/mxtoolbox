@@ -335,11 +335,15 @@ def xr_godin(dataarray, tname):
 
     # Perform averaging
     time_step = xr_time_step(dataarray, tname, 'second')
-    flt_godin = (dataarray
-                 .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
-                 .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
-                 .rolling({tname: int(25 * 3600 / time_step)}, center=True).mean()
-                 .resample({tname: '1D'}).mean())
+    # Avoids printing mean of empty slice warning
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=RuntimeWarning)
+
+        flt_godin = (dataarray
+                     .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
+                     .rolling({tname: int(24 * 3600 / time_step)}, center=True).mean()
+                     .rolling({tname: int(25 * 3600 / time_step)}, center=True).mean()
+                     .resample({tname: '1D'}).mean())
 
     # Transpose to original dimensions
     if type(dataarray) == 'xarray.core.dataset.Dataset':

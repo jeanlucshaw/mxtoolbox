@@ -12,7 +12,8 @@ from matplotlib.colors import LinearSegmentedColormap
 __all__ = ['list2cm',
            'pd_cat_column_files',
            'pd_read_odf',
-           'read_odf_metadata']
+           'read_odf_metadata',
+           'xr_print_columns']
 
 
 def list2cm(array_file, N: 'integer' = 256):
@@ -281,3 +282,57 @@ def read_odf_metadata(fname, vnames, dtype=None):
         results[i] = t(r)
     
     return results
+def xr_print_columns(xr_obj, cols, filename, csv_kw={}):
+    """
+    Print variables and coordinates of an xarray dataset or
+    dataarray to a simple ascii file.
+
+    Parameters
+    ----------
+    xr_obj: xarray.Dataset or xarray.DataArray
+        From which to write.
+    filename: str
+        Path and name of output file
+    csv_kw: dict
+        Dictionary of arguments passed to pd.to_csv
+    cols: iterable of strings
+        Names of variables or coordinates to print. Order defines the 
+        output file column order.
+
+    Note
+    ----
+    Possible values of cols are all variables and coordinates
+    of `xr_obj`, as well as year, month, day and date. If `xr_obj` is
+    a dataarray enter `values` to print the data values.
+    """
+    # Build a dictionary of the proper columns
+    col_dict = {}
+    for col in cols:
+        if col == 'year':
+            col_dict[col] = xr_obj.time.dt.year.values
+        elif col == 'month':
+            col_dict[col] = xr_obj.time.dt.month.values
+        elif col == 'day':
+            col_dict[col] = xr_obj.time.dt.day.values
+        elif col == 'date':
+            col_dict[col] = xr_obj.time
+        elif col == 'values':
+            col_dict[col] = xr_obj.values
+        else:
+            col_dict[col] = xr_obj[col]
+        
+    # Init dataframe
+    dataframe = pd.DataFrame.from_dict(col_dict)
+
+    # Handle pd.to_csv defaults and keyword arguments
+    csv_defaults = {'sep': ' ',
+                    'float_format': '%f',
+                    'header': False,
+                    'index': False,
+                    'na_rep': np.nan}
+    for key in csv_defaults:
+        if not key in csv_kw.keys():
+            csv_kw[key] = csv_defaults[key]
+
+    # Print to csv
+    dataframe.to_csv(filename, **csv_kw)

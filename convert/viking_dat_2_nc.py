@@ -6,19 +6,23 @@ use files produced by this routine to correct for profiler
 movement.
 
 The options below are generated automatically by the python
-part of this routine but the first postional argument is
-passed to the shell part of this routine. It is the path
+part of this routine but the first two postional arguments are
+passed to the shell part of this routine. They are the path
 to the raw files containing GPS coordinates. Typically,
 
 .. code::
 
-   /data/Viking/DropBox/Dropbox/BUOY_DATA/BUOYNAME/YYYY
+   /data/Viking/Surface/Edited/PMZA-RIKI
+
+and the year. Other arguments are past to the python portion
+of this routine.
 
 """
 import argparse as ap
 import pandas as pd
 import matplotlib.pyplot as plt
 import mxtoolbox.process as ps
+import mxtoolbox.plot as pt
 
 # Parse input arguments
 parser  =   ap.ArgumentParser(usage=__doc__)
@@ -42,9 +46,12 @@ parser.add_argument('-N', '--north-bound',
 parser.add_argument('-t', '--track',
                     action='store_true',
                     help='Show plot of buoy tracks.')
+parser.add_argument('-s', '--speeds',
+                    action='store_true',
+                    help='Show plot of buoy tracks and velocity vectors.')
 parser.add_argument('-p', '--printout',
                     action='store_true',
-                    help='Show plot of buoy tracks.')
+                    help='Print summary info to terminal..')
 parser.add_argument("station")
 args    =   parser.parse_args()
 
@@ -60,6 +67,7 @@ def pprint(variable, units):
 dataframe = pd.read_csv(args.filename,
                         sep=r"\s+",
                         parse_dates=['time'],
+                        na_values='#.#',
                         names=['time',
                                'lat',
                                'lon',
@@ -78,7 +86,7 @@ if args.north_bound:
 u, v, speed = ps.lonlat2speed(dataframe.lon.values,
                               dataframe.lat.values,
                               dataframe.time.values,
-                              heading=dataframe.heading.values,
+                              # heading=dataframe.heading.values,
                               top_speed=5)
 
 # Calculate distance from center
@@ -99,6 +107,20 @@ dataframe['radial_distance'] = radial_distance
 if args.track:
     plt.plot(dataframe.lon, dataframe.lat)
     plt.plot(lon_0, lat_0, 'o', mfc='r', mec='r', ms=10)
+    plt.show()
+
+# Show buoy track and velocity subset
+if args.speeds:
+    if dataframe.shape[0] < 100:
+        last = dataframe.shape[0]
+    else:
+        last = 100
+
+    _, ax = plt.subplots()
+    geoax, kw  = pt.cp_proj(ax, 'Mercator') 
+    geoax.plot(dataframe.lon[:last], dataframe.lat[:last])
+    geoax.quiver(dataframe.lon[:last], dataframe.lat[:last],
+                 dataframe.u[:last], dataframe.v[:last], color='r')
     plt.show()
 
 # Print out
