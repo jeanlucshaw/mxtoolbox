@@ -2,6 +2,7 @@ from pycurrents.adcp.rdiraw import Multiread
 import xarray as xr
 import numpy as np
 import mxtoolbox.process as ps
+import warnings
 from scipy.stats import circmean
 
 
@@ -155,7 +156,7 @@ def adcp_init(depth, time):
 def adcp_qc(dataset,
             amp_th=30,
             pg_th=90,
-            corr_th=0.6,
+            corr_th=64,
             roll_th=20,
             pitch_th=20,
             vel_th=5,
@@ -163,8 +164,8 @@ def adcp_qc(dataset,
             mode_sidelobes=None,
             gps_file=None,
             depth=None,
-            theta_2=None,
-            theta_1=None):
+            theta_1=None,
+            theta_2=None):
     """
     Perform ADCP quality control.
 
@@ -191,10 +192,10 @@ def adcp_qc(dataset,
         contamination. Set to either `dep` or `bt`.
     depth : float
         Fixed depth used for removing side lobe contamination.
-    theta_2 : float
-        Horizontally rotate velocity after motion correction by this value.
     theta_1 : float
         Horizontally rotate velocity before motion correction by this value.
+    theta_2 : float
+        Horizontally rotate velocity after motion correction by this value.
 
 
     Note
@@ -213,7 +214,9 @@ def adcp_qc(dataset,
        Data are marked as questionable if they fail only the 4beam
        transformation test. If they fail the 4beam test and any other
        non-critical tests they are marked as bad. Data likely to be
-       biased from sidelobe interference are also marked as bad.
+       biased from sidelobe interference are also marked as bad. If
+       pitch or roll is greater than 90 degrees data are also marked
+       as bad since the ADCP is not looking in the right direction.
 
     """
     # Work on copy
@@ -278,7 +281,7 @@ def adcp_qc(dataset,
             if depth != None:
                 sidelobe_condition = ds.z > (adcp_depth + (depth - adcp_depth) * cos_ba)
             else:
-                raise Warning("Can not correct for side lobes, depth not provided.")
+                warnings.warn("Can not correct for side lobes, depth not provided.")
 
         # Upward looking
         elif ds.attrs['looking'] == 'up':
@@ -289,9 +292,10 @@ def adcp_qc(dataset,
             raise Warning("Can not correct for side lobes, looking attribute not set.")
             sidelobe_condition = np.ones(ds.z.values.size, dtype='bool')
 
-    # Remove side lobe influence ping by ping
+    # Remove side lobes using bottom track
     elif mode_sidelobes == 'bt':
-        raise KeyError("Removing sidelob interference using BT range not implemented yet.")
+        msg = "Removing sidelob interference using BT range not implemented yet."
+        raise KeyError(msg)
 
     # Do not perform side lobe removal
     else:

@@ -69,10 +69,6 @@ __all__ = list()
 
 # Command line interface
 if __name__ == '__main__':
-    # # Not ideal but until pandas/xarray sort eachother out..
-    # warnings.simplefilter('ignore')
-
-    # Handle input arguments
     parser = argparse.ArgumentParser(usage=__doc__)
 
     # identifies files
@@ -183,8 +179,8 @@ if __name__ == '__main__':
                         boundary.''')
     parser.add_argument('-S', '--flag-sparse',
                         action='store_true',
-                        help='''Flag data beyond depths where 10/100 of the data are good as
-                        seeming like bad data (4).''')
+                        help='''Flag data beyond depths where 10/100 of the data
+                        seem like bad data (4).''')
     parser.add_argument('-T', '--mindep',
                         metavar='',
                         type=float,
@@ -201,7 +197,7 @@ if __name__ == '__main__':
                         this value in m/s.''')
     parser.add_argument('-z', '--zgrid',
                         metavar='',
-                        help='''Interpolate depths to grid defined by the single column
+                        help='''Bin depths to grid defined by the single column
                         depth in meters file given in argument.''')
     args = parser.parse_args()
 
@@ -213,6 +209,7 @@ if __name__ == '__main__':
     # Brand independent quality control defaults
     qc_defaults = dict(mode_platform_velocity=None,
                        gps_file=None,
+                       corr_th=64,
                        pitch_th=20,
                        roll_th=20,
                        vel_th=2,
@@ -223,10 +220,8 @@ if __name__ == '__main__':
                        pg_th=90)
 
     # Brand dependent quality control defaults
-    rti_qc_defaults = dict(amp_th=20,
-                           corr_th=64)  # 0.25 * 255
-    rdi_qc_defaults = dict(amp_th=0,
-                           corr_th=64)
+    rti_qc_defaults = dict(amp_th=20)
+    rdi_qc_defaults = dict(amp_th=0)
 
     # Quality control options
     user_qc_kw = {}
@@ -259,9 +254,8 @@ if __name__ == '__main__':
     t_offset = args.t_offset / 24 if args.t_offset else 0
     clip = args.clip or 0
     min_depth = args.mindep or 0
-    gridf = args.zgrid          # expected default is None anyway
+    gridf = args.zgrid
     qc = not args.no_qc
-    selected = None             # not used for now.
 
     # Get output path
     if isinstance(args.files, list):
@@ -269,11 +263,6 @@ if __name__ == '__main__':
     else:
         abs_path = os.path.abspath(args.files)
     path = '%s/' % os.path.dirname(abs_path)
-    # path = (os.path.dirname(args.files[0])
-    #         if isinstance(args.files, list)
-    #         else os.path.dirname(args.files))
-    # if not path == '':
-    #     path = path + '/'  # avoids trying to write at /
 
     # Read ADCP data
     if args.adcptype in ['wh', 'bb', 'os']:
@@ -326,20 +315,6 @@ if __name__ == '__main__':
         cond = ds.z < z_max if ds.looking == 'down' else ds.z > z_max
         ds['flags'] = ds.flags.where(cond, 4)
 
-    # Information printout
-    if args.info:
-        def pprint(variable, units):
-            maximum = ds[variable].max()
-            minimum = ds[variable].min()
-            print('%15s : range (%.2f, %.2f) %s' % (variable,
-                                                    minimum,
-                                                    maximum,
-                                                    units))
-        print('=' * 80)
-        pprint('u', 'm/s')
-        pprint('v', 'm/s')
-        pprint('w', 'm/s')
-
     # Sort by time and drop duplicates
     ds = xr_unique(ds.sortby('time'), 'time')
 
@@ -348,12 +323,14 @@ if __name__ == '__main__':
     time_stop = args.end_time or ds.time.max()
     ds = ds.sel(time=slice(time_strt, time_stop))
 
-    # Set data range attributes
+    # Set variable range attributes
     for v in ds.data_vars:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)
             ds[v].attrs['data_min'] = ds[v].min().values
             ds[v].attrs['data_max'] = ds[v].max().values
+
+    # Set coordinate range attributes
     ds['z'].attrs['data_min'] = ds['z'].min().values
     ds['z'].attrs['data_max'] = ds['z'].max().values
     ds['time'].attrs['data_min'] = str(ds['time'].min().values)[:19]
@@ -364,7 +341,8 @@ if __name__ == '__main__':
         reader = csv.DictReader(open('%sinfo.adcp2nc' % path))
         for row in reader:
             ds.attrs[row['attribute']] = row['value']
-        # Set creation date attribute
+
+    # Set creation date attribute
     ds.attrs['history'] = 'Created: %s' % datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
     # Save to netcdf
