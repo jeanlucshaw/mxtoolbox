@@ -32,6 +32,17 @@ at :code:`/usr/local/bin/` containing the following lines,
    #!/path/to/bash
    /path/to/python /path/to/mxtoolbox/convert/adcp2nc.py "$@"
 
+More attributes can be added to the output netCDF file by
+creating a file called `info.adcp2nc` next to the raw ADCP
+binaries. This csv file should have the format
+
+.. code::
+
+   attribute,value
+   name_1,value_1
+   name_2,value_2
+   ...
+
 See Also
 --------
 
@@ -43,8 +54,12 @@ See Also
 from mxtoolbox.read.adcp import *
 from mxtoolbox.read.rtitools import load_rtb_binary
 from mxtoolbox.process.signal_ import xr_bin
+from mxtoolbox.process.math_ import xr_unique
+from datetime import datetime
 import xarray as xr
 import numpy as np
+import warnings
+import csv
 import os
 import argparse
 
@@ -81,6 +96,10 @@ if __name__ == '__main__':
                         metavar='',
                         type=float,
                         help='Amplitude threshold (0-255). Defaults to 0.')
+    parser.add_argument('-b', '--start-time',
+                        metavar='',
+                        type=str,
+                        help='Remove data before this date (YYYYMMDDTHHMM).')
     parser.add_argument('-c', '--corr-thres',
                         metavar='',
                         type=float,
@@ -98,6 +117,10 @@ if __name__ == '__main__':
     parser.add_argument('-D', '--force-dw',
                         action='store_true',
                         help='Force downward looking processing.')
+    parser.add_argument('-e', '--end-time',
+                        metavar='',
+                        type=str,
+                        help='Remove data after this date (YYYYMMDDTHHMM).')
     parser.add_argument('-f', '--fill-na',
                         action='store_true',
                         help='Interpolate velocity vertically and marke as changed (5).')
@@ -160,7 +183,7 @@ if __name__ == '__main__':
                         boundary.''')
     parser.add_argument('-S', '--flag-sparse',
                         action='store_true',
-                        help='''Flag data beyond depths where 10% of the data are good as
+                        help='''Flag data beyond depths where 10/100 of the data are good as
                         seeming like bad data (4).''')
     parser.add_argument('-T', '--mindep',
                         metavar='',
@@ -188,29 +211,29 @@ if __name__ == '__main__':
         raise ValueError("Cannot force downwards AND upwards processing")
 
     # Brand independent quality control defaults
-    qc_defaults = dict(iv=None,
-                       gpsfile=None,
+    qc_defaults = dict(mode_platform_velocity=None,
+                       gps_file=None,
                        pitch_th=20,
                        roll_th=20,
                        vel_th=2,
-                       R=0,
-                       C=0,
-                       sl=None,
+                       theta_2=0,
+                       theta_1=0,
+                       mode_sidelobes=None,
                        depth=None,
                        pg_th=90)
 
     # Brand dependent quality control defaults
     rti_qc_defaults = dict(amp_th=20,
-                           corr_th=0.6)
+                           corr_th=64)  # 0.25 * 255
     rdi_qc_defaults = dict(amp_th=0,
                            corr_th=64)
 
     # Quality control options
     user_qc_kw = {}
     if args.motion_correction:
-        user_qc_kw['iv'] = args.motion_correction
+        user_qc_kw['mode_platform_velocity'] = args.motion_correction
     if args.gps_file:
-        user_qc_kw['gpsfile'] = args.gps_file
+        user_qc_kw['gps_file'] = args.gps_file
     if args.corr_thres:
         user_qc_kw['corr_th'] = args.corr_thres
     if args.pg_thres:
@@ -224,28 +247,33 @@ if __name__ == '__main__':
     if args.roll_thres:
         user_qc_kw['vel_th'] = args.velocity_thres
     if args.rot_ang:
-        user_qc_kw['R'] = args.rot_ang
+        user_qc_kw['theta_2'] = args.rot_ang
     if args.compass_adjustment:
-        user_qc_kw['C'] = args.compass_adjustment
+        user_qc_kw['theta_1'] = args.compass_adjustment
     if args.sl_mode:
-        user_qc_kw['sl'] = args.sl_mode
+        user_qc_kw['mode_sidelobes'] = args.sl_mode
     if args.depth:
         user_qc_kw['depth'] = args.depth
 
     # Other options
     t_offset = args.t_offset / 24 if args.t_offset else 0
     clip = args.clip or 0
-    mindep = args.mindep or 0
+    min_depth = args.mindep or 0
     gridf = args.zgrid          # expected default is None anyway
     qc = not args.no_qc
     selected = None             # not used for now.
 
     # Get output path
-    path = (os.path.dirname(args.files[0])
-            if isinstance(args.files, list)
-            else os.path.dirname(args.files))
-    if not path == '':
-        path = path + '/'  # avoids trying to write at /
+    if isinstance(args.files, list):
+        abs_path = os.path.abspath(args.files[0])
+    else:
+        abs_path = os.path.abspath(args.files)
+    path = '%s/' % os.path.dirname(abs_path)
+    # path = (os.path.dirname(args.files[0])
+    #         if isinstance(args.files, list)
+    #         else os.path.dirname(args.files))
+    # if not path == '':
+    #     path = path + '/'  # avoids trying to write at /
 
     # Read ADCP data
     if args.adcptype in ['wh', 'bb', 'os']:
@@ -253,7 +281,7 @@ if __name__ == '__main__':
                              args.adcptype,
                              force_dw=args.force_dw,
                              force_up=args.force_up,
-                             mindep=mindep)
+                             min_depth=min_depth)
         brand = 'RDI'
         qc_kw = {**qc_defaults, **rdi_qc_defaults, **user_qc_kw}
     elif args.adcptype == 'sw':
@@ -262,6 +290,7 @@ if __name__ == '__main__':
         qc_kw = {**qc_defaults, **rti_qc_defaults, **user_qc_kw}
     else:
         raise ValueError('Sonar type %s not recognized' % args.adcptype)
+    ds.attrs['sonar'] = '%s %s' % (brand, args.adcptype)
 
     # Quality control
     if qc:
@@ -282,7 +311,7 @@ if __name__ == '__main__':
         # Interpolate velocities vertically and mark as changed (5)
         if args.fill_na:
             _nan_before = np.isnan(ds.u) | np.isnan(ds.v) | np.isnan(ds.w)
-            
+
             ds['u'] = ds.u.interpolate_na(dim='z')
             ds['v'] = ds.v.interpolate_na(dim='z')
             ds['w'] = ds.w.interpolate_na(dim='z')
@@ -296,15 +325,6 @@ if __name__ == '__main__':
     if args.flag_sparse:
         cond = ds.z < z_max if ds.looking == 'down' else ds.z > z_max
         ds['flags'] = ds.flags.where(cond, 4)
-
-    # manage temperature data
-    if args.include_temp:
-        ds['temp'].values = np.asarray([data.temperature[selected]])
-    # else:
-    #     temp = seabird_init(t)
-    #     temp['temp'] = ('time', np.array(data.temperature[selected]))
-    #     temp['z'] = ('time', np.array(data.XducerDepth[selected]))
-    #     temp.to_netcdf(path+args.name+'_'+strt+'_'+stop+'_RDI_TEMP.nc')
 
     # Information printout
     if args.info:
@@ -320,7 +340,35 @@ if __name__ == '__main__':
         pprint('v', 'm/s')
         pprint('w', 'm/s')
 
+    # Sort by time and drop duplicates
+    ds = xr_unique(ds.sortby('time'), 'time')
+
+    # Trim if requested
+    time_strt = args.start_time or ds.time.min()
+    time_stop = args.end_time or ds.time.max()
+    ds = ds.sel(time=slice(time_strt, time_stop))
+
+    # Set data range attributes
+    for v in ds.data_vars:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            ds[v].attrs['data_min'] = ds[v].min().values
+            ds[v].attrs['data_max'] = ds[v].max().values
+    ds['z'].attrs['data_min'] = ds['z'].min().values
+    ds['z'].attrs['data_max'] = ds['z'].max().values
+    ds['time'].attrs['data_min'] = str(ds['time'].min().values)[:19]
+    ds['time'].attrs['data_max'] = str(ds['time'].max().values)[:19]
+
+    # Look for info.adcp2nc file and set description attributes
+    if os.path.exists('%sinfo.adcp2nc' % path):
+        reader = csv.DictReader(open('%sinfo.adcp2nc' % path))
+        for row in reader:
+            ds.attrs[row['attribute']] = row['value']
+        # Set creation date attribute
+    ds.attrs['history'] = 'Created: %s' % datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
     # Save to netcdf
     strt = str(ds.time.values[0])[:10]
     stop = str(ds.time.values[-1])[:10]
-    ds.to_netcdf('%s%s_%s_%s_%s_ADCP.nc' % (path, args.name, strt, stop, brand))
+    filename = '%s_%s_%s_%s_ADCP.nc' % (args.name, strt, stop, brand)
+    ds.to_netcdf('%s%s' % (path, filename.lower()))

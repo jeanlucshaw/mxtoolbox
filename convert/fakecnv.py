@@ -1,37 +1,44 @@
 """
-* A command line utility designed to recreate minimal seabird-like
+A command line utility designed to recreate minimal seabird-like
 cnv files from AZOMP netcdf files of CTD casts. As this will likely
 be used mostly for Gulf of St. Lawrence and Newfoundland data,
 longitudes are flipped towards the west by default.
 
-
-* By default, the expected coordinate names are time, level, longitude
+By default, the expected coordinate names are time, level, longitude
 and latitude. If they are named differently, this will cause an error
 which can be fixed by first calling nc2fakecnv with the -s flag to
 obtain coordinate names:
 
-$ nc2fakecnv file_name.nc -s
+.. code::
+
+   $ nc2fakecnv file_name.nc -s
 
 then calling it again and specifying the coordinate names:
 
-$ nc2fakecnv file_name.nc -l ... -L ... -t ... -z ...
+.. code::
 
+   $ nc2fakecnv file_name.nc -l ... -L ... -t ... -z ...
 
-* By default, the following variable names are translated to better
+By default, the following variable names are translated to better
 match seabird formatting:
 
-temperature -> tv290C: Temperature [ITS 90, deg C]
-salinity -> sal00: Salinity, Practical [PSU]
-conductivity -> c0S/m: Conductivity [S/m]
-sigma-t -> sigma-t00: Density, sigma-t [kg/m^3]
-pressure -> prdM: Pressure, Strain Gauge [db]
+.. code::
+
+   temperature -> tv290C: Temperature [ITS 90, deg C]
+   salinity -> sal00: Salinity, Practical [PSU]
+   conductivity -> c0S/m: Conductivity [S/m]
+   sigma-t -> sigma-t00: Density, sigma-t [kg/m^3]
+   pressure -> prdM: Pressure, Strain Gauge [db]
 
 As this translation makes use of information not found in the netcdf
 files it is hard-coded. The user must make sure the translated units
 match the originals. To instead infer names and units, call with the -i
-flag:
+flag
 
-$ nc2fakecnv file_name -i
+.. code::
+
+   $ nc2fakecnv file_name -i
+
 """
 import argparse as ap
 import xarray as xr
@@ -70,6 +77,10 @@ def xr2fakecnv(dataset,
     """
     Write xarray dataset to fake cnv text file.
 
+    The input xarray is expected to have time, level, longitude,
+    and latitude as coordinates. Data variables are expected to
+    have the strings `units` and `standard_name` as attributes.
+
     Parameters
     ----------
     dataset: xarray.Dataset
@@ -84,6 +95,12 @@ def xr2fakecnv(dataset,
         Name of longitude coordinate in all Datasets.
     lat_name: str
         Name of latitude coordinate in all Datasets.
+    flip_longitude: bool
+        Switch longitude from east to west or vice versa.
+    infer_descriptors: bool
+        Infer variable descriptors from input file.
+    verbose: bool
+        Print to std when descriptors must be inferred.
     """
     # # Show variable and coordinate names
     # if dataset_info:

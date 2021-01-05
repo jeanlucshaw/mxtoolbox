@@ -107,7 +107,8 @@ dataframe['radial_distance'] = radial_distance
 if args.track:
     plt.plot(dataframe.lon, dataframe.lat)
     plt.plot(lon_0, lat_0, 'o', mfc='r', mec='r', ms=10)
-    plt.show()
+    pt.bshow('buoy_lat_lon_track.png', save=False)
+    # plt.show()
 
 # Show buoy track and velocity subset
 if args.speeds:
@@ -121,7 +122,8 @@ if args.speeds:
     geoax.plot(dataframe.lon[:last], dataframe.lat[:last])
     geoax.quiver(dataframe.lon[:last], dataframe.lat[:last],
                  dataframe.u[:last], dataframe.v[:last], color='r')
-    plt.show()
+    pt.bshow('buoy_u_v_track.png', save=False)
+    # plt.show()
 
 # Print out
 if args.printout:
