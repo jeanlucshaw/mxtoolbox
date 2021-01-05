@@ -4,6 +4,7 @@ Tweak details of matplotlib.
 import calendar as cd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import os
 import numpy as np
 from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -12,6 +13,7 @@ from ..read.text import list2cm
 
 __all__ = ['axlabel_doy2months',
            'axlabel_woy2months',
+           'bshow',
            'colorbar',
            'colorline',
            'contour_n_largest',
@@ -33,7 +35,8 @@ def axlabel_doy2months(axes):
         Matplotlib axes on which to operate.
 
     """
-    mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     days = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
     axes.set(xticks=days, xticklabels=mons, xlabel=None)
     axes.tick_params(axis='x', which='minor', top=False, bottom=False)
@@ -49,11 +52,13 @@ def axlabel_woy2months(axes, place='tick', labels=True, ycoord=-10, ltype='abbr'
         Matplotlib axes on which to operate.
 
     """
-    days = np.array([1,32,60,91,121,152,182,213,244,274,305,335, 365])
+    days = np.array([1, 32, 60, 91, 121, 152, 182,
+                     213, 244, 274, 305, 335, 365])
     if ltype == 'abbr':
-        mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec', '']
+        mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', '']
     elif ltype == 'letter':
-        mons = ['J','F','M','A','M','J','J','A','S','O','N','D', '']
+        mons = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D', '']
     weeks = days/7 + 1
     weeks[0] = 1
     axes.set(xticks=weeks, xticklabels=[], xlabel=None)
@@ -65,6 +70,60 @@ def axlabel_woy2months(axes, place='tick', labels=True, ycoord=-10, ltype='abbr'
                 axes.text(week, ycoord, mon, **kwargs)
     # axes.set_xticklabels(mons, ha=align)
     axes.tick_params(axis='x', which='minor', top=False, bottom=False)
+
+
+def bshow(savename, close=True, show=False, save=True):
+    """
+    Show matplotlib figure in browser.
+
+    Figures are symlinked to the temporary web-visible location
+    `/var/www/jls/t` and saved at `savename`.
+
+    Parameters
+    ----------
+    savename : str
+        Path and name where to save the figure file.
+    close : bool
+        Close current figure after symlinking.
+    show : bool
+        Show plot interactively (X11).
+    save : bool
+        Save a figure copy at `savename`.
+    """
+    # Separate input name and path
+    name_ = os.path.basename(savename)
+    path_ = os.path.dirname(savename)
+
+    # Input path is filename
+    if path_ == '':
+        savepath = '%s/%s' % (os.getcwd(), savename)
+    # Input path is absolute
+    elif path_[0] == '/':
+        savepath = savename
+    # Input path is relative
+    else:
+        savepath = '%s/%s' % (os.getcwd(), savename)
+
+    # Save figure
+    if save:
+        plt.savefig(savepath)
+
+    # Symlink to browser accessible location
+    # linkname = '/var/www/jls/t/%s' % name_
+    # if os.path.islink(linkname):
+    #     os.remove(linkname)
+    # os.symlink(savepath, linkname)
+
+    # Save in browser accessible location
+    plt.savefig('/var/www/jls/t/%s' % name_)
+
+    # Show figure if requested
+    if show:
+        plt.show()
+
+    # Close figure
+    if close and not show:
+        plt.close(plt.gca().figure)
 
 
 def colorbar(axes,
@@ -184,7 +243,8 @@ def colorline(x, y, z=None, cmap=plt.get_cmap('copper'),
     z = np.asarray(z)
 
     segments = make_segments(x, y)
-    lc = LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=linewidth, alpha=alpha)
+    lc = LineCollection(segments, array=z, cmap=cmap,
+                        norm=norm, linewidth=linewidth, alpha=alpha)
 
     ax = plt.gca()
     ax.add_collection(lc)
@@ -299,11 +359,13 @@ def labeled_colorbar(position, col_arr, lab_array, fig, txt_w=None):
         if position[2] < position[3]:
             # Vertical colorbar
             cbar_ax.axhspan(i * stepsize, (i + 1) * stepsize, color=color)
-            cbar_ax.text(0.5, (i + 0.5) * stepsize, label, color=tc, ha='center', va='center')
+            cbar_ax.text(0.5, (i + 0.5) * stepsize, label,
+                         color=tc, ha='center', va='center')
     if position[2] < position[3]:
         # Vertical colorbar
         cbar_ax.axhspan((steps - 1) * stepsize, 1, color=col_arr[-1])
-        cbar_ax.text(0.5, (steps - 0.5) * stepsize, lab_array[-1], color=tcs[-1], ha='center', va='center')
+        cbar_ax.text(0.5, (steps - 0.5) * stepsize,
+                     lab_array[-1], color=tcs[-1], ha='center', va='center')
 
     # Remove ticks and white space
     cbar_ax.set(xlim=(0, 1),
@@ -365,6 +427,7 @@ def move_axes(axes, ud=0, rl=0):
     box.y1 += ud
     axes.set_position(box)
 
+
 def sequential(N=256):
     """
     Return the TSAT colormap in N steps.
@@ -381,7 +444,8 @@ def sequential(N=256):
 
     """
     return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/TsatPalette', N=N)
-    
+
+
 def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, **kwargs):
     """
     Add multiple text annotations to plot in one call.

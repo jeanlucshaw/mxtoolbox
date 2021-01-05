@@ -8,9 +8,11 @@ import xarray as xr
 import scipy.signal as signal
 from .math_ import xr_time_step
 from .convert import binc2edge, bine2center
+from pandas.tseries.frequencies import to_offset
 import warnings
 
 __all__ = ['pd_bin',
+           'pd_at_var_stat',
            'xr_at_var_max',
            'xr_bin',
            'xr_bin_where',
@@ -51,6 +53,72 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
     except:
         return dataset.to_dataframe().reset_index()
 
+
+def pd_at_var_stat(dataframe, varname, func, interval, drop=True):
+    """
+    Find lines of `dataframe` where `varname` is equal to `func(varname)`.
+
+    Parameters
+    ----------
+    dataframe: pandas.DataFrame
+        Must have a time index.
+    varname: str
+        Column name on which to apply `func`.
+    func: str or callable
+        Passed to pandas.resample.agg, the bin reduction function.
+    interval: str
+        Bin time interval. For now only multiple of hours, days and months are
+        supported. Weekly bins can be taken by entering `7D`. Daily bins start at
+        midnight. Hourly bins start at 00:00:00 and increase by `interval`. Monthly
+        bins start on the first day of each month.
+    drop: bool
+        Drop duplicate lines for equal values of func(var) in a given bin.
+
+    Returns
+    -------
+    pandas.DataFrame:
+        Input `dataframe` with all lines removed but those where the selection
+        criterium is met. A `bin_starts` column is associate values with time
+        intervals.
+    """
+    # Group dataframe by time intervals
+    resampler = dataframe.resample(interval, label='left')
+
+    # Aggregate groups using func
+    df_varstat = resampler.agg(func)
+
+    # This is needed for monthly intervals because the origin keyword seems to be missing
+    if 'M' in interval:
+        df_varstat.index = df_varstat.index + to_offset('1D')
+
+    # Format aggregated variable for comparison to input dataframe
+    df_varstat = df_varstat[varname].reset_index()
+    df_varstat = df_varstat.rename(columns={'time': 'bin_starts', varname: 'varstat'}).set_index('bin_starts')
+
+    # Create a coarse time index column for dataframe
+    dataframe.loc[:, 'bin_starts'] = dataframe.index.copy()
+    for value, indices in resampler.indices.items():
+        dataframe.iloc[indices, -1] = value
+
+    # This is needed for monthly intervals because the origin keyword seems to be missing
+    if 'M' in interval:
+        dataframe['bin_starts'] = dataframe['bin_starts'] + to_offset('1D')
+
+    # Add variable statistic column
+    df_match = dataframe.reset_index().set_index('bin_starts')
+    df_match = df_match.join(df_varstat)
+
+    # Make time the index once again
+    df_match = df_match.reset_index().set_index('time')
+
+    # Query for lines where var matches varstat
+    df_match =  df_match.query('%s == varstat' % varname)
+
+    # Optionnally drop duplicated
+    if drop:
+        df_match = df_match.drop_duplicates(subset='bin_starts')
+
+    return df_match
 
 def xr_at_var_max(dataset, variable, dim=None):
     """
@@ -137,8 +205,18 @@ def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
         for key in dataset.keys():
             dim_dict[key] = dataset[key].dims
 
-        # Save attributes
+        # Save dataset attributes
         attributes = dataset.attrs
+
+        # Save variable attributes
+        var_attributes = dict()
+        for v in dataset.data_vars:
+            var_attributes[v] = dataset[v].attrs
+
+        # Save variable attributes
+        coord_attributes = dict()
+        for c in dataset.coords:
+            coord_attributes[c] = dataset[c].attrs
 
     # Avoids printing mean of empty slice warning
     with warnings.catch_warnings():
@@ -151,8 +229,16 @@ def xr_bin(dataset, dim, bins, centers=True, func=np.nanmean):
 
     # Skip for compatibility with DataArray
     if isinstance(dataset, xr.core.dataset.Dataset):
-        # Restore attributes
+        # Restore dataset attributes
         output.attrs = attributes
+
+        # Restore variable
+        for v in output.data_vars:
+            output[v].attrs = var_attributes[v]
+
+        # Restore variable
+        for c in output.coords:
+            output[c].attrs = coord_attributes[c]
 
         # Restore dimension order to each variable
         for key, dim_tuple in dim_dict.items():

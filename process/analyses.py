@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import statsmodels.api as sm
+from statsmodels.multivariate.pca import PCA
 from scipy.optimize import leastsq
 from scipy.signal import find_peaks
 from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
@@ -12,6 +13,7 @@ from .convert import dt2epoch
 
 __all__ = ['pca',
            'pd_pca',
+           'sm_pca',
            'principal_modes',
            'gaussian_smoothing',
            'lsq_curve_fit',
@@ -58,11 +60,11 @@ def pca(input_):
     # Find eigenvalues and eigenvectors
     vals, vecs = np.linalg.eig(S)
     I = np.argsort(abs(vals))[::-1]
-    U = vecs[:,I]
+    U = vecs[:, I]
     lbda = vals[I]
 
     # Normalize eigenvectors to unit length
-    U /= np.sqrt((U ** 2).sum(axis=0)) 
+    U /= np.sqrt((U ** 2).sum(axis=0))
 
     # Calculate the matrix of component scores
     F = Y_h @ U
@@ -143,6 +145,30 @@ def pd_pca(dataframe, features, target=None, plot=False, **plt_kwargs):
         plt.show()
 
     return pcdf, lbda, UL_sr
+
+
+def sm_pca(u, v):
+    """
+    Compute principal directions of variation
+    """
+    # Form input into dataframe
+    data = pd.DataFrame({'u': u, 'v': v})
+
+    # Clean data
+    data = data.query('~u.isnull() & ~v.isnull()')
+
+    # Perform PCA
+    pca_model = PCA(data, demean=True, standardize=False)
+
+    # Component vectors
+    u_1, v_1 = pca_model.eigenvecs.iloc[:, 0]
+    u_2, v_2 = pca_model.eigenvecs.iloc[:, 1]
+    l_1, l_2 = pca_model.eigenvals
+
+    # Compute angle of eigenvector 1
+    theta = 180 * np.arctan2(v_1, u_1) / np.pi
+
+    return u_1, v_1, u_2, v_2, l_1, l_2, theta
 
 
 def principal_modes(args):
@@ -438,7 +464,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
     """
     # Clean
     dataframe = dataframe.query('~%s.isnull() & ~%s.isnull()' % (x, y))
-    
+
     # Set up variables
     dependent = dataframe[y]
     independent = sm.add_constant(dataframe[x])
@@ -449,10 +475,10 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
         independent_fit = dataframe[x].values
     else:
         independent_fit = xfit
-    yfit = model.params[0] + model.params[1] * independent_fit 
+    yfit = model.params[0] + model.params[1] * independent_fit
     fit = pd.DataFrame({'x': independent_fit, 'y': yfit})
 
-    return model, fit, model.rsquared 
+    return model, fit, model.rsquared
 
 
 def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
@@ -502,14 +528,14 @@ def xr_2D_to_2D_interp(dataarray, xx, yy, dims):
     """
     # Set up new coordinates as DataArrays
     x_i = xr.DataArray(xx,
-                         dims=['x', 'y'],
-                         coords={'x': np.arange(xx.shape[0]),
-                                 'y': np.arange(xx.shape[1])})
+                       dims=['x', 'y'],
+                       coords={'x': np.arange(xx.shape[0]),
+                               'y': np.arange(xx.shape[1])})
     y_i = xr.DataArray(yy,
-                         dims=['x', 'y'],
-                         coords={'x': np.arange(yy.shape[0]),
-                                 'y': np.arange(yy.shape[1])})
-    
+                       dims=['x', 'y'],
+                       coords={'x': np.arange(yy.shape[0]),
+                               'y': np.arange(yy.shape[1])})
+
     # Interpolate
     return dataarray.interp(**{dims[0]: x_i, dims[1]: y_i}).values
 
@@ -562,9 +588,9 @@ def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
     r2 = np.corrcoef(a_pad, b_pad)[0, 1] ** 2
 
     # Mask values with missing values in either input
-    a_pad_mask = np.hstack((np.zeros(b.size -1, dtype='bool'),
+    a_pad_mask = np.hstack((np.zeros(b.size - 1, dtype='bool'),
                             amask,
-                            np.zeros(b.size -1, dtype='bool')))
+                            np.zeros(b.size - 1, dtype='bool')))
     b_pad_mask = np.hstack((bmask,
                             np.zeros(a.size + b.size - 2, dtype='bool')))
     b_pad_mask = np.roll(b_pad_mask, cc.argmax())
@@ -617,7 +643,8 @@ def xr_time_aht(dataset, field='h', period=12.4166):
     locs, _ = find_peaks(dataset[field].values, distance=period_steps/2)
 
     # Remove peaks within 1/2 period of dataset borders
-    locs = locs[(locs > period_steps / 4) & (locs < time.size - period_steps / 4)]
+    locs = locs[(locs > period_steps / 4) &
+                (locs < time.size - period_steps / 4)]
 
     # Numerical values of time after first high tide
     aht = time - time[0]
@@ -628,6 +655,7 @@ def xr_time_aht(dataset, field='h', period=12.4166):
 
     # Manage data before first high tide
     aht[:locs[0]] = period - time[locs[0]] + time[:locs[0]]
+    aht[aht < 0] += period
 
     # Manage data after last high tide
     aht[locs[-1]:] = aht[locs[-1]:] - aht[locs[-1]]

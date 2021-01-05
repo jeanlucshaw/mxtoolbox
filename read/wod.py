@@ -5,7 +5,9 @@ import xarray as xr
 from numpy import isfinite, nan, ones_like
 import gsw
 
+
 __all__ = ['wod_cast_n']
+
 
 def wod_cast_n(rag_arr,
                n,
@@ -85,7 +87,7 @@ def wod_cast_n(rag_arr,
     # Default of TEOS10 switches
     has_temp = False
     has_sal = False
-    
+
     # Loop over requested variables
     for variable in var_names:
         # Check this variable is not empty for this cast
@@ -112,7 +114,8 @@ def wod_cast_n(rag_arr,
                 # Check quality flag exists for cast
                 if pf_exists:
                     # Pass value of cast quality flag
-                    cast.attrs['%s_WODprofileflag' % variable] = dset['%s_WODprofileflag' % variable].values[n]
+                    cast.attrs['%s_WODprofileflag' %
+                               variable] = dset['%s_WODprofileflag' % variable].values[n]
 
                     # Check quality flag is accepted for cast
                     if cast.attrs['%s_WODprofileflag' % variable] in [0, 1]:
@@ -127,7 +130,8 @@ def wod_cast_n(rag_arr,
 
                         # Value flags do not exist
                         else:
-                            print('Warning: No flags for variable %s' % variable)
+                            print('Warning: No flags for variable %s' %
+                                  variable)
                             cast[variable] *= nan
                             cast['%s_WODflag' % variable] = (depth_name,
                                                              -3 * ones_like(depth, dtype=int))
@@ -191,8 +195,8 @@ def wod_cast_n(rag_arr,
                                    cast.CT.values,
                                    cast.Sea_Pres.values))
             cast['SIGMA_THETA'] = (depth_name,
-                                    gsw.density.sigma0(cast.SA.values,
-                                                       cast.CT.values))
+                                   gsw.density.sigma0(cast.SA.values,
+                                                      cast.CT.values))
         except:
             print('Could not do TEOS 10 conversions')
 

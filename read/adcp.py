@@ -3,7 +3,6 @@ import xarray as xr
 import numpy as np
 import mxtoolbox.process as ps
 from scipy.stats import circmean
-# from libmx.utils.time import yb2dt
 
 
 __all__ = ['adcp_init',
@@ -11,15 +10,15 @@ __all__ = ['adcp_init',
            'load_rdi_binary']
 
 
-def adcp_init(Nz, Nt, Nb):
+def adcp_init(depth, time):
     """
     Return empty xarray shell in standardized format.
 
     Parameters
     ----------
-    Nz : int
+    size_depth : int
         Number of vertical bins.
-    Nt : int
+    size_time : int
         Number of time steps.
     Nb : int
         Number of ADCP beams.
@@ -30,58 +29,148 @@ def adcp_init(Nz, Nt, Nb):
         An empty dataset ready for data input.
 
     """
+    # Take inputs as coordinate sizes or vectors
+    if isinstance(depth, int):
+        z = np.arange(depth)
+    else:
+        z = depth
+    size_depth = z.size
+    if isinstance(time, int):
+        t = np.empty(time, dtype='datetime64[ns]')
+    else:
+        t = time 
+    size_time = t.size
+
+    # Main adcp data structure
     ds = xr.Dataset(
-        data_vars = {'u': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'v': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'w': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'e': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'flags': (['z', 'time'], np.zeros((Nz, Nt))),
-                     'temp': (['time'], np.nan * np.ones(Nt)),
-                     'dep': (['time'], np.nan * np.ones(Nt)),
-                     'Roll': (['time'], np.nan * np.ones(Nt)),
-                     'pitch': (['time'], np.nan * np.ones(Nt)),
-                     'heading': (['time'], np.nan * np.ones(Nt)),
-                     'u_bt': (['time'], np.nan * np.ones(Nt)),
-                     'v_bt': (['time'], np.nan * np.ones(Nt)),
-                     'w_bt': (['time'], np.nan * np.ones(Nt)),
-                     'e_bt': (['time'], np.nan * np.ones(Nt)),
-                     'corr': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'amp': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'pg': (['z', 'time'], np.nan * np.ones((Nz, Nt))),
-                     'pg_bt': (['Nbeam', 'time'], np.nan * np.ones((Nb, Nt))),
-                     'corr_bt': (['Nbeam', 'time'], np.nan * np.ones((Nb, Nt))),
-                     'range_bt': (['Nbeam', 'time'], np.nan * np.ones((Nb, Nt)))},
-        coords = {'z' : np.arange(Nz),
-                  'time': np.empty(Nt, dtype='datetime64[ns]'),
-                  'Nbeam': np.arange(0, Nb)},
-        attrs = {'freqHz': '',
-                 'angle': '',
-                 'binSize': '',
+        data_vars = {'u': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'v': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'w': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'e': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'flags': (['z', 'time'], np.zeros((size_depth, size_time))),
+                     'lon': (['time'], np.nan * np.ones(size_time)),
+                     'lat': (['time'], np.nan * np.ones(size_time)),
+                     'temp': (['time'], np.nan * np.ones(size_time)),
+                     'depth': (['time'], np.nan * np.ones(size_time)),
+                     'roll_': (['time'], np.nan * np.ones(size_time)),
+                     'pitch': (['time'], np.nan * np.ones(size_time)),
+                     'heading': (['time'], np.nan * np.ones(size_time)),
+                     'uship': (['time'], np.nan * np.ones(size_time)),
+                     'vship': (['time'], np.nan * np.ones(size_time)),
+                     'u_bt': (['time'], np.nan * np.ones(size_time)),
+                     'v_bt': (['time'], np.nan * np.ones(size_time)),
+                     'w_bt': (['time'], np.nan * np.ones(size_time)),
+                     'amp': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'corr': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'pg': (['z', 'time'], np.nan * np.ones((size_depth, size_time))),
+                     'corr_bt': (['time'], np.nan * np.ones(size_time)),
+                     'pg_bt': (['time'], np.nan * np.ones(size_time)),
+                     'range_bt': (['time'], np.nan * np.ones(size_time))},
+        coords = {'z' : z,
+                  'time': t},
+        attrs = {'title': '',
+                 'description': '',
+                 'platform': '',
+                 'Conventions': 'COARDS',
+                 'history': '',
+                 'sonar': '',
+                 'ping_frequency': '',
+                 'beam_angle': '',
+                 'bin_size': '',
                  'looking': '',
-                 'serial': ''})
+                 'instrument_serial': ''})
+
+    # Set velocity attributes in COARDS conventions
+    ds.u.attrs['long_name'] = 'Velocity east'
+    ds.u.attrs['standard_name'] = 'eastward_sea_water_velocity'
+    ds.u.attrs['units'] = 'm s-1'
+    ds.v.attrs['long_name'] = 'Velocity north'
+    ds.v.attrs['standard_name'] = 'northward_sea_water_velocity'
+    ds.v.attrs['units'] = 'm s-1'
+    ds.w.attrs['long_name'] = 'Velocity up'
+    ds.w.attrs['standard_name'] = 'upward_sea_water_velocity'
+    ds.w.attrs['units'] = 'm s-1'
+    ds.e.attrs['long_name'] = 'Error velocity'
+    ds.e.attrs['description'] = 'Difference between vertical velocity estimates'
+    ds.e.attrs['units'] = 'm s-1'
+
+    # Set motion correction attributes
+    ds.u_bt.attrs['long_name'] = 'Bottom track velocity east'
+    ds.u_bt.attrs['units'] = 'm s-1'
+    ds.v_bt.attrs['long_name'] = 'Bottom track elocity north'
+    ds.v_bt.attrs['units'] = 'm s-1'
+    ds.w_bt.attrs['long_name'] = 'Bottom track velocity up'
+    ds.w_bt.attrs['units'] = 'm s-1'
+    ds.range_bt.attrs['long_name'] = 'Bottom track depth'
+    ds.range_bt.attrs['units'] = 'm'
+    ds.corr_bt.attrs['long_name'] = 'Bottom track signal correlation (all beams averaged)'
+    ds.pg_bt.attrs['long_name'] = 'Bottom track percentage of 4-beam transformations'
+    ds.uship.attrs['long_name'] = 'Platform velocity east'
+    ds.uship.attrs['units'] = 'm s-1'
+    ds.vship.attrs['long_name'] = 'Platform velocity north'
+    ds.vship.attrs['units'] = 'm s-1'
+
+    # Set signal attributes in COARDS conventions
+    ds.amp.attrs['long_name'] = 'Received signal strength (all beams averaged)'
+    ds.corr.attrs['long_name'] = 'Received signal correlation (all beams averaged)'
+    ds.pg.attrs['long_name'] = 'Percentage of good 4-beam transformations'
+
+    # Set gyro attributes
+    ds.heading.attrs['long_name'] = 'ADCP compass heading'
+    ds.heading.attrs['units'] = 'degrees'
+    ds.roll_.attrs['long_name'] = 'ADCP tilt angle 1'
+    ds.roll_.attrs['units'] = 'degrees'
+    ds.pitch.attrs['long_name'] = 'ADCP tilt angle 2'
+    ds.pitch.attrs['units'] = 'degrees'
+    
+    # Set time attributes in COARDS conventions
+    ds.time.attrs['long_name'] = 'Decimal day'
+    ds.time.attrs['standard_name'] = 'time'
+
+    # Set depth attributes in COARDS conventions
+    ds.z.attrs['long_name'] = 'Depth'
+    ds.z.attrs['units'] = 'm'
+    ds.z.attrs['positive'] = 'down'
+
+    # Set geographical attributes in COARDS conventions
+    ds.lon.attrs['long_name'] = 'Longitude'
+    ds.lon.attrs['standard_name'] = 'longitude'
+    ds.lon.attrs['units'] = 'degrees_east'
+    ds.lat.attrs['long_name'] = 'Latitude'
+    ds.lat.attrs['standard_name'] = 'latitude'
+    ds.lat.attrs['units'] = 'degrees_north'
+
+    # Set geographical attributes in COARDS conventions
+    ds.temp.attrs['long_name'] = 'ADCP transducer temperature'
+    ds.temp.attrs['units'] = 'Celsius'
+    ds.depth.attrs['long_name'] = 'ADCP transducer depth'
+    ds.depth.attrs['units'] = 'm'
+
+    # Set quality flag attributes
+    ds.flags.attrs['long_name'] = 'Quality control flags'
 
     return ds
 
 
-def adcp_qc(di,
+def adcp_qc(dataset,
             amp_th=30,
             pg_th=90,
             corr_th=0.6,
             roll_th=20,
             pitch_th=20,
             vel_th=5,
-            iv=None,
-            gpsfile=None,
-            sl=None,
+            mode_platform_velocity=None,
+            mode_sidelobes=None,
+            gps_file=None,
             depth=None,
-            R=None,
-            C=None):
+            theta_2=None,
+            theta_1=None):
     """
     Perform ADCP quality control.
 
     Parameters
     ----------
-    di : xarray.Dataset
+    dataset : xarray.Dataset
         ADCP dataset formatted as done by adcp_init.
     amp_th : float
         Require more than this amplitude values.
@@ -93,18 +182,18 @@ def adcp_qc(di,
         Require roll values be smaller than this value (degrees).
     pitch_th : float
         Require pitch values be smaller than this value (degrees).
-    iv : None
+    mode_platform_velocity : None
         Unknown.
-    gpsfile : str
+    gps_file : str
         GPS dataset formatted as by gps_init.
-    sl : str
+    mode_sidelobes : str
         Use fixed depth or bottom track range to remove side lobe
         contamination. Set to either `dep` or `bt`.
     depth : float
         Fixed depth used for removing side lobe contamination.
-    R : float
+    theta_2 : float
         Horizontally rotate velocity after motion correction by this value.
-    C : float
+    theta_1 : float
         Horizontally rotate velocity before motion correction by this value.
 
 
@@ -128,57 +217,72 @@ def adcp_qc(di,
 
     """
     # Work on copy
-    ds = di.copy(deep=True)
+    ds = dataset.copy(deep=True)
+
+    # Remove improbable values
+    for v in ['u', 'v', 'w', 'e']:
+        ds[v] = ds[v].where((ds[v] > -5) & (ds[v] < 5))
 
     # Check for gps file if required
-    if iv=='gps':
+    if mode_platform_velocity == 'gps':
         try:
-            gps = xr.open_dataset(gpsfile).interp(time=ds.time)
-            ds['lon'] = gps.lon
-            ds['lat'] = gps.lat
+            gps = xr.open_dataset(gps_file).interp(time=ds.time)
+            ds['lon'].values = gps.lon
+            ds['lat'].values = gps.lat
         except:
             raise NameError("GPS file not found...!")
 
-    # Acoustics conditions
+    # Acoustics conditions (True fails)
     corr_condition = np.abs( ds.corr ) < corr_th
     pg_condition = np.abs( ds.pg ) < pg_th
     amp_condition = np.abs( ds.amp ) < amp_th
 
-    # Motion conditions
-    roll_mean = circmean(ds.Roll.values, low=-180, high=180)
-    roll_condition = np.abs(ps.circular_distance(ds.Roll.values, roll_mean, units='deg')) > roll_th
+    # Roll conditions (True fails)
+    roll_mean = circmean(ds.roll_.values, low=-180, high=180)
+    roll_from_mean = ps.circular_distance(ds.roll_.values, roll_mean, units='deg')
+    roll_condition = np.abs(roll_from_mean) > roll_th
+    roll_looking_condition = np.abs(roll_from_mean) > 90
+
+    # Pitch conditions (True fails)
     pitch_mean = circmean(ds.pitch.values, low=-180, high=180)
-    pitch_condition = np.abs(ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')) > pitch_th
-    motion_condition = roll_condition & pitch_condition
+    pitch_from_mean = ps.circular_distance(ds.pitch.values, pitch_mean, units='deg')
+    pitch_condition = np.abs(pitch_from_mean) > pitch_th
+    pitch_looking_condition = np.abs(pitch_from_mean) > 90
 
-    # Outiler conditions
+    # Motion conditions (True fails)
+    motion_condition = roll_condition | pitch_condition
+    looking_condition = roll_looking_condition | pitch_looking_condition
+    
+    # Outlier conditions (True fails)
     horizontal_velocity = np.sqrt(ds.u ** 2 + ds.v ** 2)
-    # velocity_condition = (np.greater(abs(ds.u.values), vel_th, where=np.isfinite(ds.u.values)) |
-    #                       np.greater(abs(ds.v.values), vel_th, where=np.isfinite(ds.v.values)))
     velocity_condition = np.greater(horizontal_velocity.values, vel_th, where=np.isfinite(ds.u.values))
-    bottom_track_condition = (np.greater(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
-                              np.greater(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
+    if 'u_bt' in ds.data_vars and 'v_bt' in ds.data_vars:
+        bottom_track_condition = (np.greater(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
+                                  np.greater(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
 
-    # Missing condition
+    # Missing condition (True fails)
     missing_condition = (~np.isfinite(ds.u) | ~np.isfinite(ds.v) | ~np.isfinite(ds.w)).values
 
-    # Boolean summary of non-critical tests
+    # Boolean summary of non-critical tests (True fails)
     ncrit_condition = corr_condition | amp_condition | motion_condition | velocity_condition
 
-    # Remove side lob influence according to a fixed depths (e.g. Moorings)
-    if sl == 'dep':
+    # Remove side lob influence (True fails) according to a fixed depths (e.g. Moorings)
+    if mode_sidelobes == 'dep':
+
+        # Calculate these here to clarify the code below
+        cos_ba = np.cos(np.pi * ds.attrs['beam_angle'] / 180)
+        adcp_depth = ds.depth.mean()
+
         # Dowward looking
         if ds.attrs['looking'] == 'down':
             if depth != None:
-                sidelobe_condition = (ds.z > ds.dep.values.mean()
-                                      * (1 - np.cos(np.pi * ds.attrs['angle'] / 180))
-                                      + depth * np.cos(np.pi * ds.attrs['angle'] / 180))
+                sidelobe_condition = ds.z > (adcp_depth + (depth - adcp_depth) * cos_ba)
             else:
                 raise Warning("Can not correct for side lobes, depth not provided.")
 
         # Upward looking
-        elif ds.attrs['looking']=='up':
-            sidelobe_condition = ds.z < ds.dep.values.mean()*(1-np.cos(np.pi*ds.attrs['angle']/180))
+        elif ds.attrs['looking'] == 'up':
+            sidelobe_condition = ds.z < adcp_depth * (1 - cos_ba)
 
         # Orientation unknown 
         else:
@@ -186,48 +290,63 @@ def adcp_qc(di,
             sidelobe_condition = np.ones(ds.z.values.size, dtype='bool')
 
     # Remove side lobe influence ping by ping
-    elif sl=='bt':
-        print("Per ping side lobe correction using bottom track range not yet implemented. Doing nothing.")
+    elif mode_sidelobes == 'bt':
+        raise KeyError("Removing sidelob interference using BT range not implemented yet.")
 
     # Do not perform side lobe removal
     else:
         sidelobe_condition = np.zeros_like(ds.u.values, dtype='bool')
 
     # Apply condition to bottom track velocities
-    for field in ['u_bt', 'v_bt', 'w_bt']:
-        ds[field] = ds[field].where( bottom_track_condition )
+    if 'u_bt' in ds.data_vars and 'v_bt' in ds.data_vars:
+        for field in ['u_bt', 'v_bt', 'w_bt']:
+            ds[field] = ds[field].where( bottom_track_condition )
 
     # Determine quality flags
-    ds['flags'] = 1
-    ds['flags'] = xr.where(pg_condition, 3, ds.flags)
-    ds['flags'] = xr.where(pg_condition & ncrit_condition, 4, ds.flags)
-    ds['flags'] = xr.where(sidelobe_condition, 4, ds.flags)
-    ds['flags'] = xr.where(missing_condition, 9, ds.flags)
+    ds['flags'].values = np.ones(ds.flags.shape)
+    ds['flags'].values = xr.where(pg_condition, 3, ds.flags)
+    ds['flags'].values = xr.where(pg_condition & ncrit_condition, 4, ds.flags)
+    ds['flags'].values = xr.where(sidelobe_condition, 4, ds.flags)
+    ds['flags'].values = xr.where(looking_condition, 4, ds.flags)
+    ds['flags'].values = xr.where(missing_condition, 9, ds.flags)
 
     # First optional rotation to correct compass misalignment
-    if C not in [None, 0]:
-        u, v = ps.rotate_frame(ds.u.values, ds.v.values, C, units='deg')
-        ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
-        u_bt, v_bt = ps.rotate_frame(ds.u_bt.values, ds.v_bt.values, C, units='deg')
-        ds['u_bt'], ds['v_bt'] = (('time'), u_bt), (('time'), v_bt)
+    if theta_1 not in [None, 0]:
+        u, v = ps.rotate_frame(ds.u.values, ds.v.values, theta_1, units='deg')
+        ds['u'].values = u
+        ds['v'].values = v
+
+        if 'u_bt' in ds.data_vars and 'v_bt' in ds.data_vars:
+            u_bt, v_bt = ps.rotate_frame(ds.u_bt.values, ds.v_bt.values, theta_1, units='deg')
+            ds['u_bt'].values = u_bt
+            ds['v_bt'].values = v_bt
 
     # Correct for platform motion
-    for field in ['u', 'v', 'w', 'e']:
+    for field in ['u', 'v', 'w']:
 
-        # No bottom track for error velocity
-        if field in ['u', 'v', 'w']:
-            # Bottom track correction in 3D
-            if iv=='bt':
-                ds[field] -= ds['%s_bt' % field].values
+        # Bottom track correction in 3D
+        if mode_platform_velocity == 'bt':
+            ds[field] -= ds['%s_bt' % field].values
 
-            # GPS velocity correction in 2D
-            elif iv=='gps' and (field in ['u', 'v']):
-                ds[field] += np.tile(gps[field].where(np.isfinite(gps.lon.values), 0), (ds.z.size, 1))
+        # GPS velocity correction in 2D
+        elif mode_platform_velocity == 'gps' and (field in ['u', 'v']):
+            ds[field] += np.tile(gps[field].where(np.isfinite(gps.lon.values), 0), (ds.z.size, 1))
+            ds['%sship' % field].values = gps[field].values
+
+            # Remove bottom track data if not used
+            for v in ['u_bt', 'v_bt', 'w_bt', 'range_bt', 'pg_bt', 'corr_bt']:
+                if v in ds.data_vars:
+                    ds.drop_vars(names=v)
+
+    # No platform velocity correction
+    if mode_platform_velocity != 'gps':
+        ds = ds.drop_vars(['uship', 'vship'])
 
     # Second optional rotation to place in chosen reference frame
-    if R not in [None, 0]:
-        u, v = ps.rotate_frame(ds.u.values, ds.v.values, R, units='deg')
-        ds['u'], ds['v'] = (('z', 'time'), u), (('z', 'time'), v)
+    if theta_2 not in [None, 0]:
+        u, v = ps.rotate_frame(ds.u.values, ds.v.values, theta_2, units='deg')
+        ds['u'].values = u
+        ds['v'].values = v
 
     return ds
 
@@ -236,7 +355,7 @@ def load_rdi_binary(files,
                      adcptype,
                      force_dw=False,
                      force_up=False,
-                     mindep=0,
+                     min_depth=0,
                      selected=None,
                      clip=0,
                      t_offset=0):
@@ -253,7 +372,7 @@ def load_rdi_binary(files,
         Process as downward looking ADCP.
     force_up : bool
         Process as upward looking ADCP.
-    mindep : float
+    min_depth : float
         Require instrument depth be greater that this value in meters.
 
     Returns
@@ -277,34 +396,36 @@ def load_rdi_binary(files,
 
     # Configure depth of bin centers
     if force_dw or force_up:
+
+        # downwards processing
         if force_dw:
-            # downwards processing
-            selected = data.XducerDepth > mindep
+            selected = data.XducerDepth > min_depth
             z = data.dep + np.nanmean(data.XducerDepth[selected])  # depth of the bins
             looking = 'down'
+
+        # upwards processing
         else:
-            # upwards processing
-            selected = data.XducerDepth > mindep
-            qc_kw['depth'] = np.nanmean(data.XducerDepth[selected])
-            z = qc_kw['depth'] - data.dep  # depth of the bins
+            selected = data.XducerDepth > min_depth
+            z = np.nanmean(data.XducerDepth[selected]) - data.dep  # depth of the bins
             looking = 'up'
+
+    # downwards processing
     elif not data.sysconfig['up']:
-        # downwards processing
-        selected = data.XducerDepth > mindep
+        selected = data.XducerDepth > min_depth
         z = data.dep + np.nanmean(data.XducerDepth[selected])  # depth of the bins
         looking = 'down'
+
+    # upwards processing
     elif data.sysconfig['up']:
-        # upwards processing
-        selected = data.XducerDepth > mindep
-        qc_kw['depth'] = np.nanmean(data.XducerDepth[selected])
-        z = qc_kw['depth'] - data.dep  # depth of the bins
+        selected = data.XducerDepth > min_depth
+        z = np.nanmean(data.XducerDepth[selected]) - data.dep  # depth of the bins
         looking = 'up'
     else:
-        raise ValueError('Could not determine ADCP orientation!')
+        raise ValueError('Could not determine ADCP orientation.')
 
     # Init xarray
     t = t[selected]
-    ds = adcp_init(z.size, t.size, 4)
+    ds = adcp_init(z, t)
 
     # Set up xarray
     ds['u'].values = np.asarray(data.vel1[selected][:].T)
@@ -314,28 +435,30 @@ def load_rdi_binary(files,
     ds['corr'].values = np.asarray(np.mean(data.cor, axis=2)[selected][:].T)
     ds['amp'].values = np.asarray(np.mean(data.amp, axis=2)[selected][:].T)
     ds['pg'].values = np.float64(np.asarray(data.pg4[selected][:].T))
-    ds['dep'].values = np.asarray(data.XducerDepth[selected])
+    ds['depth'].values = np.asarray(data.XducerDepth[selected])
     ds['heading'].values = np.asarray(data.heading[selected])
-    ds['Roll'].values = np.asarray(data.roll[selected])
+    ds['roll_'].values = np.asarray(data.roll[selected])
     ds['pitch'].values = np.asarray(data.pitch[selected])
-
-    # Set up coordinates
-    ds = ds.assign_coords(time=t, z=z, Nbeam=np.arange(4))
+    ds['temp'].values = np.asarray(data.temperature[selected])
 
     # Bottom track data if it exists
     if not (data.bt_vel.data == 0).all():
         ds['u_bt'].values = data.bt_vel.data[selected, 0]
         ds['v_bt'].values = data.bt_vel.data[selected, 1]
         ds['w_bt'].values = data.bt_vel.data[selected, 2]
-        ds['e_bt'].values = data.bt_vel.data[selected, 3]
         ds['range_bt'].values = data.bt_depth.data[selected, :].T
 
+    # If no bottom track data, drop variables
+    else:
+        bt_vars = ['u_bt', 'v_bt', 'w_bt', 'range_bt', 'pg_bt', 'corr_bt']
+        ds = ds.drop_vars(names=bt_vars)
+
     # Attributes
-    ds.attrs['angle'] = data.sysconfig['angle']
-    ds.attrs['freqHz'] = data.sysconfig['kHz'] * 1000
-    ds.attrs['binSize'] = data.CellSize
+    ds.attrs['beam_angle'] = data.sysconfig['angle']
+    ds.attrs['ping_frequency'] = data.sysconfig['kHz'] * 1000
+    ds.attrs['bin_size'] = data.CellSize
     ds.attrs['looking'] = looking
-    ds.attrs['serial'] = str(data.FL['Inst_SN'])
+    ds.attrs['instrument_serial'] = str(data.FL['Inst_SN'])
 
     # Flip z if upward looking
     if ds.attrs['looking'] == 'up':

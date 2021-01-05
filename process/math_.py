@@ -3,12 +3,14 @@ Mathematical, geometrical and simple matrix operations.
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 # from math import radians, cos, sin, asin, sqrt
 import shapely.speedups
 # from mpl_toolkits.basemap import Basemap
 from shapely.geometry import Point, Polygon
 from scipy.interpolate import interp1d
 # import mxtoolbox.process.convert.crs2crs as crs2crs
+import scipy.stats as ss
 import matplotlib.path as mpltPath
 import cartopy.crs as ccrs
 shapely.speedups.enable()
@@ -18,6 +20,10 @@ __all__ = ['array_corners',
            'broadcastable',
            'circular_distance',
            'consecutive_duplicates',
+           'date_abb',
+           'date_full',
+           'doy_mean',
+           'doy_std',
            'destination_point',
            'distance_along_bearing',
            'f_gaussian',
@@ -39,6 +45,11 @@ __all__ = ['array_corners',
            'xr_time_step',
            'xr_unique',
            'mxy2abc']
+
+
+# Brief functions
+date_abb = lambda x: '%s, %.0f' % (x.month_name()[:3], x.day)
+date_full = lambda x: '%s %.0f' % (x.month_name(), x.day)
 
 
 def array_outline(array):
@@ -173,7 +184,6 @@ def circular_distance(a1, a2, units='rad'):
 
     return res
 
-
 def consecutive_duplicates(x_pts, y_pts):
     """
     Find consecutive duplicate coordinates in 2D space.
@@ -201,6 +211,55 @@ def consecutive_duplicates(x_pts, y_pts):
     x_nd, y_nd = x_pts[~duplicate], y_pts[~duplicate]
 
     return x_nd, y_nd, duplicate
+
+
+def doy_mean(series, abb=True):
+    """
+    Circular mean pandas.Timestamp series as day of year.
+
+    Parameters
+    ----------
+    series: pandas.Series of pandas.Timestamp
+        Series to analyse.
+
+    Returns
+    -------
+    float:
+        Average day of year of series in units of days.
+    """
+    # Exclude NaN before computing mean
+    series = series.loc[(~series.isnull())]
+
+    # Compute circular mean
+    doy = ss.circmean(series.apply(lambda x: x.dayofyear), low=1, high=365)
+
+    # Generate text label
+    timestamp = pd.Timestamp('2000-01-01') + pd.Timedelta(int(round(doy)), 'D')
+    if abb:
+        label = date_abb(timestamp)
+    else:
+        label = date_full(timestamp)
+    return doy, label
+
+
+def doy_std(series):
+    """
+    Circular std pandas.Timestamp series as day of year.
+
+    Parameters
+    ----------
+    series: pandas.Series of pandas.Timestamp
+        Series to analyse.
+
+    Returns
+    -------
+    float:
+        Standard deviation in units of days.
+    """
+    # Exclude NaN before computing mean
+    series = series.loc[(~series.isnull())]
+
+    return ss.circstd(series.apply(lambda x: x.dayofyear), low=1, high=365)
 
 
 def _distance(xpts, ypts, x0, y0):

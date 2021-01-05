@@ -32,6 +32,8 @@ __all__ = ['anomaly2rgb',
            'lonlat2speed',
            'lonlat2perimeter',
            'pd_add_seasons',
+           'pd_sa_ct_rho_sigmatheta',
+           'sa_ct_rho_sigmatheta',
            'theta2hd',
            'uv2hd',
            'xr_SA_CT_pden',
@@ -713,6 +715,138 @@ def pd_add_seasons(dataframe, time='time', stype='astro'):
                       (dataframe[time] < strt_w_nx), 'season'] = 'fall'
 
     return dataframe
+
+
+def pd_sa_ct_rho_sigmatheta(dataframe,
+                            temperature,
+                            salinity,
+                            latitude=50.0,
+                            longitude=-65.0,
+                            z=None,
+                            pressure=None):
+    """
+    Make common thermodynamic conversions of T-S data in dataframes.
+
+    Parameters
+    ----------
+    dataframe: pandas.DataFrame
+        In which to add columns.
+    temperature, salinity: str
+        Names of the in situ T and practical S columns.
+    latitude: float or str
+        User specified lat or column name.
+    longitude: float or str
+        User specified lon or column name.
+    z: float or str
+        User specified depth or column name.
+    pressure: float or str
+        User specified sea pressure or column name.
+
+    Returns
+    -------
+    pandas.Dataframe:
+        Input dataframe with added SA, CT, rho and ST columns.
+
+    """
+    # Insure z, pressure specified as strings are in dataframe
+    if isinstance(pressure, str) and pressure not in dataframe.keys():
+        raise KeyError('pressure must be a key of dataframe when specified as str.')
+    if isinstance(z, str) and z not in dataframe.keys():
+        raise KeyError('z must be a key of dataframe when specified as str.')
+
+    # Insure depth information is specified
+    if z is None and pressure is None:
+        raise TypeError('One of z or pressure must be float or str, not: .', z, pressure)
+
+    # Determine pressure from depth column
+    elif pressure is None and isinstance(z, str):
+        pressure = gsw.p_from_z(-dataframe[z], latitude)
+
+    # Determine pressure from depth value
+    elif pressure is None and isinstance(z, (int, float)):
+        pressure = gsw.p_from_z(-z, latitude)
+
+    # Use pressure column
+    else:
+        pressure = dataframe[pressure]
+
+    # Use dataframe column or value as geographical coordinate
+    if isinstance(latitude, str):
+        lat = dataframe[latitude]
+    else:
+        lat = latitude
+    if isinstance(longitude, str):
+        lon = dataframe[longitude]
+    else:
+        lon = longitude
+
+    # Call to TEOS10
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)
+        SA, CT, rho, sigma_theta = sa_ct_rho_sigmatheta(dataframe[temperature],
+                                                        dataframe[salinity],
+                                                        pressure,
+                                                        latitude=lat,
+                                                        longitude=lon)
+
+    # Add columns to dataframe
+    dataframe.loc[:, 'SA'] = SA
+    dataframe.loc[:, 'CT'] = CT
+    dataframe.loc[:, 'rho'] = rho
+    dataframe.loc[:, 'ST'] = sigma_theta
+
+    return dataframe
+
+
+def sa_ct_rho_sigmatheta(temperature,
+                         salinity,
+                         pressure,
+                         latitude=50,
+                         longitude=-65):
+    """
+    Get common thermodynamic conversions of T-S data.
+
+    Parameters
+    ----------
+    temperature: float or 1D array
+        In situ temperature.
+    salinity: float or 1D array
+        Practical salinity.
+    pressure: float or 1D array
+        Sea pressure (dBar).
+    longitude, latitude: float or 1D array
+        Geographical coordinates.
+
+    Returns
+    -------
+    SA: float or 1D array
+        Absolute salinity.
+    CT: float or 1D array
+        Conservative temperature.
+    rho: float or 1D array
+        In situ density.
+    ST: float or 1D array
+        Potential density anomaly.
+    """
+
+    # Get absolute salinity
+    SA = gsw.SA_from_SP(salinity,
+                        pressure,
+                        longitude,
+                        latitude)
+
+    # Get conservative temperature
+    CT = gsw.CT_from_t(SA,
+                       temperature,
+                       pressure)
+
+    # Get in situ density
+    rho = gsw.rho(SA, CT, pressure)
+
+    # Get density anomaly
+    sigma_theta = gsw.density.sigma0(SA, CT)
+
+    return SA, CT, rho, sigma_theta
 
 
 def theta2hd(theta):

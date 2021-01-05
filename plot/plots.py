@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from matplotlib.ticker import FormatStrFormatter
 from .mplutils import text_array, colorbar
 from .cputils import cp_proj, cp_ticks
-from ..process.math_ import xr_abs
+from ..process.math_ import xr_abs, doy_mean, doy_std, date_abb
 from ..read.text import list2cm
 from ..process.convert import anomaly2rgb, binc2edge, dd2dms
 
@@ -25,6 +25,7 @@ __all__ = ['anomaly_bar',
            'gsl_bathy_contourf',
            'gsl_map',
            'gsl_temperature_cast',
+           'pd_scorecard',
            'scorecard',
            'scorecard_bottom_monthly',
            'wa_map',
@@ -444,59 +445,55 @@ def gsl_map(axes,
 
     return geoax
 
-
-def scorecard(df,
-              field,
-              ax,
+def scorecard(df, field, ax,
               side_label='',
               color_displays='anomaly',
               value_displays='value',
               anomaly_color_levels=4,
               units_label='',
               cbar_label='',
+              clevels=None,
               averages=False,
               colorbar=False,
               hide_xlabels=False,
-              sub_na=None):
+              hide_xticks=True,
+              xlabel_angle=60,
+              pad_xlabel=0,
+              text_offset=[0., 0.],
+              sub_na=None,
+              bfmt='%.1f',
+              sfmt='%.2f',
+              n_cutoff=None,
+              fc_thres=None):
     """
-    Make AZMP-like monthly/yearly scorecard plots.
+    Function scorecard:
 
     Takes as input a pandas dataframe with one of the columns named
-    time and expected to be type numpy datetime64[ns]. Aesthetics are of
-    the scorecard plot are modelled on Peter Galbraith's AZMP figures.
+    time and expected to be type numpy datetime64[ns]. Makes a monthly
+    scorecard plot modelled on Peter Galbraith's AZMP figures for the
+    column field of the dataframe and places it in axes ax.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Contains the input time series.
-    field : str
-        Name of the column to analyse.
-    ax : pyplot.Axes
-        Where to plot the scorecard
-    color_displays : str ('anomaly', 'normalized' or 'value')
-        Meaning of the color dimension. Make the color of the boxes
-        reflect anomaly to the mean, value normalized by standard
-        deviation of the whole time series, or the actual value.
-    value_displays : str ('anomaly' or 'value' 
-        Meaning of the number to be displayed in the box.
-    anomaly_color_levels : int
-        Number of color steps on both sides of zero.
-    units_label : str
-        Units of the average values displayed on the right.
-    averages : bool
-        Display averages by month throughout all years.
-    colorbar : bool
-        Display colorbar. Requires averages=False.
-    hide_xlabels : bool
-        Hide labels of years on x axis.
+    Options:
 
-    Returns
-    -------
-    2D array
-        Averaged values.
-    2D array
-        Anomaly values.
+    side_label: Label on the left of the plot
 
+    color_displays: choose from 'anomaly', 'normalized', or 'value' to
+    make the color of the boxes reflect anomaly to the mean, value normalized
+    by standard deviation of the whole time series, or the actual value.
+
+    value_displays: choose between 'anomaly' and 'value' to set the number to
+    be displayed in the box.
+
+    anomaly_color_levels: choose how many color steps to have in both
+    directions with respect to zero.
+
+    units_label: units of the average values displayed on the right.
+
+    averages: boolean, display averages by month throughout all years.
+
+    colorbar: boolean, display colorbar if averages is false.
+
+    hide_xlabels: boolean, usefull for stacked plots.
     """
     # Compute card values
     months = df.time.dt.month.sort_values().unique()
@@ -506,11 +503,19 @@ def scorecard(df,
     anomaly_array = np.zeros((months.size, years.size)) * np.nan
     for (year, i) in zip(years, range(years.size)):
         for (month, j) in zip(months, range(months.size)):
-            array[j, i] = (df[field]
-                           .where(np.logical_and(df.time.dt.year == year,
-                                                 df.time.dt.month == month))
-                           .dropna()
-                           .mean())
+            df_month = (df[field]
+                        .where(np.logical_and(df.time.dt.year == year,
+                                              df.time.dt.month == month))
+                           .dropna())
+            if n_cutoff is None or df_month.size > n_cutoff:
+                array[j, i] = df_month.mean()
+            else:
+                array[j, i] = np.nan
+            # array[j, i] = (df[field]
+            #                .where(np.logical_and(df.time.dt.year == year,
+            #                                      df.time.dt.month == month))
+            #                .dropna()
+            #                .mean())
 
             # Substitute missing values with alternate array
             if np.isnan(array[j, i]) and (not sub_na is None):
@@ -551,14 +556,19 @@ def scorecard(df,
             vmin, vmax = -2, 2
             cticks = range(-2, 3)
     elif color_displays in ['value']:
-        cmap = list2cm('%sDivergentPalette' % cmap_dir, N=int(2 * anomaly_color_levels))
-        abs_max = np.nanmax(np.abs(array))
-        vmax = abs_max - (abs_max % anomaly_color_levels)
-        vmin = -vmax
-        if anomaly_color_levels % 2 == 0:
-            cticks = range(int(vmin), int(vmax+1), 2)
+        if clevels is None:
+            cmap = list2cm('%sDivergentPalette' % cmap_dir, N=int(2 * anomaly_color_levels))
+            abs_max = np.nanmax(np.abs(array))
+            vmax = abs_max - (abs_max % anomaly_color_levels)
+            vmin = -vmax
+            if anomaly_color_levels % 2 == 0:
+                cticks = range(int(vmin), int(vmax+1), 2)
+            else:
+                cticks = range(int(vmin)+1, int(vmax+1), 2)
         else:
-            cticks = range(int(vmin)+1, int(vmax+1), 2)
+            cmap = list2cm('%sDivergentPalette' % cmap_dir, N=int(clevels.size - 1))
+            cticks = clevels
+            vmin, vmax = clevels.min(), clevels.max()
     elif color_displays in ['seq_value']:
         cmap = list2cm('%sTsatPalette' % cmap_dir, N=int(anomaly_color_levels))
         vmax = np.ceil(np.nanmax(array)) - (np.ceil(np.nanmax(array)) % 2)
@@ -594,22 +604,35 @@ def scorecard(df,
            ylabel='',
            xlabel='',
            facecolor='lightgray')
-    if hide_xlabels:
+    if hide_xlabels > 1:
+        xticklabels = [year if (year % hide_xlabels) == 0 else '' for year in years]
+        ax.plot(years[::hide_xlabels] - 0.5,
+                12.5 * np.ones_like(years[::hide_xlabels]),
+                marker=3, markersize=6, clip_on=False)
+        ax.set(xticklabels=xticklabels)
+        ax.tick_params(axis='x', pad=pad_xlabel)
+    elif hide_xlabels:
         ax.set(xticklabels=[])
+    if not hide_xticks:
+        ax.plot(years - 0.5, 12.5 * np.ones_like(years), marker=3, markersize=4, clip_on=False)
     ax.tick_params(which='both', bottom=False, left=False)
-    ax.tick_params(axis='x', labelrotation=60)
+    ax.tick_params(axis='x', labelrotation=xlabel_angle)
     ax.set_clip_on(False)
     ax.invert_yaxis()
 
     # Add side label
-    ll = ax.plot([XG[0] - 1, XG[0] - 1], [YG[0], YG[-1]])
+    ll = ax.plot([XG[0] - 1, XG[0] - 1], [YG[0], YG[-1]], 'k')
     ll[0].set_clip_on(False)
-    tt = ax.text(XG[0] - 1.25, np.mean(YG), side_label,
+    tt = ax.text(XG[0] - 1.5, np.mean(YG), side_label,
                  ha='center',
                  va='center',
                  rotation='vertical',
                  fontsize=9)
     tt.set_clip_on(False)
+
+    # Font color change threshold
+    if fc_thres is None:
+        fc_thres = 0.75 * vmax
 
     # Add box labels
     if value_displays == 'value':
@@ -621,17 +644,21 @@ def scorecard(df,
             if np.isfinite(array[j, i]):
                 if color_displays in ['seq_value']:
                     text_color = 'k'
-                elif np.abs(color_array[j, i]) >= 0.75 * vmax:
+                elif np.abs(color_array[j, i]) >= fc_thres:
                     text_color = 'w'
                 else:
                     text_color = 'k'
-                ax.text(years[i], months[j], '%.1f' % text_array[j, i],
+                ax.text(years[i] + text_offset[0],
+                        months[j] + text_offset[1],
+                        bfmt % text_array[j, i],
                         ha='center',
                         va='center',
                         fontsize=9,
                         color=text_color)
             elif np.isfinite(sub_array[j, i]):
-                ax.text(years[i], months[j], '%.1f' % sub_array[j, i],
+                ax.text(years[i] + text_offset[0],
+                        months[j] + text_offset[1],
+                        bfmt % sub_array[j, i],
                         ha='center',
                         va='center',
                         fontsize=9,
@@ -640,14 +667,15 @@ def scorecard(df,
     # Averages on the side
     if averages:
         for (month, i) in zip(months, range(months.size)):
-            tt = ax.text(years[-1] + 0.75, month,
-                         r'%.2f%s $\pm$ %.2f' % (np.nanmean(text_array[i, :]),
-                                                 units_label,
-                                                 np.nanstd(text_array[i, :])),
-                         fontsize=9,
-                         va='center',
-                         ha='left')
-            tt.set_clip_on(False)
+            if np.isfinite(np.nanmean(text_array[i, :])):
+                tt = ax.text(years[-1] + 0.75, month + text_offset[1],
+                             (sfmt + r' %s $\pm$ ' + sfmt) % (np.nanmean(text_array[i, :]),
+                                                     units_label,
+                                                     np.nanstd(text_array[i, :])),
+                             fontsize=9,
+                             va='center',
+                             ha='left')
+                tt.set_clip_on(False)
         if colorbar:
             _, b, _, h = ax.properties()['position'].bounds
             cbaraxis = ax.figure.add_axes([0.9, b, 0.025, h])
@@ -659,6 +687,221 @@ def scorecard(df,
         ax.figure.colorbar(caxis, cax=cbaraxis, label=cbar_label, ticks=cticks).minorticks_off()
 
     return array, anomaly_array
+
+# def scorecard(df,
+#               field,
+#               ax,
+#               side_label='',
+#               color_displays='anomaly',
+#               value_displays='value',
+#               anomaly_color_levels=4,
+#               units_label='',
+#               cbar_label='',
+#               averages=False,
+#               colorbar=False,
+#               hide_xlabels=False,
+#               sub_na=None):
+#     """
+#     Make AZMP-like monthly/yearly scorecard plots.
+
+#     Takes as input a pandas dataframe with one of the columns named
+#     time and expected to be type numpy datetime64[ns]. Aesthetics are of
+#     the scorecard plot are modelled on Peter Galbraith's AZMP figures.
+
+#     Parameters
+#     ----------
+#     df : pandas.DataFrame
+#         Contains the input time series.
+#     field : str
+#         Name of the column to analyse.
+#     ax : pyplot.Axes
+#         Where to plot the scorecard
+#     color_displays : str ('anomaly', 'normalized' or 'value')
+#         Meaning of the color dimension. Make the color of the boxes
+#         reflect anomaly to the mean, value normalized by standard
+#         deviation of the whole time series, or the actual value.
+#     value_displays : str ('anomaly' or 'value' 
+#         Meaning of the number to be displayed in the box.
+#     anomaly_color_levels : int
+#         Number of color steps on both sides of zero.
+#     units_label : str
+#         Units of the average values displayed on the right.
+#     averages : bool
+#         Display averages by month throughout all years.
+#     colorbar : bool
+#         Display colorbar. Requires averages=False.
+#     hide_xlabels : bool
+#         Hide labels of years on x axis.
+
+#     Returns
+#     -------
+#     2D array
+#         Averaged values.
+#     2D array
+#         Anomaly values.
+
+#     """
+#     # Compute card values
+#     months = df.time.dt.month.sort_values().unique()
+#     years = df.time.dt.year.unique()
+#     array = np.zeros((months.size, years.size)) * np.nan
+#     sub_array = np.zeros((months.size, years.size)) * np.nan
+#     anomaly_array = np.zeros((months.size, years.size)) * np.nan
+#     for (year, i) in zip(years, range(years.size)):
+#         for (month, j) in zip(months, range(months.size)):
+#             array[j, i] = (df[field]
+#                            .where(np.logical_and(df.time.dt.year == year,
+#                                                  df.time.dt.month == month))
+#                            .dropna()
+#                            .mean())
+
+#             # Substitute missing values with alternate array
+#             if np.isnan(array[j, i]) and (not sub_na is None):
+#                 sub_array[j, i] = (df[sub_na]
+#                                    .where(np.logical_and(df.time.dt.year == year,
+#                                                          df.time.dt.month == month))
+#                                    .dropna()
+#                                    .mean())
+
+#     # Compute anomaly
+#     clim_mean = np.nanmean(array, axis=1)
+#     clim_std = np.nanstd(array, axis=1)
+
+#     for (i, mean, std) in zip(range(array.shape[0]), clim_mean, clim_std):
+#         anomaly_array[i, :] = (array[i, :] - mean) / std
+
+#     # Convert to anomaly if called for
+#     standard_deviation = df[field].std()
+#     normalized_array = array / standard_deviation
+
+#     # Call style and colormap
+#     cmap_dir = '/home/jls/Software/anaconda3/lib/python3.7/site-packages/libmx/utils/'
+#     if color_displays in ['anomaly', 'normalized']:
+#         cmap = list2cm('%sAnomalyPalette' % cmap_dir, N=int(2 * anomaly_color_levels))
+#         if anomaly_color_levels == 6:
+#             vmin, vmax = -3, 3
+#             cticks = range(-3, 4)
+#         elif anomaly_color_levels == 5:
+#             vmin, vmax = -2.5, 2.5
+#             cticks = range(-2, 3)
+#         elif anomaly_color_levels == 4:
+#             vmin, vmax = -2, 2
+#             cticks = range(-2, 3)
+#         elif anomaly_color_levels == 3:
+#             vmin, vmax = -3, 3
+#             cticks = range(-3, 4)
+#         elif anomaly_color_levels == 2:
+#             vmin, vmax = -2, 2
+#             cticks = range(-2, 3)
+#     elif color_displays in ['value']:
+#         cmap = list2cm('%sDivergentPalette' % cmap_dir, N=int(2 * anomaly_color_levels))
+#         abs_max = np.nanmax(np.abs(array))
+#         vmax = abs_max - (abs_max % anomaly_color_levels)
+#         vmin = -vmax
+#         if anomaly_color_levels % 2 == 0:
+#             cticks = range(int(vmin), int(vmax+1), 2)
+#         else:
+#             cticks = range(int(vmin)+1, int(vmax+1), 2)
+#     elif color_displays in ['seq_value']:
+#         cmap = list2cm('%sTsatPalette' % cmap_dir, N=int(anomaly_color_levels))
+#         vmax = np.ceil(np.nanmax(array)) - (np.ceil(np.nanmax(array)) % 2)
+#         vmin = np.floor(np.nanmin(array))
+#         cticks = np.linspace(int(vmin), int(vmax), anomaly_color_levels + 1)[::2]
+#         # if (vmax - vmin) % 2 == 0:
+#         #     cticks = np.linspace(int(vmin), int(vmax), anomaly_color_levels)
+#         # else:
+#         #     cticks = np.linspace(int(vmin)+1, int(vmax), anomaly_color_levels)
+
+
+#     # Color boxes
+#     XG = np.hstack((years - 0.5, years[-1] + 0.5))
+#     YG = np.hstack((months - 0.5, months[-1] + 0.5))
+#     if color_displays == 'anomaly':
+#         color_array = anomaly_array
+#     elif color_displays == 'normalized':
+#         color_array = normalized_array
+#     else:
+#         color_array = array
+#     caxis = ax.pcolor(XG, YG, color_array,
+#                       ec='k',
+#                       linewidth=0.1,
+#                       fc='gray',
+#                       cmap=cmap,
+#                       vmin=vmin,
+#                       vmax=vmax)
+#     ax.set(yticks=np.arange(1, 13),
+#            yticklabels=['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
+#            xticks=years,
+#            xlim=(XG[0], XG[-1]),
+#            ylim=(YG[0], YG[-1]),
+#            ylabel='',
+#            xlabel='',
+#            facecolor='lightgray')
+#     if hide_xlabels:
+#         ax.set(xticklabels=[])
+#     ax.tick_params(which='both', bottom=False, left=False)
+#     ax.tick_params(axis='x', labelrotation=60)
+#     ax.set_clip_on(False)
+#     ax.invert_yaxis()
+
+#     # Add side label
+#     ll = ax.plot([XG[0] - 1, XG[0] - 1], [YG[0], YG[-1]])
+#     ll[0].set_clip_on(False)
+#     tt = ax.text(XG[0] - 1.25, np.mean(YG), side_label,
+#                  ha='center',
+#                  va='center',
+#                  rotation='vertical',
+#                  fontsize=9)
+#     tt.set_clip_on(False)
+
+#     # Add box labels
+#     if value_displays == 'value':
+#         text_array = array
+#     else:
+#         text_array = anomaly_array
+#     for i in range(years.size):
+#         for j in range(months.size):
+#             if np.isfinite(array[j, i]):
+#                 if color_displays in ['seq_value']:
+#                     text_color = 'k'
+#                 elif np.abs(color_array[j, i]) >= 0.75 * vmax:
+#                     text_color = 'w'
+#                 else:
+#                     text_color = 'k'
+#                 ax.text(years[i], months[j], '%.1f' % text_array[j, i],
+#                         ha='center',
+#                         va='center',
+#                         fontsize=9,
+#                         color=text_color)
+#             elif np.isfinite(sub_array[j, i]):
+#                 ax.text(years[i], months[j], '%.1f' % sub_array[j, i],
+#                         ha='center',
+#                         va='center',
+#                         fontsize=9,
+#                         color='k')
+
+#     # Averages on the side
+#     if averages:
+#         for (month, i) in zip(months, range(months.size)):
+#             tt = ax.text(years[-1] + 0.75, month,
+#                          r'%.2f%s $\pm$ %.2f' % (np.nanmean(text_array[i, :]),
+#                                                  units_label,
+#                                                  np.nanstd(text_array[i, :])),
+#                          fontsize=9,
+#                          va='center',
+#                          ha='left')
+#             tt.set_clip_on(False)
+#         if colorbar:
+#             _, b, _, h = ax.properties()['position'].bounds
+#             cbaraxis = ax.figure.add_axes([0.9, b, 0.025, h])
+#             ax.figure.colorbar(caxis, cax=cbaraxis, label=cbar_label, ticks=cticks).minorticks_off()
+
+#     elif colorbar:
+#         _, b, _, h = ax.properties()['position'].bounds
+#         cbaraxis = ax.figure.add_axes([0.9, b, 0.025, h])
+#         ax.figure.colorbar(caxis, cax=cbaraxis, label=cbar_label, ticks=cticks).minorticks_off()
+
+#     return array, anomaly_array
 
 
 def scorecard_bottom_monthly(dataset,
@@ -827,6 +1070,178 @@ def ts_diagram(axes,
 
     # Set axis limits to input TS limits
     axes.set(xlim=(s_min, s_max), ylim=(t_min, t_max))
+
+
+def pd_scorecard(axes,
+                 dataframe,
+                 units=None,
+                 flip_anomaly=None,
+                 groups=None,
+                 angle_xlabel=60,
+                 pad_stat=0.02,
+                 pad_xlabel=0.1,
+                 pad_ylabel=0.02,
+                 pad_group=0.14,
+                 pad_group_label=0.02,
+                 pad_group_lines = 0.015):
+    """
+    Generate scorecard plot from pandas dataframe.
+
+    The index of the dataframe is used as the x axis and
+    each column becomes one row of the scorecard. Names of
+    the dataframe's columns are used as row labels.
+
+    Parameters
+    ----------
+    dataframe: pandas.DataFrame
+        Data to use for plot.
+    units: list of str
+        Ordered units of each column. If set to `dt`, the
+        column is processed as `numpy.datetime64`.
+    flip_anomaly: list of str
+        Names of columns for which to flip the anomaly colormap.
+    groups: dict
+        Used to group row labels with a line and label. Values are
+        lists of size 2 containing the indices of the rows to group
+        starting from the bottom. Keys are the labels to place next
+        to each line.
+    angle_xlabel: float
+        Rotate labels of x axis by this amount (deg).
+    pad_stat: float
+        Space between the scorecard and averages.
+    pad_xlabel: float
+        Space between the scorecard and x labels.
+    pad_ylabel: float
+        Space between the scorecard and y labels.
+    pad_group: float
+        Space between the scorecard and group lines.
+    pad_group_label: float
+        Space between the group line and its label.
+    pad_group_lines: float
+        Space between the group lines.
+
+    Returns
+    -------
+    matplotlib.Axes:
+        Axes on which the scorecard is drawn
+
+    """
+    # Defaults
+    if units is None:
+        units = ['' for _ in dataframe.keys()]
+    if flip_anomaly is None:
+        flip_anomaly = []
+
+    # Get dataframe dimensions
+    n_cols, n_rows = dataframe.shape
+
+    # Find grid edges and centers
+    x_centers = np.linspace(0, 1, n_cols)
+    y_centers = np.linspace(0, 1, n_rows)
+    x_edges = binc2edge(x_centers)
+    y_edges = binc2edge(y_centers)
+
+    # Set position of averages
+    x_stat = x_edges.max() + pad_stat
+
+    # Loop over rows
+    for y_l, y_c, y_r, name_, unit_ in zip(y_edges[:-1], y_centers, y_edges[1:], dataframe.keys(), units):
+
+        # Check if this is a date row
+        if unit_ == 'dt':
+            mean_, mean_label = doy_mean(dataframe[name_])
+            std_ = doy_std(dataframe[name_])
+        else:
+            # Calculate row mean and std
+            mean_ = dataframe[name_].mean()
+            std_ = dataframe[name_].std()
+
+        # If requirested, flip anomaly colormap
+        if name_ in flip_anomaly:
+            flip_ = -1
+        else:
+            flip_ = 1
+
+        # Write statistic on the scorecard right
+        if unit_ == 'dt':
+            stat_ = r'%s $\pm$ %.0f days' % (mean_label, std_)
+        elif unit_:
+            stat_ = r'%.0f %s $\pm$ %.0f' % (mean_, unit_, std_)
+        else:
+            stat_ = r'%.0f $\pm$ %.0f' % (mean_, std_)
+        axes.text(x_stat, y_c, stat_, ha='left', va='center')
+
+        # Label row on the scorecard left
+        axes.text(x_edges.min() - pad_ylabel, y_c, '%s' % name_, ha='right', va='center')
+
+        # Loop over columns
+        for x_l, x_c, x_r, index_ in zip(x_edges[:-1], x_centers, x_edges[1:], dataframe.index):
+
+            # Get value and color
+            if unit_ == 'dt':
+                if isinstance(dataframe.loc[index_, name_], pd.Timestamp):
+                    value_ = date_abb(dataframe.loc[index_, name_])
+                    doy_ = dataframe.loc[index_, name_].dayofyear
+                else:
+                    value_ = np.nan
+                    doy_ = np.nan
+
+                # If value is later than October subtract a year for anomaly calculation
+                if doy_ > 275:
+                    doy_ -= 365
+
+                anomaly_ = flip_ * (doy_ - mean_) / std_
+            else:
+                value_ = dataframe.loc[index_, name_]
+                anomaly_ = (value_ - mean_) / std_
+            color_ = anomaly2rgb(anomaly_)
+
+            # Draw grid and color
+            x_rect, y_rect = [x_l, x_r, x_r, x_l, x_l], [y_l, y_l, y_r, y_r, y_l]
+
+            # Switch text color over large anomalies for readability
+            if abs(anomaly_) >= 1.5:
+                font_color = 'w'
+            else:
+                font_color ='k'
+
+            # Write date value
+            if unit_ == 'dt' and isinstance(dataframe.loc[index_, name_], pd.Timestamp):
+                axes.text(x_c, y_c, '%s' % value_, ha='center', va='center', fontsize=7)
+                axes.fill(x_rect, y_rect, facecolor=color_, edgecolor='k', linewidth=0.5)
+
+            # Or finite numeric value
+            elif np.isfinite(value_):
+                axes.text(x_c, y_c, '%.0f' % value_, ha='center', va='center')
+                axes.fill(x_rect, y_rect, facecolor=color_, edgecolor='k', linewidth=0.5)
+
+            # Or grey out the box if missing
+            else:
+                axes.fill(x_rect, y_rect, facecolor=color_, edgecolor=None, zorder=-5)
+
+    # Label x axis
+    for x_c, index_ in zip(x_centers, dataframe.index):
+        axes.text(x_c, y_edges.min() - pad_xlabel, '%s' % index_, ha='center', va='top', rotation=angle_xlabel)
+
+    # Label row groups if requested
+    if isinstance(groups, dict):
+        for title_, rows_ in groups.items():
+
+            # Set row line positions
+            y_pts = np.array([y_edges[rows_[0]] + pad_group_lines, y_edges[rows_[-1] + 1] - pad_group_lines])
+            x_pts = (x_edges.min() - pad_group) * np.ones_like(y_pts)
+
+            # Draw row group line
+            axes.plot(x_pts, y_pts, 'k', clip_on=False)
+
+            # Draw row group label
+            axes.text(x_pts.mean() - pad_group_label, y_pts.mean(), title_, ha='center', va='center', rotation=90)
+
+    # Axes and tick parameters
+    axes.set(ylim=(y_edges.min(), y_edges.max()), xlim=(x_edges.min(), x_edges.max()))
+    axes.set(xticklabels=[], yticklabels=[])
+    axes.tick_params(which='both', bottom=False, left=False)
+
 
 def wa_map(axes,
            resolution='intermediate',
