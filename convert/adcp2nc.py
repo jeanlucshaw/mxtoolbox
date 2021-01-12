@@ -61,6 +61,7 @@ import numpy as np
 import warnings
 import csv
 import os
+import re
 import argparse
 
 
@@ -264,7 +265,7 @@ if __name__ == '__main__':
         abs_path = os.path.abspath(args.files)
     path = '%s/' % os.path.dirname(abs_path)
 
-    # Read ADCP data
+    # Read teledyne ADCP data
     if args.adcptype in ['wh', 'bb', 'os']:
         ds = load_rdi_binary(args.files,
                              args.adcptype,
@@ -272,14 +273,33 @@ if __name__ == '__main__':
                              force_up=args.force_up,
                              min_depth=min_depth)
         brand = 'RDI'
+        sonar = args.adcptype
         qc_kw = {**qc_defaults, **rdi_qc_defaults, **user_qc_kw}
+
+    # Read rowetech seawatch binaries directly
     elif args.adcptype == 'sw':
         ds = load_rtb_binary(args.files)
         brand = 'RTI'
+        sonar = args.adcptype
         qc_kw = {**qc_defaults, **rti_qc_defaults, **user_qc_kw}
+
+    # Read rowetech seawatch binaries converted to pd0
+    elif args.adcptype == 'sw_pd0':
+        ds = load_rdi_binary(args.files,
+                             'wh',
+                             force_dw=args.force_dw,
+                             force_up=args.force_up,
+                             min_depth=min_depth)
+        brand = 'RTI'
+        sonar = 'sw'
+        qc_kw = {**qc_defaults, **rdi_qc_defaults, **user_qc_kw}
+
+    # Sonar unknown
     else:
         raise ValueError('Sonar type %s not recognized' % args.adcptype)
-    ds.attrs['sonar'] = '%s %s' % (brand, args.adcptype)
+
+    # Write sonar information
+    ds.attrs['sonar'] = '%s %s' % (brand, sonar)
 
     # Quality control
     if qc:
