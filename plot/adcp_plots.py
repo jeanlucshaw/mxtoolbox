@@ -451,11 +451,14 @@ if __name__ == '__main__':
         # Get percentage of values dropped
         n_u_cln = adcp.isel(z=z_level).u.dropna(dim='time').size
         n_u_raw = adcp.isel(z=z_level).u_raw.dropna(dim='time').size
-        pc_u = 100 * n_u_cln / n_u_raw
-        ax[0].text(0.015,
-                   0.9,
-                   '%.1f%% data good' %
-                   pc_u, transform=ax[0].transAxes)
+
+        # Do not display percientage if only nan in z_level
+        if n_u_raw > 0:
+            pc_u = 100 * n_u_cln / n_u_raw
+            ax[0].text(0.015,
+                       0.9,
+                       '%.1f%% data good' %
+                       pc_u, transform=ax[0].transAxes)
 
         # Draw raw velocities
         adcp.isel(z=z_level).plot.scatter(x='time',
