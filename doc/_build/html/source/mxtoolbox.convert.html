@@ -73,6 +73,15 @@ at <code class="code docutils literal notranslate"><span class="pre">/usr/local/
 <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">python</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mxtoolbox</span><span class="o">/</span><span class="n">convert</span><span class="o">/</span><span class="n">adcp2nc</span><span class="o">.</span><span class="n">py</span> <span class="s2">&quot;$@&quot;</span>
 </pre></div>
 </div>
+<p>More attributes can be added to the output netCDF file by
+creating a file called <cite>info.adcp2nc</cite> next to the raw ADCP
+binaries. This csv file should have the format</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">attribute</span><span class="p">,</span><span class="n">value</span>
+<span class="n">name_1</span><span class="p">,</span><span class="n">value_1</span>
+<span class="n">name_2</span><span class="p">,</span><span class="n">value_2</span>
+<span class="o">...</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="module-mxtoolbox.convert.ExtractCIS_Domain">
 <span id="extractcis-domain-module"></span><h2>ExtractCIS_Domain module<a class="headerlink" href="#module-mxtoolbox.convert.ExtractCIS_Domain" title="Permalink to this headline">¶</a></h2>
@@ -123,6 +132,64 @@ called masks,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">ExtractCIS</span><span class="o">-</span><span class="n">Landmask</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="module-mxtoolbox.convert.fakecnv">
+<span id="fakecnv-module"></span><h2>fakecnv module<a class="headerlink" href="#module-mxtoolbox.convert.fakecnv" title="Permalink to this headline">¶</a></h2>
+<p>A command line utility designed to recreate minimal seabird-like
+cnv files from AZOMP netcdf files of CTD casts. As this will likely
+be used mostly for Gulf of St. Lawrence and Newfoundland data,
+longitudes are flipped towards the west by default.</p>
+<p>By default, the expected coordinate names are time, level, longitude
+and latitude. If they are named differently, this will cause an error
+which can be fixed by first calling nc2fakecnv with the -s flag to
+obtain coordinate names:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ nc2fakecnv file_name.nc -s
+</pre></div>
+</div>
+<p>then calling it again and specifying the coordinate names:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ nc2fakecnv file_name.nc -l ... -L ... -t ... -z ...
+</pre></div>
+</div>
+<p>By default, the following variable names are translated to better
+match seabird formatting:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">temperature</span> <span class="o">-&gt;</span> <span class="n">tv290C</span><span class="p">:</span> <span class="n">Temperature</span> <span class="p">[</span><span class="n">ITS</span> <span class="mi">90</span><span class="p">,</span> <span class="n">deg</span> <span class="n">C</span><span class="p">]</span>
+<span class="n">salinity</span> <span class="o">-&gt;</span> <span class="n">sal00</span><span class="p">:</span> <span class="n">Salinity</span><span class="p">,</span> <span class="n">Practical</span> <span class="p">[</span><span class="n">PSU</span><span class="p">]</span>
+<span class="n">conductivity</span> <span class="o">-&gt;</span> <span class="n">c0S</span><span class="o">/</span><span class="n">m</span><span class="p">:</span> <span class="n">Conductivity</span> <span class="p">[</span><span class="n">S</span><span class="o">/</span><span class="n">m</span><span class="p">]</span>
+<span class="n">sigma</span><span class="o">-</span><span class="n">t</span> <span class="o">-&gt;</span> <span class="n">sigma</span><span class="o">-</span><span class="n">t00</span><span class="p">:</span> <span class="n">Density</span><span class="p">,</span> <span class="n">sigma</span><span class="o">-</span><span class="n">t</span> <span class="p">[</span><span class="n">kg</span><span class="o">/</span><span class="n">m</span><span class="o">^</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">pressure</span> <span class="o">-&gt;</span> <span class="n">prdM</span><span class="p">:</span> <span class="n">Pressure</span><span class="p">,</span> <span class="n">Strain</span> <span class="n">Gauge</span> <span class="p">[</span><span class="n">db</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>As this translation makes use of information not found in the netcdf
+files it is hard-coded. The user must make sure the translated units
+match the originals. To instead infer names and units, call with the -i
+flag</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ nc2fakecnv file_name -i
+</pre></div>
+</div>
+<dl class="py function">
+<dt id="mxtoolbox.convert.fakecnv.xr2fakecnv">
+<code class="sig-prename descclassname">mxtoolbox.convert.fakecnv.</code><code class="sig-name descname">xr2fakecnv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">label</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">time_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">depth_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lon_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lat_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dataset_info</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">flip_longitude</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">infer_descriptors</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mxtoolbox.convert.fakecnv.xr2fakecnv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write xarray dataset to fake cnv text file.</p>
+<p>The input xarray is expected to have time, level, longitude,
+and latitude as coordinates. Data variables are expected to
+have the strings <cite>units</cite> and <cite>standard_name</cite> as attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>xarray.Dataset</em>) – Datasets to write to file.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Prefix of date in output file name.</p></li>
+<li><p><strong>time_name</strong> (<em>str</em>) – Name of time coordinate in all Datasets.</p></li>
+<li><p><strong>depth_name</strong> (<em>str</em>) – Name of depth coordinate in all Datasets.</p></li>
+<li><p><strong>lon_name</strong> (<em>str</em>) – Name of longitude coordinate in all Datasets.</p></li>
+<li><p><strong>lat_name</strong> (<em>str</em>) – Name of latitude coordinate in all Datasets.</p></li>
+<li><p><strong>flip_longitude</strong> (<em>bool</em>) – Switch longitude from east to west or vice versa.</p></li>
+<li><p><strong>infer_descriptors</strong> (<em>bool</em>) – Infer variable descriptors from input file.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – Print to std when descriptors must be inferred.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-mxtoolbox.convert.shp2dex">
 <span id="shp2dex-module"></span><h2>shp2dex module<a class="headerlink" href="#module-mxtoolbox.convert.shp2dex" title="Permalink to this headline">¶</a></h2>
@@ -578,6 +645,7 @@ meanings are,</p>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.adcp2nc">adcp2nc module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.ExtractCIS_Domain">ExtractCIS_Domain module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.ExtractCIS_Landmask">ExtractCIS_Landmask module</a></li>
+<li><a class="reference internal" href="#module-mxtoolbox.convert.fakecnv">fakecnv module</a></li>
 <li><a class="reference internal" href="#module-mxtoolbox.convert.shp2dex">shp2dex module</a></li>
 </ul>
 </li>

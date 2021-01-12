@@ -25,6 +25,14 @@ ExtractCIS_Landmask module
    :undoc-members:
    :show-inheritance:
 
+fakecnv module
+--------------
+
+.. automodule:: mxtoolbox.convert.fakecnv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 shp2dex module
 --------------
 
