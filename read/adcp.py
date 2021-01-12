@@ -15,14 +15,17 @@ def adcp_init(depth, time):
     """
     Return empty xarray shell in standardized format.
 
+    Initializes many attributes required or recommended by
+    CF-1.8 conventions. If used by others that the author,
+    change the default values of the `source` and `contact`
+    attributes.
+
     Parameters
     ----------
-    size_depth : int
-        Number of vertical bins.
-    size_time : int
-        Number of time steps.
-    Nb : int
-        Number of ADCP beams.
+    depth : int or 1D array
+        Number of vertical bins or vertical bin vector.
+    time : int or 1D array
+        Number of time steps or time vector.
 
     Returns
     -------
@@ -69,19 +72,22 @@ def adcp_init(depth, time):
                      'range_bt': (['time'], np.nan * np.ones(size_time))},
         coords = {'z' : z,
                   'time': t},
-        attrs = {'title': '',
+        attrs = {'Conventions': 'CF-1.8',
+                 'title': '',
+                 'institution': '',
+                 'source': 'ADCP data, processed with https://github.com/jeanlucshaw/mxtoolbox',
                  'description': '',
-                 'platform': '',
-                 'Conventions': 'COARDS',
                  'history': '',
+                 'platform': '',
                  'sonar': '',
                  'ping_frequency': '',
                  'beam_angle': '',
                  'bin_size': '',
                  'looking': '',
-                 'instrument_serial': ''})
+                 'instrument_serial': '',
+                 'contact': 'Jean-Luc.Shaw@dfo-mpo.gc.ca'})
 
-    # Set velocity attributes in COARDS conventions
+    # Set velocity attributes
     ds.u.attrs['long_name'] = 'Velocity east'
     ds.u.attrs['standard_name'] = 'eastward_sea_water_velocity'
     ds.u.attrs['units'] = 'm s-1'
@@ -111,7 +117,7 @@ def adcp_init(depth, time):
     ds.vship.attrs['long_name'] = 'Platform velocity north'
     ds.vship.attrs['units'] = 'm s-1'
 
-    # Set signal attributes in COARDS conventions
+    # Set signal attributes
     ds.amp.attrs['long_name'] = 'Received signal strength (all beams averaged)'
     ds.corr.attrs['long_name'] = 'Received signal correlation (all beams averaged)'
     ds.pg.attrs['long_name'] = 'Percentage of good 4-beam transformations'
@@ -124,16 +130,26 @@ def adcp_init(depth, time):
     ds.pitch.attrs['long_name'] = 'ADCP tilt angle 2'
     ds.pitch.attrs['units'] = 'degrees'
     
-    # Set time attributes in COARDS conventions
-    ds.time.attrs['long_name'] = 'Decimal day'
+    # Set time attributes
+    """
+    The `units` attribute is not set though required by CF-1.8. This
+    is because datetime64 are already encoded with this information
+    and a units attribute clashes with this encoding when saving to
+    netCDF. You can check that this information is however stored in
+    the variable's attributes by inspecting it with other tools than
+    xarray (eg. ncdump filname.nc | head -n 50).
+    """
+    ds.time.attrs['long_name'] = 'Time'
     ds.time.attrs['standard_name'] = 'time'
+    ds.time.attrs['axis'] = 'T'
 
-    # Set depth attributes in COARDS conventions
+    # Set depth attributes
     ds.z.attrs['long_name'] = 'Depth'
     ds.z.attrs['units'] = 'm'
     ds.z.attrs['positive'] = 'down'
+    ds.z.attrs['axis'] = 'Z'
 
-    # Set geographical attributes in COARDS conventions
+    # Set geographical attributes
     ds.lon.attrs['long_name'] = 'Longitude'
     ds.lon.attrs['standard_name'] = 'longitude'
     ds.lon.attrs['units'] = 'degrees_east'
@@ -141,7 +157,7 @@ def adcp_init(depth, time):
     ds.lat.attrs['standard_name'] = 'latitude'
     ds.lat.attrs['units'] = 'degrees_north'
 
-    # Set geographical attributes in COARDS conventions
+    # Set transducer attributes
     ds.temp.attrs['long_name'] = 'ADCP transducer temperature'
     ds.temp.attrs['units'] = 'Celsius'
     ds.depth.attrs['long_name'] = 'ADCP transducer depth'
@@ -149,6 +165,8 @@ def adcp_init(depth, time):
 
     # Set quality flag attributes
     ds.flags.attrs['long_name'] = 'Quality control flags'
+    ds.flags.attrs['flag_values'] = '0 1 3 4 9'
+    ds.flags.attrs['flag_meanings'] = 'raw good questionable bad missing'
 
     return ds
 
@@ -222,9 +240,12 @@ def adcp_qc(dataset,
     # Work on copy
     ds = dataset.copy(deep=True)
 
-    # Remove improbable values
-    for v in ['u', 'v', 'w', 'e']:
-        ds[v] = ds[v].where((ds[v] > -5) & (ds[v] < 5))
+    # Remove bins with improbable values
+    for v in ['u', 'v', 'w']:
+        plausible = (ds[v] > -10) & (ds[v] < 10)
+        ds['u'] = ds['u'].where(plausible)
+        ds['v'] = ds['v'].where(plausible)
+        ds['w'] = ds['w'].where(plausible)
 
     # Check for gps file if required
     if mode_platform_velocity == 'gps':
@@ -258,16 +279,27 @@ def adcp_qc(dataset,
     
     # Outlier conditions (True fails)
     horizontal_velocity = np.sqrt(ds.u ** 2 + ds.v ** 2)
-    velocity_condition = np.greater(horizontal_velocity.values, vel_th, where=np.isfinite(ds.u.values))
+    velocity_condition = np.greater(horizontal_velocity.values,
+                                    vel_th,
+                                    where=np.isfinite(horizontal_velocity))
     if 'u_bt' in ds.data_vars and 'v_bt' in ds.data_vars:
-        bottom_track_condition = (np.greater(abs(ds.u_bt.values), vel_th, where=np.isfinite(ds.u_bt.values)) |
-                                  np.greater(abs(ds.v_bt.values), vel_th, where=np.isfinite(ds.v_bt.values)))
+        bottom_track_condition = (np.greater(abs(ds.u_bt.values),
+                                             vel_th,
+                                             where=np.isfinite(ds.u_bt.values)) |
+                                  np.greater(abs(ds.v_bt.values),
+                                             vel_th,
+                                             where=np.isfinite(ds.v_bt.values)))
 
     # Missing condition (True fails)
-    missing_condition = (~np.isfinite(ds.u) | ~np.isfinite(ds.v) | ~np.isfinite(ds.w)).values
+    missing_condition = (~np.isfinite(ds.u) |
+                         ~np.isfinite(ds.v) |
+                         ~np.isfinite(ds.w)).values
 
     # Boolean summary of non-critical tests (True fails)
-    ncrit_condition = corr_condition | amp_condition | motion_condition | velocity_condition
+    ncrit_condition = (corr_condition |
+                       amp_condition |
+                       motion_condition |
+                       velocity_condition)
 
     # Remove side lob influence (True fails) according to a fixed depths (e.g. Moorings)
     if mode_sidelobes == 'dep':
@@ -289,7 +321,7 @@ def adcp_qc(dataset,
 
         # Orientation unknown 
         else:
-            raise Warning("Can not correct for side lobes, looking attribute not set.")
+            warnings.warn("Can not correct for side lobes, looking attribute not set.")
             sidelobe_condition = np.ones(ds.z.values.size, dtype='bool')
 
     # Remove side lobes using bottom track
@@ -403,25 +435,25 @@ def load_rdi_binary(files,
 
         # downwards processing
         if force_dw:
-            selected = data.XducerDepth > min_depth
+            selected = data.XducerDepth >= min_depth
             z = data.dep + np.nanmean(data.XducerDepth[selected])  # depth of the bins
             looking = 'down'
 
         # upwards processing
         else:
-            selected = data.XducerDepth > min_depth
+            selected = data.XducerDepth >= min_depth
             z = np.nanmean(data.XducerDepth[selected]) - data.dep  # depth of the bins
             looking = 'up'
 
     # downwards processing
     elif not data.sysconfig['up']:
-        selected = data.XducerDepth > min_depth
+        selected = data.XducerDepth >= min_depth
         z = data.dep + np.nanmean(data.XducerDepth[selected])  # depth of the bins
         looking = 'down'
 
     # upwards processing
     elif data.sysconfig['up']:
-        selected = data.XducerDepth > min_depth
+        selected = data.XducerDepth >= min_depth
         z = np.nanmean(data.XducerDepth[selected]) - data.dep  # depth of the bins
         looking = 'up'
     else:
@@ -450,7 +482,7 @@ def load_rdi_binary(files,
         ds['u_bt'].values = data.bt_vel.data[selected, 0]
         ds['v_bt'].values = data.bt_vel.data[selected, 1]
         ds['w_bt'].values = data.bt_vel.data[selected, 2]
-        ds['range_bt'].values = data.bt_depth.data[selected, :].T
+        ds['range_bt'].values = np.nanmean(data.bt_depth.data[selected, :], axis=-1)
 
     # If no bottom track data, drop variables
     else:
