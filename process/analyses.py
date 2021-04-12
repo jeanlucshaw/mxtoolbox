@@ -5,11 +5,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
 from statsmodels.multivariate.pca import PCA
+from statsmodels.stats.outliers_influence import OLSInfluence
 from scipy.optimize import leastsq
 from scipy.signal import find_peaks
 from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
 from .convert import dt2epoch
+
 
 __all__ = ['pca',
            'pd_pca',
@@ -19,6 +22,7 @@ __all__ = ['pca',
            'lsq_curve_fit',
            'pd_regression_statistics',
            'sm_lin_fit',
+           'sm_lin_fit_diagnostics',
            'xr_2D_to_1D_interp',
            'xr_2D_to_2D_interp',
            'xr_cross_correlate',
@@ -465,20 +469,88 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
     # Clean
     dataframe = dataframe.query('~%s.isnull() & ~%s.isnull()' % (x, y))
 
-    # Set up variables
+    # Convert time to julian day if time series
+    if isinstance(dataframe[x].values[0], np.datetime64):
+        x_data = [t_.to_julian_date() for t_ in dataframe[x].to_list()]
+    else:
+        x_data = dataframe[x]
+
+    # Set up variables for OLS
     dependent = dataframe[y]
-    independent = sm.add_constant(dataframe[x])
+    independent = sm.add_constant(x_data)
 
     # Fit
     model = sm.OLS(dependent, independent).fit()
+
+    # Manage fit coordinates
     if xfit is None:
-        independent_fit = dataframe[x].values
+        xfit = dataframe[x]
+
+    # Convert to julian date if time series
+    if isinstance(xfit[0], np.datetime64):
+        fit_labels = xfit
+        xfit = [t_.to_julian_date() for t_ in pd.Series(xfit).to_list()]
     else:
-        independent_fit = xfit
-    yfit = model.params[0] + model.params[1] * independent_fit
-    fit = pd.DataFrame({'x': independent_fit, 'y': yfit})
+        fit_labels = xfit
+
+    # Calculate fit line
+    yfit = model.params[0] + model.params[1] * np.array(xfit)
+    fit = pd.DataFrame({'x': fit_labels, 'y': yfit})
 
     return model, fit, model.rsquared
+
+
+def sm_lin_fit_diagnostics(model):
+    """
+    Make diagnostic plots of linear regression.
+
+    Parameters
+    ----------
+    model: statsmodels.RegressionResult
+        E.g. returned by `sm_lin_fit`.
+
+    Returns
+    -------
+    pyplot.Axes:
+        On which diagnostics are drawn.
+
+    """
+    def cook_distance(residuals, leverage, k_vars):
+        return residuals ** 2 * leverage / (1 - leverage) / k_vars
+
+    influence = OLSInfluence(model)
+    k_vars = influence.k_vars
+    standardized_resid = influence.resid_studentized_internal
+
+    # Init plot
+    gs_kw = {'hspace': 0.35, 'wspace': 0.35, 'right': 0.95, 'left':0.1}
+    _, ax = plt.subplots(2, 2, figsize=(8, 8), gridspec_kw=gs_kw)
+
+    # Residuals vs. predicted panel
+    ax[0, 0].plot(model.fittedvalues, model.resid, 'ko')
+    ax[0, 0].set(xlabel='Fitted values', ylabel='Residuals')
+
+    # Q-Q plot panel
+    sm.qqplot(model.resid, ax=ax[0, 1], line='r')
+
+    # Scale-location panel
+    ax[1, 0].plot(model.fittedvalues, np.sqrt(standardized_resid ** 2), 'ko')
+    ax[1, 0].set(xlabel='Fitted values', ylabel=r'$|$Standardized residuals$|^{\frac{1}{2}}$')
+
+    # Leverage panel
+    leverage = model.get_influence().hat_matrix_diag
+    ax[1, 1].plot(leverage, standardized_resid, 'ko')
+    ax[1, 1].set(xlabel='Leverage', ylabel='Standradized residuals')
+
+    # --- Cook distance lines
+    x = np.linspace(0, 0.3, 100)
+    y = np.linspace(-6, 6, 100)
+    X, Y = np.meshgrid(x, y)
+    C = cook_distance(Y, X, k_vars)
+    ctr = ax[1, 1].contour(X, Y, C, [0.5, 1], colors='r', linestyles='--')
+    plt.clabel(ctr, fmt='%.1f')
+
+    return ax
 
 
 def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):

@@ -29,6 +29,7 @@ __all__ = ['anomaly_bar',
            'scorecard',
            'scorecard_bottom_monthly',
            'wa_map',
+           'wa_coastline',
            'xr_plot_pm_patch']
 
 
@@ -187,8 +188,25 @@ def correlation_text(axes, x, y, b, a, r2, fmt='%.2f', p=None, **text_kw):
     axes.text(x, y, _text, clip_on=False, **text_kw)
 
 
-def gebco_bathy():
+def gebco_bathy(extent=None):
+    """
+    Load GEBCO bathymetry for the west Atlantic.
+
+    Parameters
+    ----------
+    extent: 4-iterable
+        Containing lon_min, lon_max, lat_min and lat_max
+
+    Returns
+    -------
+    xarray.DataArray:
+        Bathymetry in the specified domain.
+
+    """
     dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic.nc')
+    if extent:
+        dataset = dataset.sel(lon=slice(*extent[:2]),
+                              lat=slice(*extent[3:]))
     bathy = dataset.elevation * -1
     return bathy
 
@@ -1248,11 +1266,12 @@ def wa_map(axes,
            crs='PlateCarree',
            landcolor='oldlace',
            watercolor='lightgray',
-           extent=[-70, -40, 35, 54],
+           extent=[-70, -40, 35, 55],
            tick_x_maj=np.arange(-70, -35, 5),
            tick_y_maj=np.arange(35, 58, 2),
            tick_x_min=np.arange(-71, -39, 1),
-           tick_y_min=np.arange(35, 56, 1)):
+           tick_y_min=np.arange(35, 56, 1),
+           **crs_kw):
     """
     Plot West Atlantic map in axes.
 
@@ -1275,6 +1294,8 @@ def wa_map(axes,
         Longitude and latidude of major ticks and labels.
     tick_x_min, tick_y_min: 1D array
         Longitude and latitude of minor ticks.
+    **crs_kw : keyword arguments
+        Passed to the crs constructor.
 
     Returns
     -------
@@ -1283,9 +1304,74 @@ def wa_map(axes,
 
     """
     # Replace normal Axes with geoAxes
-    geoax, _ = cp_proj(axes, crs)
+    geoax, _ = cp_proj(axes, crs, **crs_kw)
     geoax.set_extent(extent)
 
+    # # Most features are fine in GSHHS
+    # coast = cfeature.GSHHSFeature(scale=resolution,
+    #                               levels=[1],
+    #                               facecolor=landcolor,
+    #                               edgecolor='k',
+    #                               linewidth=0.25)
+    # lakes = cfeature.GSHHSFeature(scale=resolution,
+    #                               levels=[2],
+    #                               facecolor=watercolor,
+    #                               edgecolor=watercolor)
+    # islands = cfeature.GSHHSFeature(scale=resolution,
+    #                                 levels=[3],
+    #                                 facecolor=landcolor,
+    #                                 edgecolor=landcolor)
+    # ponds = cfeature.GSHHSFeature(scale=resolution,
+    #                               levels=[4],
+    #                               facecolor=watercolor,
+    #                               edgecolor=watercolor)
+
+    # # Add GSHHS features
+    # geoax.add_feature(coast)
+    # geoax.add_feature(lakes)
+    # geoax.add_feature(islands)
+    # geoax.add_feature(ponds)
+
+    # # Rivers are not in GSHHS
+    # RIVERS = pd.read_csv('/data/atlas/gmt/gulff-rivers-all.lon_lat',
+    #                      names=['lon', 'lat'],
+    #                      sep=r'\s+',
+    #                      na_values=-99.000)
+    # geoax.plot(-RIVERS.lon.values,
+    #            RIVERS.lat.values,
+    #            color='lightskyblue',
+    #            transform=ccrs.PlateCarree())
+    # Add coastal features
+    wa_coastline(geoax, resolution=resolution, landcolor=landcolor, watercolor=watercolor) 
+
+    # Ticks
+    cp_ticks(geoax, tick_x_maj, tick_y_maj, labels=[True, False, True, False], size=3)
+    cp_ticks(geoax, tick_x_min, tick_y_min, labels=False, size=1.5)
+
+    return geoax
+
+
+def wa_coastline(geoax,
+                 resolution='intermediate',
+                 landcolor='oldlace',
+                 watercolor='lightgray'):
+    """
+    Draw coastlines on West Atlantic map.
+
+    Parameters
+    ----------
+    axes: matplotlib.Axes
+        Axes to replace with GSL map.
+    resolution: str
+        GSHHS features resolution. Can be one of `coarse`, `low`,
+        `intermediate`, `high` or `full`.
+    landcolor: str
+        Continent and islands filled with this color.
+    watercolor: str
+        Rivers and lakes filled with this color.
+    extent: 4-list
+        Longitude and latitude limits of map.
+    """
     # Most features are fine in GSHHS
     coast = cfeature.GSHHSFeature(scale=resolution,
                                   levels=[1],
@@ -1318,16 +1404,10 @@ def wa_map(axes,
                          na_values=-99.000)
     geoax.plot(-RIVERS.lon.values,
                RIVERS.lat.values,
-               color='lightskyblue',
+               color=watercolor,
                transform=ccrs.PlateCarree())
 
-    # Ticks
-    cp_ticks(geoax, tick_x_maj, tick_y_maj, labels=True, size=3)
-    cp_ticks(geoax, tick_x_min, tick_y_min, labels=False, size=1.5)
 
-    return geoax
-
-    
 def xr_plot_pm_patch(ds, xcoord, base, interval, ax, color='lightskyblue'):
     """
     Draw a patch of +- interval width around time series.

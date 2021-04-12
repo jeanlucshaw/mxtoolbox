@@ -27,6 +27,7 @@ def _int_to_roman(input):
         input -= ints[i] * count
     return ''.join(result)
 
+
 def tex_write(signature, results, mode='w'):
     """
     Write variable values as TeX commands.
@@ -50,6 +51,7 @@ def tex_write(signature, results, mode='w'):
 
         # Transform numbers in fname for TeX command compatibility
         regex = re.compile(r"\d+")
+        signature = os.path.basename(signature)
         signature = regex.sub(lambda x: _int_to_roman(int(x.group(0))), signature)
 
         # Write saved values to file

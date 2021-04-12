@@ -6,12 +6,16 @@ filtering and binning functions.
 import numpy as np
 import xarray as xr
 import scipy.signal as signal
+import pandas as pd
 from .math_ import xr_time_step
 from .convert import binc2edge, bine2center
 from pandas.tseries.frequencies import to_offset
 import warnings
 
-__all__ = ['pd_bin',
+__all__ = ['ctd_flag_inversions',
+           'ctd_flag_spikes',
+           'pd_bin',
+           'pd_bin_2',
            'pd_at_var_stat',
            'xr_at_var_max',
            'xr_bin',
@@ -19,6 +23,151 @@ __all__ = ['pd_bin',
            'xr_filtfilt',
            'xr_godin',
            'xr_peaks']
+
+
+# Flag density inversions
+def ctd_flag_inversions(dataset, density, threshold=0):
+    """
+    Flag water denser than deeper water in CTD cast.
+
+    Parameters
+    ----------
+    dataset: xarray.dataset
+        Of a single CTD cast.
+    density: str
+        Name of the density variable.
+    threshold: float
+        Amount by which data must be denser to get flagged.
+
+    Returns
+    -------
+    1D array of bool
+        Inverted density data marked as True.
+
+    Note
+    ----
+
+       Data are expected to be arranged in order of monotonically
+       increasing depth.
+
+    """
+    densities = dataset[density].values
+    inverted = [(d_ > densities[i_:] + threshold).any()
+                for (i_, d_)
+                in enumerate(densities)]
+
+    return np.array(inverted)
+
+
+def ctd_flag_spikes(dataset,
+                    salinity,
+                    window=5,
+                    window_size_type='pc',
+                    n_sigma=1,
+                    min_spike_size=0.5,
+                    return_lowpass=False):
+    """
+    De-spike profile data using a two pass median filter test.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        Containing a single CTD cast.
+    salinity : str
+        Name of the variable to de-spike.
+    window : int or float
+        Size of window.
+    window_size_type : str
+        Either `pc` (percentage of size) or `n` (number of data).
+    n_sigma : float
+        Fraction of local std to use as a spike threshold. (see Note)
+    min_spike_size : float
+        Keep only spikes larger than this value.
+    return_lowpass : bool
+        Return the low passed profile (2nd pass).
+
+    Returns
+    -------
+    tuple : (1D array of bool) or (1D array of bool, 1D array of float)
+        Values marked as spikes (and lowpassed profile).
+
+    Note
+    ----
+       The algorithm is the following:
+
+          * Low pass the profile with a median filter (LP)
+          * Calculate the difference between data and LP (residual)
+          * Calculate the local std for each window (local_std)
+          * Flag  abs(residuals) > 1 * n_sigma * local_std
+          * Replace flagged values with LP in a copy of the profile
+          * Low pass the copy with a median filter (LP)
+          * Calculate the difference between the copy and LP (residual)
+          * Calculate the local std of the copy for each window (local_std)
+          * Calculate the difference between the profile and LP (error)
+          * Flag  abs(error) > 2 * n_sigma * local_std
+          * Keep only flags where  abs(error) > min_spike_size
+
+    """
+    # Get dimension name
+    if len(dataset[salinity].shape) == 1:
+        dim = dataset[salinity].dims[0]
+    else:
+        raise ValueError('Profile variable must be 1D.')
+
+    # Percentage of cast size converted to window size
+    if window_size_type == 'pc':
+        window = int(dataset[salinity].size * window / 100)
+
+        # Unless this means the window is 1 data wide
+        if window <= 1:
+            window = 3
+
+    # Working copy of data
+    data = dataset[salinity].copy()
+
+    """ First pass """
+
+    # Moving average filter the profile
+    kw_rolling = {dim: window, 'center': True, 'min_periods': np.floor(window / 2)}
+    lowpass_profile = data.rolling(**kw_rolling).median()
+
+    # Get difference of data to the moving average
+    residual_profile = data - lowpass_profile
+
+    # Get std of each window
+    residual_std = residual_profile.rolling(**kw_rolling).std()
+
+    # Identify first pass spikes
+    spike_pass_1 = np.array(abs(residual_profile) > (n_sigma * residual_std))
+
+    # Remove pass 1 spikes from working copy
+    data.values[spike_pass_1] = lowpass_profile.values[spike_pass_1]
+
+    """ Second pass """
+
+    # Moving average filter the profile
+    lowpass_profile = data.rolling(**kw_rolling).median()
+
+    # Get difference of data to the moving average
+    residual_profile = data - lowpass_profile
+
+    # Get std of each window
+    residual_std = residual_profile.rolling(**kw_rolling).std()
+
+    # Error profile
+    error_profile = dataset[salinity] - lowpass_profile
+
+    # Identify first pass spikes
+    spike_pass_2 = abs(error_profile) > (2 * n_sigma * residual_std)
+    spike_pass_2 = spike_pass_2 & (abs(error_profile) > min_spike_size)
+
+    # Return lowpassed salinity or not
+    if return_lowpass:
+        output = np.array(spike_pass_2), lowpass_profile
+    else:
+        output = np.array(spike_pass_2)
+
+    return output
 
 
 def pd_bin(dataframe, dim, binc, func=np.nanmean):
@@ -52,6 +201,49 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
         return dataset.to_dataframe().reset_index().set_index(index_names)
     except:
         return dataset.to_dataframe().reset_index()
+
+
+def pd_bin_2(dataframe,
+             bins,
+             on,
+             centers=True):
+    """
+    Bin values in pandas dataframe using `cut`.
+
+    Parameters
+    ----------
+    dataframe: pandas.DataFrame
+        Data to bin.
+    bins: 1D array
+        Bin definitions.
+    on: str
+        Column to use as index.
+    centers: bool
+        `bins` is the bin centers (or edges).
+
+    Returns
+    -------
+    pandas.Dataframe:
+        Binned dataframe.
+
+    """
+    # Isolate series to bin along
+    series = dataframe[on]
+
+    # Manage bin edges/labels
+    if centers:
+        labels = bins
+        bins = binc2edge(bins)
+    else:
+        labels = bine2center(bins)
+
+    # Bin and format output
+    dataframe['bin'] = pd.cut(series, bins=bins, labels=labels)
+    dataframe = dataframe.groupby('bin').mean()
+    dataframe[on] = labels
+    dataframe = dataframe.reset_index()
+
+    return dataframe
 
 
 def pd_at_var_stat(dataframe, varname, func, interval, drop=True):
@@ -119,6 +311,7 @@ def pd_at_var_stat(dataframe, varname, func, interval, drop=True):
         df_match = df_match.drop_duplicates(subset='bin_starts')
 
     return df_match
+
 
 def xr_at_var_max(dataset, variable, dim=None):
     """

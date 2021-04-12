@@ -291,12 +291,13 @@ def cp_proj(axes, proj, **m_kwargs):
         Keywords to pass when plotting to these axes.
     """
     # Choose projection
-    if proj == 'PlateCarree':
-        projection = ccrs.PlateCarree(**m_kwargs)
-    elif proj == 'Mercator':
-        projection = ccrs.Mercator(**m_kwargs)
-    else:
-        raise KeyError('Projection %s not implemented to plot.cp_proj_panel.' % proj)
+    # if proj == 'PlateCarree':
+    #     projection = ccrs.PlateCarree(**m_kwargs)
+    # elif proj == 'Mercator':
+    #     projection = ccrs.Mercator(**m_kwargs)
+    # else:
+    #     raise KeyError('Projection %s not implemented to plot.cp_proj_panel.' % proj)
+    projection = getattr(ccrs, proj)(**m_kwargs)
 
     # Get current panel position
     position = axes.get_position()
@@ -314,7 +315,97 @@ def cp_proj(axes, proj, **m_kwargs):
     return geoaxes, map_kw
 
 
-def cp_ticks(axes, xlocs, ylocs, labels=False, size=5, lrbt=[True, True, True, True]):
+# def cp_ticks(axes,
+#              xlocs,
+#              ylocs,
+#              labels=False,
+#              size=5,
+#              lrbt=[True, True, True, True],
+#              float_format='%.0f'):
+#     """
+#     Add tick marks to cartopy map plot.
+
+#     Parameters
+#     ----------
+#     axes: cartopy.GeoAxes
+#         Axes containing the map.
+#     xlocs, ylocs: 1D array
+#         Longitudes and latidudes of tick marks.
+#     labels: bool or 4-list of bool
+#         Add text label to tick mark. If list, label [left, right, bottom, top].
+#     size: float
+#         Length of tick marck.
+#     lrbt: 4-list of bool
+#         Control addition of ticks to left, right, bottom and top of map.
+#     """
+#     if isinstance(labels, list):
+#         draw_labels = True
+#     else:
+#         draw_labels = labels
+
+#     # Get map extent
+#     xmin, xmax, ymin, ymax = axes.get_extent(crs=ccrs.PlateCarree())
+
+#     # Filter grid locs outside extent
+#     xlocs = xlocs[(xlocs >= xmin) & (xlocs <= xmax)]
+#     ylocs = ylocs[(ylocs >= ymin) & (ylocs <= ymax)]
+
+#     # Call to Gridliner
+#     gl = axes.gridlines(xlocs=xlocs,
+#                         ylocs=ylocs,
+#                         draw_labels=draw_labels)
+
+#     # Gridliner parameters
+#     if isinstance(labels, list):
+#         gl.ylabels_left = labels[0]
+#         gl.ylabels_right = labels[1]
+#         gl.xlabels_bottom = labels[2]
+#         gl.xlabels_top = labels[3]
+#     else:
+#         gl.xlabels_top = False
+#         gl.ylabels_right = False
+
+#     gl.xlines = False
+#     gl.ylines = False
+#     gl.xpadding = 10
+#     gl.ypadding = 10
+#     gl.xformatter = FormatStrFormatter(float_format+'%s' % _DEGREE_SYMBOL)
+#     gl.yformatter = FormatStrFormatter(float_format+'%s' % _DEGREE_SYMBOL)
+
+#     # Get tick positions (top + bottom)
+#     xticks_x = gl.xlocator.tick_values(xmin, xmax)
+#     bottom_y = np.ones_like(xticks_x) * ymin
+#     top_y = np.ones_like(xticks_x) * ymax
+
+#     # Get tick positions (left + right)
+#     yticks_y = gl.ylocator.tick_values(ymin, ymax)
+#     left_x = np.ones_like(yticks_y) * xmin
+#     right_x = np.ones_like(yticks_y) * xmax
+
+#     # Bottom ticks
+#     if lrbt[2]:
+#         axes.plot(xticks_x, bottom_y, marker=3, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+
+#     # Top ticks
+#     if lrbt[3]:
+#         axes.plot(xticks_x, top_y , marker=2, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+
+#     # Left ticks
+#     if lrbt[0]:
+#         axes.plot(left_x, yticks_y, marker=0, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+
+#     # Right ticks
+#     if lrbt[1]:
+#         axes.plot(right_x, yticks_y, marker=1, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+def cp_ticks(geoax,
+             xticks,
+             yticks,
+             labels=True,
+             labels_pad_x=3,
+             labels_pad_y=3,
+             float_fmt='%.0f',
+             size=5,
+             lrbt=[True, True, True, True]):
     """
     Add tick marks to cartopy map plot.
 
@@ -324,57 +415,90 @@ def cp_ticks(axes, xlocs, ylocs, labels=False, size=5, lrbt=[True, True, True, T
         Axes containing the map.
     xlocs, ylocs: 1D array
         Longitudes and latidudes of tick marks.
-    labels: bool
-        Add text label to tick mark.
+    labels: bool or 4-list of bool
+        Add text label to tick mark. If list, label [left, right, bottom, top].
     size: float
         Length of tick marck.
     lrbt: 4-list of bool
         Control addition of ticks to left, right, bottom and top of map.
     """
-    # Get map extent
-    xmin, xmax, ymin, ymax = axes.get_extent(crs=ccrs.PlateCarree())
+    if isinstance(labels, bool):
+        labels = [labels, labels, labels, labels]
+    
+    # Get map limits
+    xmin, xmax, ymin, ymax = geoax.get_extent(crs=ccrs.PlateCarree())
+    xmin, xmax, ymin, ymax = (round(l_, 5) for l_ in [xmin, xmax, ymin, ymax])
 
-    # Filter grid locs outside extent
-    xlocs = xlocs[(xlocs >= xmin) & (xlocs <= xmax)]
-    ylocs = ylocs[(ylocs >= ymin) & (ylocs <= ymax)]
+    # Remove ticks outside extent
+    xticks = xticks[(xticks <= xmax) & (xticks >= xmin)]
+    yticks = yticks[(yticks <= ymax) & (yticks >= ymin)]
 
-    # Call to Gridliner
-    gl = axes.gridlines(xlocs=xlocs,
-                        ylocs=ylocs,
-                        draw_labels=labels)
-
-    # Gridliner parameters
-    gl.xlines = False
-    gl.ylines = False
-    gl.xlabels_top = False
-    gl.ylabels_right = False
-    gl.xpadding = 10
-    gl.ypadding = 10
-    gl.xformatter = FormatStrFormatter('%.0f'+'%s' % _DEGREE_SYMBOL)
-    gl.yformatter = FormatStrFormatter('%.0f'+'%s' % _DEGREE_SYMBOL)
+    # Set label offsets
+    labels_lon_pad = (ymax - ymin) / 100 * labels_pad_x
+    labels_lat_pad = (xmax - xmin) / 100 * labels_pad_y
 
     # Get tick positions (top + bottom)
-    xticks_x = gl.xlocator.tick_values(xmin, xmax)
-    bottom_y = np.ones_like(xticks_x) * ymin
-    top_y = np.ones_like(xticks_x) * ymax
+    bottom = np.ones_like(xticks) * ymin
+    top = np.ones_like(xticks) * ymax
 
     # Get tick positions (left + right)
-    yticks_y = gl.ylocator.tick_values(ymin, ymax)
-    left_x = np.ones_like(yticks_y) * xmin
-    right_x = np.ones_like(yticks_y) * xmax
+    left = np.ones_like(yticks) * xmin
+    right = np.ones_like(yticks) * xmax
 
     # Bottom ticks
+    plot_kw = dict(clip_on=False, ms=size, ls='none', transform=ccrs.PlateCarree())
+    text_kw = dict(transform=ccrs.PlateCarree())
     if lrbt[2]:
-        axes.plot(xticks_x, bottom_y, marker=3, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+        geoax.plot(xticks, bottom, marker=3, **plot_kw)
+        if labels[2]:
+            for x_, y_ in zip(xticks, bottom):
+                y_ -= labels_lon_pad
+                l_ = (float_fmt+'%s') % (x_, _DEGREE_SYMBOL)
+                geoax.text(x_,
+                           y_,
+                           l_,
+                           ha='center',
+                           va='top',
+                           **text_kw)
 
     # Top ticks
     if lrbt[3]:
-        axes.plot(xticks_x, top_y , marker=2, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+        geoax.plot(xticks, top , marker=2, **plot_kw)
+        if labels[3]:
+            for x_, y_ in zip(xticks, top):
+                y_ += labels_lon_pad
+                l_ = (float_fmt+'%s') % (x_, _DEGREE_SYMBOL)
+                geoax.text(x_,
+                           y_,
+                           l_,
+                           ha='center',
+                           va='bottom',
+                           **text_kw)
 
     # Left ticks
     if lrbt[0]:
-        axes.plot(left_x, yticks_y, marker=0, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+        geoax.plot(left, yticks, marker=0, **plot_kw)
+        if labels[0]:
+            for x_, y_ in zip(left, yticks):
+                x_ -= labels_lat_pad
+                l_ = (float_fmt+'%s') % (y_, _DEGREE_SYMBOL)
+                geoax.text(x_,
+                           y_,
+                           l_,
+                           ha='right',
+                           va='center',
+                           **text_kw)
 
     # Right ticks
     if lrbt[1]:
-        axes.plot(right_x, yticks_y, marker=1, ms=size, clip_on=False, transform=ccrs.PlateCarree())
+        geoax.plot(right, yticks, marker=1, **plot_kw)
+        if labels[1]:
+            for x_, y_ in zip(right, yticks):
+                x_ += labels_lat_pad
+                l_ = (float_fmt+'%s') % (y_, _DEGREE_SYMBOL)
+                geoax.text(x_,
+                           y_,
+                           l_,
+                           ha='left',
+                           va='center',
+                           **text_kw)

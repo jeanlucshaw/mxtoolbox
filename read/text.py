@@ -7,11 +7,14 @@ import re
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
-
+from ..process.convert import dmd2dd
 
 __all__ = ['list2cm',
+           'mangle_list_duplicates',
            'pd_cat_column_files',
+           'pd_read_cnv',
            'pd_read_odf',
+           'read_cnv_metadata',
            'read_odf_metadata',
            'xr_print_columns']
 
@@ -23,6 +26,41 @@ def list2cm(array_file, N: 'integer' = 256):
     '''
     colors = np.genfromtxt(array_file)
     return LinearSegmentedColormap.from_list("Tsat", colors, N=N)
+
+
+def mangle_list_duplicates(list_):
+    """
+    Add suffix to duplicate strings in list strings
+
+    Parameters
+    ----------
+    list_, : list of str
+        List of names to check for duplicates
+
+    Returns
+    -------
+    list:
+        List of names with duplicates suffixed.
+
+    """
+    # Initialize output and duplicate counter
+    list_new = list_.copy()
+    counts = dict()
+
+    # Loop over list elements
+    for index, name in enumerate(list_):
+        occurences = list_.count(name)
+
+        # Modify if one of duplicate set
+        if occurences > 1:
+            if name in counts.keys():
+                counts[name] += 1
+                list_new[index] += '-%d' % counts[name] 
+            else:    
+                counts[name] = 1
+                list_new[index] = '%s-1' % list_[index]
+
+    return list_new
 
 
 def pd_cat_column_files(path_list,
@@ -113,6 +151,70 @@ def pd_cat_column_files(path_list,
 
     # Return dataframe
     return dataframe
+
+
+def pd_read_cnv(FNAME,
+                sep=r'\s+',
+                usecols=None,
+                metadata_cols=True,
+                short_names=True,
+                **kw_read_csv):
+    """
+    Read seabird(like) files into a pandas dataframe.
+
+    Parameters
+    ----------
+    FNAME: str
+        Path and name of odf file.
+    sep: str
+        Data delimiter of odf file. Default is whitespace.
+    usecols: list of int
+        Index of columns to extract from odf file. Passed to pd.read_csv.
+        By default all columns are returned.
+    metadata_cols: bool
+        Add columns with date, lon, lat repeated from header.
+    short_names: bool
+        Give output columns shorter names.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataframe containing the requested data columns of the cnv file.
+
+    """
+
+    # Read the file as a list of lines
+    LINES = open(FNAME, 'r', errors='replace').readlines()
+
+    # Get metadata from header
+    md = read_cnv_metadata(FNAME, short_names=short_names)
+
+    # Manually mangle duplicate names
+    md['names'] = mangle_list_duplicates(md['names'])
+    
+    # Select columns to read
+    if usecols is None:
+        usecols = [i_ for i_, _ in enumerate(md['names'])]
+
+    # Read the data
+    DF = pd.read_csv(FNAME,
+                     skiprows=md['header_lines'],
+                     sep=sep,
+                     usecols=usecols,
+                     names=md['names'],
+                     na_values=md['missing_values'],
+                     **kw_read_csv)
+
+    # Add metadata columns
+    if metadata_cols:
+        if md['date']:
+            DF.loc[:, 'date'] = md['date']
+        if md['lon']:
+            DF.loc[:, 'Longitude'] = md['lon']
+        if ['lat']:
+            DF.loc[:, 'Latitude'] = md['lat']
+
+    return DF
 
 
 def pd_read_odf(FNAME,
@@ -217,6 +319,77 @@ def pd_read_odf(FNAME,
         DF['header depth'] = DEPTH * np.ones(DF.shape[0])
 
     return DF
+
+
+def read_cnv_metadata(FNAME, short_names=True):
+    """
+    Get information from cnv file header.
+
+    Parameters
+    ----------
+    FNAME: str
+        Name and path of cnv file.
+    short_names: bool
+        Return short variable names.
+
+    Returns
+    -------
+    NAMES: list of str
+        
+    """
+    # Read the file as a list of lines
+    LINES = open(FNAME, 'r', errors='replace').readlines()
+
+    # Parameters
+    metadata = dict(names=[],
+                    seabird_names=[],
+                    units=[],
+                    date=None,
+                    lon=None,
+                    lat=None,
+                    missing_values=None,
+                    header_lines=0)
+
+    # Parse header
+    for LN, L in enumerate(LINES):
+
+        # Scan for metadata
+        if re.search('Date', L):
+            day_ = re.findall('\d{4}-\d{2}-\d{2}', L)[0]
+            hour = re.findall('\d{2}:\d{2}[:0-9]*', L)[0]
+            metadata['date'] = np.datetime64('%sT%s' % (day_, hour))
+        if re.search('Longitude', L):
+            degree = float(L.split()[-3])
+            minute = float(L.split()[-2])
+            direction = L.split()[-1]
+            metadata['lon'] = dmd2dd(degree, minute, direction)
+        if re.search('Latitude', L):
+            degree = float(L.split()[-3])
+            minute = float(L.split()[-2])
+            direction = L.split()[-1]
+            metadata['lat'] = dmd2dd(degree, minute, direction)
+        if re.search('# bad_flag', L):
+            metadata['missing_values'] = L.split()[-1]
+
+        # Scan for variables
+        if re.search('# name', L):
+            full_name = L.split('=')[-1].strip()
+            short_name = full_name.split()[1]
+            short_name = re.findall('[A-Za-z]+', short_name)[0]
+            if short_names:
+                name = short_name
+            else:
+                name = full_name
+            metadata['names'].append(name)
+            metadata['seabird_names'].append(full_name.split(':')[0])
+            metadata['units'].append(re.findall('\[.*\]', L)[0])
+
+        # Scan for end of header
+        if re.search('\*END\*', L):
+            metadata['header_lines'] = LN + 1
+            break
+
+    return metadata
 
 
 def read_odf_metadata(fname, vnames, dtype=None):

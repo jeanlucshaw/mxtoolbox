@@ -19,6 +19,7 @@ __all__ = ['anomaly2rgb',
            'bine2center',
            'crs2crs',
            'dd2dms',
+           'dmd2dd',
            'dms2dd',
            'degrees_180_to_360',
            'degrees_360_to_180',
@@ -246,6 +247,33 @@ def crs2crs(x, y, target, origin=ccrs.PlateCarree()):
         x_dest, y_dest = transformed[:, 0].reshape(shape), transformed[:, 1].reshape(shape)
 
     return x_dest, y_dest
+
+
+def dmd2dd(degrees, minutes, direction):
+    """
+    Convert geographical coordinate from degree (decimal) minute to DMS.
+
+    Parameters
+    ----------
+    degrees: float or array
+        Degree portion of the coordinate(s).
+    minutes: float or array
+        Minute portion of the coordinate(s).
+    direction: str
+        Cardinal direction of ['E', 'W', 'N', 'S'].
+
+    Returns
+    -------
+    float or array:
+        Coordinate(s) in degrees decimal.
+
+    """
+    coordinate = abs(degrees) + abs(minutes) / 60
+
+    if direction in 'SW':
+        coordinate *= -1
+
+    return coordinate
 
 
 def dms2dd(degrees, minutes, seconds):
