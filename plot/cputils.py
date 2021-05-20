@@ -12,7 +12,8 @@ __all__ = ['cp_map_ruler',
            'cp_mercator_panel',
            'cp_proj',
            'cp_proj_panel',
-           'cp_ticks']
+           'cp_ticks',
+           'km_legend']
 
 
 def cp_map_ruler(axes,
@@ -502,3 +503,69 @@ def cp_ticks(geoax,
                            ha='left',
                            va='center',
                            **text_kw)
+
+
+def km_legend(geoax,
+              lon0,
+              lat0,
+              distance,
+              azimuth,
+              wing_size=0.1,
+              label='',
+              label_offset=0.25,
+              **plot_kw):
+    """
+    Add an size scale to cartopy axes.
+
+    Parameters
+    ----------
+    geoax: cartopy.Geoaxes
+        Where to add the legend.
+    lon0, lat0: float
+        Left of the legend.
+    distance: float
+        Size of the legend in km.
+    azimuth: float
+        Orientation of the legend (0: N, 90: E).
+    wing_size: float
+        Legend `wing` size as fraction of `distance`.
+    label: str
+        Label of legend.
+    label_offset: float
+        As fraction of `distance`.
+    **plot_kw: dict
+        Passed to pyplot.plot.
+    """
+    # Manage whether of not the transform is given
+    if plot_kw is None:
+        plot_kw = dict(transform=ccrs.PlateCarree())
+    elif isinstance(plot_kw, dict) and 'transform' not in plot_kw.keys():
+        plot_kw['transform'] = ccrs.PlateCarree()
+
+    # Calculate other end of legend
+    lonf, latf = destination_point(lon0, lat0, distance, azimuth)
+
+    # Calculate left wing coords
+    _x1, _y1 = destination_point(lon0, lat0, wing_size * distance, azimuth - 90)
+    _x2, _y2 = destination_point(lon0, lat0, wing_size * distance, azimuth + 90)
+    lonwl, latwl = [_x1, _x2], [_y1, _y2]
+
+    # Calculate left wing coords
+    _x1, _y1 = destination_point(lonf, latf, wing_size * distance, azimuth - 90)
+    _x2, _y2 = destination_point(lonf, latf, wing_size * distance, azimuth + 90)
+    lonwr, latwr = [_x1, _x2], [_y1, _y2]
+
+    # Calculate middle point
+    lonm, latm = np.mean([lon0, lonf]), np.mean([lat0, latf])
+
+    # Calculate legend center
+    lonl, latl = destination_point(lonm, latm, label_offset * distance, azimuth - 90)
+
+    # Draw
+    geoax.plot([lon0, lonf], [lat0, latf], **plot_kw)
+    geoax.plot(lonwl, latwl, **plot_kw)
+    geoax.plot(lonwr, latwr, **plot_kw)
+
+    # Label
+    label_kw = dict(ha='center', va='center', transform=plot_kw['transform'])
+    geoax.text(lonl, latl, label, rotation=-azimuth+90, **label_kw)

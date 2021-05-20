@@ -97,6 +97,7 @@ def _read_sberaw(fname,
                  min_depth=0,
                  min_sal=15,
                  max_temp=20,
+                 max_date=None,
                  pressure=None,
                  latitude=49):
     """
@@ -176,9 +177,17 @@ def _read_sberaw(fname,
     if 'z' in df.keys():
         df = df.query('z > %f' % min_depth)
 
-    # Sort by time
-    return df.set_index('time').sort_values('time')
+    # Eliminate timestamp duplicates
+    df = df.drop_duplicates(subset='time')
 
+    # Sort by time
+    df = df.sort_values('time')
+
+    # Remove after max date if required
+    if args.max_date:
+        df = df.query('time < "%s"' % args.max_date)
+
+    return df.set_index('time')
 
 # Command line interface
 if __name__ == '__main__':
@@ -201,6 +210,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--pressure',
                         metavar='', type=float, default=None,
                         help='pressure to use for salinity calculation (dbar)')
+    parser.add_argument('-D', '--max-date',
+                        metavar='', type=str, default='',
+                        help='discard data after this date')
     args = parser.parse_args()
 
     # Get variable names and header length
@@ -214,7 +226,8 @@ if __name__ == '__main__':
                       min_depth=args.min_depth,
                       min_sal=args.min_sal,
                       max_temp=args.max_temp,
-                      pressure=args.pressure)
+                      pressure=args.pressure,
+                      max_date=args.max_date)
 
     # Save location
     abspath = os.path.abspath(args.fname)

@@ -472,6 +472,8 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
     # Convert time to julian day if time series
     if isinstance(dataframe[x].values[0], np.datetime64):
         x_data = [t_.to_julian_date() for t_ in dataframe[x].to_list()]
+    elif isinstance(dataframe[x].values[0], pd.Timestamp):
+        x_data = [t_.to_julian_date() for t_ in dataframe[x].to_list()]
     else:
         x_data = dataframe[x]
 
@@ -490,6 +492,9 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
     if isinstance(xfit[0], np.datetime64):
         fit_labels = xfit
         xfit = [t_.to_julian_date() for t_ in pd.Series(xfit).to_list()]
+    elif isinstance(xfit[0], pd.Timestamp):
+        fit_labels = xfit
+        xfit = [t_.to_julian_date() for t_ in pd.Series(xfit).to_list()]
     else:
         fit_labels = xfit
 
@@ -500,7 +505,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
     return model, fit, model.rsquared
 
 
-def sm_lin_fit_diagnostics(model):
+def sm_lin_fit_diagnostics(model, max_leverage=0.3, cook_th=0.25, cook_labels=None):
     """
     Make diagnostic plots of linear regression.
 
@@ -541,19 +546,23 @@ def sm_lin_fit_diagnostics(model):
     leverage = model.get_influence().hat_matrix_diag
     ax[1, 1].plot(leverage, standardized_resid, 'ko')
     ax[1, 1].set(xlabel='Leverage', ylabel='Standradized residuals')
+    if cook_labels is not None:
+        for n_, l_, r_ in zip(cook_labels, leverage, standardized_resid):
+            if cook_distance(r_, l_, k_vars) > cook_th:
+                ax[1, 1].text(l_, r_, n_)
 
     # --- Cook distance lines
-    x = np.linspace(0, 0.3, 100)
+    x = np.linspace(0, max_leverage, 100)
     y = np.linspace(-6, 6, 100)
     X, Y = np.meshgrid(x, y)
     C = cook_distance(Y, X, k_vars)
     ctr = ax[1, 1].contour(X, Y, C, [0.5, 1], colors='r', linestyles='--')
     plt.clabel(ctr, fmt='%.1f')
 
-    return ax
+    return ax, cook_distance(standardized_resid, leverage, k_vars)
 
 
-def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
+def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, z):
     """
     Interpolate 2D field along arbitrary track.
 
@@ -565,8 +574,10 @@ def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
         Coordinates of interpolation track.
     xcoord, ycoord : str
         Coordinate names of the 2D field.
-    name : str
-        Name of the track coordinate.
+    z : str or dict
+        Name of the track coordinate or dictionnary with two fields:
+        `name` a string to be the name of the track and `values` to
+        be the coordinate of the track.
 
     Returns
     -------
@@ -574,8 +585,15 @@ def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, name):
         Field interpolated to track.
 
     """
-    da_x = xr.DataArray(x, dims=name)
-    da_y = xr.DataArray(y, dims=name)
+    if isinstance(z, str):
+        da_args = dict(dims=z)
+    elif isinstance(z, dict):
+        da_args = dict(dims=z['name'], coords={z['name']: z['values']})
+    else:
+        raise TypeError('z must be str or dict')
+
+    da_x = xr.DataArray(x, **da_args)
+    da_y = xr.DataArray(y, **da_args)
     return dataset.interp({xcoord: da_x, ycoord: da_y})
 
 

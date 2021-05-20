@@ -211,7 +211,7 @@ def pd_read_cnv(FNAME,
             DF.loc[:, 'date'] = md['date']
         if md['lon']:
             DF.loc[:, 'Longitude'] = md['lon']
-        if ['lat']:
+        if md['lat']:
             DF.loc[:, 'Latitude'] = md['lat']
 
     return DF
@@ -354,16 +354,16 @@ def read_cnv_metadata(FNAME, short_names=True):
     for LN, L in enumerate(LINES):
 
         # Scan for metadata
-        if re.search('Date', L):
+        if re.search('\* Date:', L):
             day_ = re.findall('\d{4}-\d{2}-\d{2}', L)[0]
             hour = re.findall('\d{2}:\d{2}[:0-9]*', L)[0]
             metadata['date'] = np.datetime64('%sT%s' % (day_, hour))
-        if re.search('Longitude', L):
+        if re.search('\* Longitude:', L):
             degree = float(L.split()[-3])
             minute = float(L.split()[-2])
             direction = L.split()[-1]
             metadata['lon'] = dmd2dd(degree, minute, direction)
-        if re.search('Latitude', L):
+        if re.search('\* Latitude:', L):
             degree = float(L.split()[-3])
             minute = float(L.split()[-2])
             direction = L.split()[-1]
@@ -382,7 +382,12 @@ def read_cnv_metadata(FNAME, short_names=True):
                 name = full_name
             metadata['names'].append(name)
             metadata['seabird_names'].append(full_name.split(':')[0])
-            metadata['units'].append(re.findall('\[.*\]', L)[0])
+
+            if re.findall('\[.*\]', L):
+                units = re.findall('\[.*\]', L)[0].strip('[]')
+                metadata['units'].append(units)
+            else:
+                metadata['units'].append('')
 
         # Scan for end of header
         if re.search('\*END\*', L):
@@ -455,6 +460,8 @@ def read_odf_metadata(fname, vnames, dtype=None):
         results[i] = t(r)
     
     return results
+
+
 def xr_print_columns(xr_obj, cols, filename, csv_kw={}):
     """
     Print variables and coordinates of an xarray dataset or

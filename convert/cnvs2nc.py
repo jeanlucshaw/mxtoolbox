@@ -19,13 +19,107 @@ max_depth = 200
 
 # Long, standard, units
 seabird_std_names = {'tv290C': 'sea_water_temperature',
+                     't090C': 'sea_water_temperature',
                      'prdM': 'sea_water_pressure',
                      'sal00': 'sea_water_practical_salinity',
                      'c0S/m': 'sea_water_electrical_conductivity',
                      'sigma-t00': 'sea_water_density',
                      'flTC7': 'mass_concentration_of_chlorophyll_in_sea_water',
                      'ox': 'mass_concentration_of_chlorophyll_in_sea_water',
-                     'AroFTox': 'volume_fraction_of_oxygen_in_sea_water'}
+                     'AroFTox': 'volume_fraction_of_oxygen_in_sea_water',
+                     'flag': 'flags',
+                     'scan': 'sample_id',
+                     'timeK': 'time'}
+
+
+def time_series_init(time, series_metadata=None):
+    """
+    Return empty xarray shell in standardized format.
+
+    Initializes many attributes required or recommended by
+    CF-1.8 conventions. If used by others that the author,
+    change the default values of the `source` and `contact`
+    attributes.
+
+    Parameters
+    ----------
+    time : int or 1D array
+        Number of time steps or time vector.
+    series_metadata : dict of list
+        Contains the keys `names`, `seabird_names` and `units`. This
+        determines the profile variables which will be initialized.
+
+    Returns
+    -------
+    xarray.Dataset
+        An empty dataset ready for data input.
+
+    See Also
+    --------
+
+       * mxtoolbox.read.text.read_cnv_metadata
+       * mxtoolbox.read.text.pd_read_cnv
+
+    """
+    # Take inputs as coordinate sizes or vectors
+    if isinstance(depth, int):
+        z = np.arange(depth)
+    else:
+        z = depth
+    size_depth = z.size
+    if isinstance(time, int):
+        t = np.empty(time, dtype='datetime64[ns]')
+    else:
+        t = time 
+    size_time = t.size
+
+    # Initialize 1D and 2D blank arrays
+    blank_timeseries = np.nan * np.ones(size_time)
+
+    # Select variables to keep
+    if series_metadata is None:
+        series_vars = ['Temperature', 'Salinity']
+        series_units = ['[deg C]', '[PSU]']
+        series_sb_names = ['tv290', 'sal00']
+    else:
+        series_vars = series_metadata['names']
+        series_units = series_metadata['units']
+        series_sb_names = series_metadata['seabird_names']
+
+    series_blanks = dict()
+    for v_, u_ in zip(series_vars, series_units):
+        series_blanks[v_] = (['time'], blank_timeseries.copy())
+
+    ds = xr.Dataset(
+        data_vars = {**series_blanks,
+                     'lon': (['time'], blank_timeseries.copy()),
+                     'lat': (['time'], blank_timeseries.copy()),
+                     'uship': (['time'], blank_timeseries.copy()),
+                     'vship': (['time'], blank_timeseries.copy())},
+        coords = {'time': t},
+        attrs = {'Conventions': 'CF-1.8',
+                 'title': '',
+                 'institution': '',
+                 'source': 'CTD data, processed with https://github.com/jeanlucshaw/mxtoolbox',
+                 'description': '',
+                 'history': '',
+                 'platform': '',
+                 'bin_size': '',
+                 'looking': '',
+                 'instrument_serial': '',
+                 'contact': 'Jean-Luc.Shaw@dfo-mpo.gc.ca'})
+
+    # Add metadata
+    for v_, u_, sb_ in zip(series_vars, series_units, series_sb_names):
+        ds[v_].attrs['units'] = u_
+        ds[v_].attrs['long_name'] = v_
+
+        if sb_ in seabird_std_names:
+            ds[v_].attrs['standard_name'] = seabird_std_names[sb_]
+        else:
+            print('No CF name for variable: %s, %s' % (v_, sb_))
+
+    return ds
 
 
 def profile_time_series_init(depth,

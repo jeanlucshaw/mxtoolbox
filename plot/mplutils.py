@@ -7,11 +7,13 @@ import matplotlib.patches as patches
 import os
 import numpy as np
 from matplotlib.collections import LineCollection
+import matplotlib.dates as md
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from ..process.math_ import xr_abs
 from ..read.text import list2cm
 
-__all__ = ['axlabel_doy2months',
+__all__ = ['anomalycmap',
+           'axlabel_doy2months',
            'axlabel_woy2months',
            'bshow',
            'colorbar',
@@ -19,10 +21,46 @@ __all__ = ['axlabel_doy2months',
            'contour_n_largest',
            'data_to_axis_coordinates',
            'divergent',
+           'format_dateaxis',
            'labeled_colorbar',
            'move_axes',
            'sequential',
-           'text_array']
+           'text_array',
+           'xr_saturate']
+
+
+def anomalycmap(N, renew=False):
+    """
+    Return `N` step anomaly colormap.
+
+    Parameters
+    ----------
+    N: int
+        Size of the colormar
+    renew: bool
+        Calling with this True resets the colormap file to
+        the array written below.
+    """
+    # Path to the colormap file
+    p_ = '/opt/anaconda3/lib/python3.7/site-packages/mxtoolbox/'
+
+    if renew:
+        anomaly_cm = [[0.500, 0.000, 0.900],
+                      [0.000, 0.000, 0.900],
+                      [0.450, 0.450, 0.900],
+                      [0.700, 0.700, 1.000],
+                      [0.875, 0.875, 1.000],
+                      [1.0, 1.0, 1.0],
+                      [1.0, 1.0, 1.0],
+                      [1.000, 0.875, 0.875],
+                      [1.000, 0.700, 0.700],
+                      [0.900, 0.450, 0.450],
+                      [0.900, 0.000, 0.000],
+                      [0.500, 0.000, 0.000]]
+        np.savetxt('%s/Anomaly.dat' % p_, anomaly_cm, fmt='%.3f')
+
+    else:
+        return list2cm('%s/Anomaly.dat' % p_, N)
 
 
 def axlabel_doy2months(axes):
@@ -391,6 +429,29 @@ def divergent(N=256):
     """
     return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/DivergentPalette', N=N)
 
+def format_dateaxis(ax, fmt):
+    """
+    Format date axis using strftime format.
+
+    Typical values of fmt are
+
+    * `'%b'` : abbreviated month name.
+    * `'%B'` : full month name.
+    * `%Y-%m-%d %H:%M:%S'` : date and time
+    * `'%j'` : day of the year (1--366)
+    * `'%W'` : Mon-Sun week number (0--53)
+
+    Parameters
+    ----------
+    ax: pyplot.axes
+        Of which to format the tick labels.
+    fmt: str
+        Description of the format.
+
+    """
+    fmt_obj = md.DateFormatter(fmt)
+    ax.xaxis.set_major_formatter(fmt_obj)
+
 
 def make_segments(x, y):
     '''
@@ -491,3 +552,35 @@ def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, *
             pass
 
     return None
+
+
+def xr_saturate(dataset, vars_, clevels):
+    """
+    Saturate variables to the extreme values of colormap.
+
+    Parameters
+    ----------
+    dataset: xarray.Dataset
+        In which to manipulate data.
+    vars_: list of str
+        Variable names to saturate.
+    clevels: 1D array
+        Contour levels.
+
+    Returns
+    -------
+    xarray.Dataset
+        With variables saturated.
+
+    """
+    if ~isinstance(clevels, np.ndarray):
+        clevels = np.array(clevels)
+
+    for v_ in vars_:
+        is_finite = np.isfinite(dataset[v_].values)
+        max_condition = is_finite & (dataset[v_] < clevels.max())
+        min_condition = is_finite & (dataset[v_] > clevels.min())
+        dataset[v_] = dataset[v_].where(max_condition, clevels.max())
+        dataset[v_] = dataset[v_].where(min_condition, clevels.min())
+        dataset[v_] = dataset[v_].where(is_finite)
+    return dataset

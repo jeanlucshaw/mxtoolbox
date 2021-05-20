@@ -6,7 +6,9 @@ filtering and binning functions.
 import numpy as np
 import xarray as xr
 import scipy.signal as signal
+from scipy.stats import mode
 import pandas as pd
+from statsmodels.nonparametric.smoothers_lowess import lowess
 from .math_ import xr_time_step
 from .convert import binc2edge, bine2center
 from pandas.tseries.frequencies import to_offset
@@ -14,12 +16,16 @@ import warnings
 
 __all__ = ['ctd_flag_inversions',
            'ctd_flag_spikes',
+           'lowess',
            'pd_bin',
            'pd_bin_2',
            'pd_at_var_stat',
+           'regularize_xy',
+           'running_mean',
            'xr_at_var_max',
            'xr_bin',
            'xr_bin_where',
+           'xr_create_lagged',
            'xr_filtfilt',
            'xr_godin',
            'xr_peaks']
@@ -170,6 +176,31 @@ def ctd_flag_spikes(dataset,
     return output
 
 
+def lowess(*args, **kwargs):
+    """
+    Wrapper for lowess from statsmodels.
+
+    This is lazy, but the import call for this function is
+    hard to remember.
+
+    Parameters
+    ----------
+    endog: 1D array
+        Independent variable.
+    exog: 1D array
+        Dependent variable.
+    frac: float
+        Between 0 and 1. The fraction of the data used when
+        estimating each y-value.
+
+    Returns
+    -------
+    1D array
+        The smoothed independent variable.
+    """
+    return lowess(*args, **{'return_sorted': False, **kwargs})
+
+
 def pd_bin(dataframe, dim, binc, func=np.nanmean):
     """
     Bin values in pandas dataframe.
@@ -206,7 +237,8 @@ def pd_bin(dataframe, dim, binc, func=np.nanmean):
 def pd_bin_2(dataframe,
              bins,
              on,
-             centers=True):
+             centers=True,
+             func=np.mean):
     """
     Bin values in pandas dataframe using `cut`.
 
@@ -220,6 +252,8 @@ def pd_bin_2(dataframe,
         Column to use as index.
     centers: bool
         `bins` is the bin centers (or edges).
+    func: callable
+        Apply to groupy object for aggregation.
 
     Returns
     -------
@@ -238,9 +272,9 @@ def pd_bin_2(dataframe,
         labels = bine2center(bins)
 
     # Bin and format output
-    dataframe['bin'] = pd.cut(series, bins=bins, labels=labels)
-    dataframe = dataframe.groupby('bin').mean()
-    dataframe[on] = labels
+    dataframe.loc[:, 'bin'] = pd.cut(series, bins=bins, labels=labels)
+    dataframe = dataframe.groupby('bin').apply(func)
+    dataframe.loc[:, on] = labels
     dataframe = dataframe.reset_index()
 
     return dataframe
@@ -311,6 +345,60 @@ def pd_at_var_stat(dataframe, varname, func, interval, drop=True):
         df_match = df_match.drop_duplicates(subset='bin_starts')
 
     return df_match
+
+
+def regularize_xy(x, y):
+    """
+    Force regular intervals of the coordinate in x,y data.
+
+    Parameters
+    ----------
+    x, y: 1D array
+        Independent and dependent variables.
+
+    Returns
+    -------
+    x_reg, y_reg: 1D array
+        Interpolated regular interval data.
+    dx: type( diff(x) )
+        The mode of `diff` applied to `x` used as the interval
+        for `x_reg`.
+
+    """
+    # Find best regular interval
+    dx, _ = mode(np.diff(x))
+    dx = dx[0]
+
+    # Construct regular coordinate
+    x_r = np.arange(x[0], x[-1] + dx, dx)
+
+    # Interpolate via xarray
+    da = xr.DataArray(y, dims=['x'], coords={'x': x})
+    da = da.interp(x=x_r)
+
+    return da.x.values, da.values, dx
+
+
+def running_mean(x, ws, *args, **kwargs):
+    """
+    Running mean using convolve.
+
+    Parameters
+    ----------
+    x: 1D array
+        The variable to smooth.
+    ws: int
+        The window size in data points.
+    *args, **kwargs: arguments, keyword arguments
+        Passed to `numpy.convolve`.
+
+    Returns
+    -------
+    1D array:
+        Smoothed variable.
+
+    """
+    return np.convolve(x, np.ones(ws) / ws, *args, **kwargs)
 
 
 def xr_at_var_max(dataset, variable, dim=None):
@@ -517,6 +605,54 @@ def xr_bin_where(dataset, field, selector, dim, binc, fill_na=-99999):
     return output
 
 
+def xr_create_lagged(dataset, variable, dim='time', sign_td=1, args_td=None, name=None):
+    """
+    Add lagged version of variable to xarray Dataset
+
+    Parameters
+    ----------
+    dataset: xarray.Dataset
+        On which to operate.
+    variable: str
+        Name of the variable to lag.
+    dim: str
+        Name of the time coordinate.
+    sign_td: int
+        Delay (1) of rush (-1) the signal.
+    args_td: tuple
+        Delay parameters. Unpacked as input to numpy.timedelta64.
+    name: str
+        Name of output lagged variable.
+
+    Returns
+    -------
+    xarray.Dataset
+        With the lagged variable added.
+
+    """
+    # Zero lag by default
+    if args_td is None:
+        args_td = (0, 'D')
+
+    # Set default lagged variable name
+    if name is None:
+        name = '%s_lagged' % variable
+
+    # Create shifted time
+    shifted_dim = dataset[dim].values + sign_td * np.timedelta64(*args_td)
+
+    # Create a shifted dataarray
+    shifted_var = xr.DataArray(dataset[variable].values, dims=[dim], coords={dim: shifted_dim})
+
+    # Reinterpolated to original time
+    dataset[name] = shifted_var.interp({dim: dataset[dim]})
+
+    # Save as attribute what the added lag is
+    dataset[name].attrs['lag'] = 'Variable %s lagged by %d * %d %s' % (variable, sign_td, *args_td)
+
+    return dataset
+
+
 def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):
     """
     Pass xarray data through variable state forward-backward filter.
@@ -632,40 +768,77 @@ def xr_godin(dataarray, tname):
     return flt_godin
 
 
-def xr_peaks(array, th_array, tname, two_sided=True, fp_kwargs=None):
+# def xr_peaks(array, th_array, tname, two_sided=True, fp_kwargs=None):
+#     """
+#     Find peaks in xarray dataset.
+
+#     !!!The UI here needs to be reworked and tested!!!
+
+#     Wrapper of scipy.signal.find_peaks that takes as input the array in which
+#     to find peaks, the variable threshold array 'th_array' and their matching
+#     x coordinate name 'tname'. If two_sided is True, positive and negative peaks
+#     above the threshold will be returned.
+
+#     out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
+#     index of peaks in original array.
+#     """
+
+#     hpksi, props = signal.find_peaks(array.values, fp_kwargs)
+#     hpks = xr.DataArray(array.values[hpksi],
+#                         coords=[array[tname].values[hpksi]],
+#                         dims=tname)
+#     hpks = hpks.where(hpks > th_array.values[hpksi], drop=True)
+#     out = (hpks,)
+#     ipks = hpksi
+
+#     if two_sided:
+#         th_array = -th_array
+#         lpksi, props = signal.find_peaks(-array, fp_kwargs)
+#         lpks = xr.DataArray(array.values[lpksi],
+#                             coords=[array[tname].values[lpksi]],
+#                             dims=tname)
+#         lpks = lpks.where(lpks < th_array.values[lpksi],
+#                           drop=True)
+#         out = out + (lpks,)
+#         ipks = np.sort(np.hstack((ipks, lpksi)))
+
+#     out = out + (ipks,)
+
+#     return out
+
+def xr_peaks(dataset, variable, troughs=False, **kwargs_fp):
     """
-    Find peaks in xarray dataset.
+    Convenience xarray wrapper for scipy.signal.find_peaks.
 
-    !!!The UI here needs to be reworked and tested!!!
+    Parameters
+    ----------
+    dataset: xarray.Dataset
+        In which to operate.
+    variable: str
+        Name of variable to find peaks in.
+    **kwargs_fp: dict
+        Keyword arguments passed to `find_peaks`.
 
-    Wrapper of scipy.signal.find_peaks that takes as input the array in which
-    to find peaks, the variable threshold array 'th_array' and their matching
-    x coordinate name 'tname'. If two_sided is True, positive and negative peaks
-    above the threshold will be returned.
+    Returns
+    -------
+    x_p, y_p: 1D array
+        Position and value of peaks.
 
-    out is a tuple formed of DataArrays for high peaks, low peaks (two_sided=True), and
-    index of peaks in original array.
     """
+    # Get arrays of the coordinate and data variables
+    dim = dataset[variable].dims
+    if len(dim) == 1:
+        dim = dim[0]
+    else:
+        raise TypeError('Variable must be one dimensional.')
+    coord = dataset[dim].values
+    x = dataset[variable].values
 
-    hpksi, props = signal.find_peaks(array.values, fp_kwargs)
-    hpks = xr.DataArray(array.values[hpksi],
-                        coords=[array[tname].values[hpksi]],
-                        dims=tname)
-    hpks = hpks.where(hpks > th_array.values[hpksi], drop=True)
-    out = (hpks,)
-    ipks = hpksi
+    # Function call
+    peaks, _ = signal.find_peaks(x, **kwargs_fp)
 
-    if two_sided:
-        th_array = -th_array
-        lpksi, props = signal.find_peaks(-array, fp_kwargs)
-        lpks = xr.DataArray(array.values[lpksi],
-                            coords=[array[tname].values[lpksi]],
-                            dims=tname)
-        lpks = lpks.where(lpks < th_array.values[lpksi],
-                          drop=True)
-        out = out + (lpks,)
-        ipks = np.sort(np.hstack((ipks, lpksi)))
+    if troughs:
+        troughs, _ = signal.find_peaks(-x, **kwargs_fp)
+        peaks = np.sort([*peaks, *troughs])
 
-    out = out + (ipks,)
-
-    return out
+    return coord[peaks], x[peaks]

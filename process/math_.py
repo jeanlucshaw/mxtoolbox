@@ -7,13 +7,18 @@ import pandas as pd
 # from math import radians, cos, sin, asin, sqrt
 import shapely.speedups
 # from mpl_toolkits.basemap import Basemap
-from shapely.geometry import Point, Polygon
+from skimage import measure
+from shapely.geometry import Point, Polygon, LineString
 from scipy.interpolate import interp1d
+from scipy.special import erf
+from pyproj import Geod
 # import mxtoolbox.process.convert.crs2crs as crs2crs
+import mxtoolbox.process as ps
 import scipy.stats as ss
 import matplotlib.path as mpltPath
 import cartopy.crs as ccrs
 shapely.speedups.enable()
+
 
 __all__ = ['array_corners',
            'array_outline',
@@ -26,13 +31,17 @@ __all__ = ['array_corners',
            'doy_std',
            'destination_point',
            'distance_along_bearing',
+           'f_erf',
            'f_gaussian',
            'f_sine',
            'haversine',
            'increase_resolution',
            'in_polygon',
            'get_contour_xy',
+           'lonlat2xy',
+           'lonlat_gradient',
            'lonlat_rectangle',
+           'lonlat_rectangle_tr',
            'perpendicular_line',
            'project_to_line',
            'proj_grid',
@@ -41,10 +50,13 @@ __all__ = ['array_corners',
            'rotate_frame',
            'square_dimensions',
            'xr_abs',
+           'xr_lonlat_gradient',
            'xr_contour',
            'xr_time_step',
            'xr_unique',
-           'mxy2abc']
+           'mxy2abc',
+           'pp2abc',
+           'intersection']
 
 
 # Brief functions
@@ -269,62 +281,94 @@ def _distance(xpts, ypts, x0, y0):
     return np.sqrt((xpts - x0) ** 2 + (ypts - y0) ** 2)
 
 
-def destination_point(x0, y0, distance, bearing, meters_per_unit=1000):
+# def destination_point(x0, y0, distance, bearing, meters_per_unit=1000):
+#     """
+#     Find coordinates of a point `distance` km in initial direction `bearing`.
+
+#     Let :math:`\lambda_0, \phi_0` be the longitude and latitude of some
+#     initial coordinate. On a spherical earth, coordinates of a point
+#     :math:`\lambda_f, \phi_f` a distance `d` along a great-circle line
+#     with initial bearing :math:`\\theta` can be computed as,
+
+#     .. math::
+
+#        \\phi_f = \\sin^{-1}\\left(\\sin\\phi_0\\cos\\delta + \\cos\\phi_0\\sin\\delta\\cos\\theta\\right)
+
+#     and,
+
+#     .. math::
+
+#        \\lambda_f = \\lambda_0 + \\tan^{-1}\\left(\\frac{\\sin\\theta\\sin\\delta\\cos\\phi_0}
+#        {\\cos\\delta - \\sin\\phi_0\\sin\\phi_f}\\right)
+
+#     where :math:`\delta` is the `d` divided by the earth's radius set
+#     at 6371 km.
+
+#     Parameters
+#     ----------
+#     x0, y0 : float
+#         Starting longitude and latitude.
+#     distance : float
+#         Distance to travel.
+#     bearing : float
+#         Initial azimuth in degrees, 0 north and 90 east.
+#     meters_per_unit : float
+#         Defines the unit of `distance`. Defaults to 1000 for km.
+
+#     Returns
+#     -------
+#     float
+#         Longitude and latitude of destination point.
+
+#     """
+#     # Unit conversions
+#     delta = meters_per_unit * distance / 6371008.8
+#     phi_0 = y0 * np.pi / 180
+#     lbd_0 = x0 * np.pi / 180
+#     theta = bearing * np.pi / 180
+
+#     # Destination latitude in radians
+#     phi_f = np.arcsin(np.sin(phi_0) * np.cos(delta) +
+#                       np.cos(phi_0) * np.sin(delta) * np.cos(theta))
+
+#     # Destination longitude in radians
+#     arg_y = np.sin(theta) * np.sin(delta) * np.cos(phi_0)
+#     arg_x = np.cos(delta) - np.sin(phi_0) * np.sin(phi_f)
+#     lbd_f = lbd_0 + np.arctan2(arg_y, arg_x)
+
+#     return (180 * lbd_f / np.pi, 180 * phi_f / np.pi)
+def destination_point(lon_0, lat_0, distance, azimuth, meters_per_unit=1000):
     """
-    Find coordinates of a point `distance` km in initial direction `bearing`.
-
-    Let :math:`\lambda_0, \phi_0` be the longitude and latitude of some
-    initial coordinate. On a spherical earth, coordinates of a point
-    :math:`\lambda_f, \phi_f` a distance `d` along a great-circle line
-    with initial bearing :math:`\\theta` can be computed as,
-
-    .. math::
-
-       \\phi_f = \\sin^{-1}\\left(\\sin\\phi_0\\cos\\delta + \\cos\\phi_0\\sin\\delta\\cos\\theta\\right)
-
-    and,
-
-    .. math::
-
-       \\lambda_f = \\lambda_0 + \\tan^{-1}\\left(\\frac{\\sin\\theta\\sin\\delta\\cos\\phi_0}
-       {\\cos\\delta - \\sin\\phi_0\\sin\\phi_f}\\right)
-
-    where :math:`\delta` is the `d` divided by the earth's radius set
-    at 6371 km.
-
     Parameters
     ----------
-    x0, y0 : float
+    lon_0, lat_0 : float
         Starting longitude and latitude.
     distance : float
         Distance to travel.
-    bearing : float
+    azimuth : float
         Initial azimuth in degrees, 0 north and 90 east.
     meters_per_unit : float
-        Defines the unit of `distance`. Defaults to 1000 for km.
+        Defines the unit of `distance`.
 
     Returns
     -------
-    float
+    lon, lat: float
         Longitude and latitude of destination point.
 
+    Note
+    ----
+
+       This used to be calculated explicitly until I found that the
+       pyproj module does it. Switching to this because it does not
+       assume a spherical earth.
+
     """
-    # Unit conversions
-    delta = meters_per_unit * distance / 6371008.8
-    phi_0 = y0 * np.pi / 180
-    lbd_0 = x0 * np.pi / 180
-    theta = bearing * np.pi / 180
+    lon_, lat_, _ = Geod(ellps='WGS84').fwd(lons=lon_0,
+                                            lats=lat_0,
+                                            az=azimuth,
+                                            dist=distance * meters_per_unit)
 
-    # Destination latitude in radians
-    phi_f = np.arcsin(np.sin(phi_0) * np.cos(delta) +
-                      np.cos(phi_0) * np.sin(delta) * np.cos(theta))
-
-    # Destination longitude in radians
-    arg_y = np.sin(theta) * np.sin(delta) * np.cos(phi_0)
-    arg_x = np.cos(delta) - np.sin(phi_0) * np.sin(phi_f)
-    lbd_f = lbd_0 + np.arctan2(arg_y, arg_x)
-
-    return (180 * lbd_f / np.pi, 180 * phi_f / np.pi)
+    return lon_, lat_
 
 
 def distance_along_bearing(xpts,
@@ -390,6 +434,20 @@ def distance_along_bearing(xpts,
     return distance
 
 
+def f_erf(x, a, b, c, d):
+    """
+    Parametric error function.
+
+    Calculates
+
+    .. math::
+
+       y = a \\erf\\left(\\frac{(x - b)}{c}\\right) + d
+
+    """
+    return a * erf((x - b) / c) + d
+
+
 def f_gaussian(x, a_1, a_2, a_3, a_4):
     """
     Calculates,
@@ -414,27 +472,121 @@ def f_sine(x, a_1, a_2, a_3, a_4):
     return a_1 * np.sin((x - a_2) * a_3) + a_4
 
 
-def get_contour_xy(contour):
-    """
-    Return (x, y) coordinates of contour line.
+# def get_contour_xy(contour):
+#     """
+#     Return (x, y) coordinates of contour line.
 
-    Input is assumed to be a QuadContourSet object
-    containing only one contour line.
+#     Input is assumed to be a QuadContourSet object
+#     containing only one contour line.
+
+#     Parameters
+#     ----------
+#     contour : QuadContourSet
+#         Object returned by matplotlib.pyplot.contour
+
+#     Returns
+#     -------
+#     ndarray
+#         Coordinates (x, y) as array of shape (m, 2)
+
+#     """
+#     nctr = len(contour.collections[0].get_paths())
+#     v = [contour.collections[0].get_paths()[i].vertices for i in range(nctr)]
+#     return v
+def get_contour_xy(x,
+                   y,
+                   z,
+                   level,
+                   x_date=False,
+                   y_date=False,
+                   min_length=0,
+                   return_index=None,
+                   return_flat=False,
+                   return_sorted=None):
+    """
+    Get coordinates of isoline in 2D array.
 
     Parameters
     ----------
-    contour : QuadContourSet
-        Object returned by matplotlib.pyplot.contour
+    x, y: 1D array
+        Horizontal and vertical coordinate arrays.
+    z: 2D array
+        Data in which to draw the isoline.
+    level: float
+       The isoline value.
+    x_date, y_date: bool
+       Whether or not the coordinate axes are datetime type.
+    min_length: int
+       Size of contours to keep in data points.
+    return_index: int or slice
+       Select the contours to return.
+    return_flat: bool
+       Merge all contours into one array.
+    return_sorted: str
+       Sort flattened array by `x` or `y`.
 
     Returns
     -------
-    ndarray
-        Coordinates (x, y) as array of shape (m, 2)
+    x_c, y_c: 1D array
+        Contour coordinates.
 
     """
-    nctr = len(contour.collections[0].get_paths())
-    v = [contour.collections[0].get_paths()[i].vertices for i in range(nctr)]
-    return v
+    # Convert datetime to numeric
+    if x_date or isinstance(x[0], np.datetime64):
+        x = np.array(x.tolist())
+        x_date = True
+    if y_date or isinstance(y[0], np.datetime64):
+        y = np.array(y.tolist())
+        y_date = True
+
+    # Init output
+    x_i, y_i = np.arange(x.size), np.arange(y.size)
+    x_c, y_c = [], []
+
+    # Find contour indices
+    ctr = measure.find_contours(z, level)
+
+    # Convert to data coordinates
+    for c_ in ctr:
+
+        # Filter contours by specified size
+        if len(c_) > min_length:
+
+            # Interpolate index to input coordinates
+            x_c_ = interp1d(x_i, x).__call__(c_[:, 1])
+            y_c_ = interp1d(y_i, y).__call__(c_[:, 0])
+
+            # Convert back to datetime64
+            if x_date:
+                x_c_ = pd.to_datetime(x_c_).to_numpy()
+            if y_date:
+                y_c_ = pd.to_datetime(y_c_).to_numpy()
+
+            x_c.append(x_c_)
+            y_c.append(y_c_)
+
+    # Only return specified contour
+    if return_index:
+        x_c, y_c = x_c[return_index], y_c[return_index]
+
+    # Flatten if requested
+    if len(x_c) > 1 and return_flat:
+        x_c = [i_ for x_ in x_c for i_ in x_]
+        y_c = [i_ for y_ in y_c for i_ in y_]
+
+        # Sort along requested axis
+        if return_sorted == 'x':
+            i_sort = np.argsort(x_c)
+            x_c = np.array(x_c)[i_sort]
+            y_c = np.array(y_c)[i_sort]
+        elif return_sorted == 'y':
+            i_sort = np.argsort(y_c)
+            x_c = np.array(x_c)[i_sort]
+            y_c = np.array(y_c)[i_sort]
+        else:
+            print('No sorting: return_sorted must be `x` or `y`')
+
+    return x_c, y_c
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -571,6 +723,158 @@ def increase_resolution(xpts, ypts, N, offset_idx=0):
     return xout, yout, dout
 
 
+# def lonlat2xy(lon_target, lat_target, lon_grid, lat_grid, x=None, y=None):
+#     """
+#     Find regular grid position of irregular grid coordinate. 
+    
+#     Parameters
+#     ----------
+#     lon_target, lat_target: float or 1D array
+#         Irregular coordinate(s) to position on regular grid. 
+#     lon_grid, lat_grid: 2D arrays
+#         Irregular grid coordinates.
+
+#     Returns
+#     -------
+#     x, y: float or 1D array
+#         Target regular grid positions
+
+#     """
+#     # Initialize output
+#     x, y = [], []
+
+#     # Find contour line of target in both irregular grid coordinates
+#     ctr_lon = measure.find_contours(lon_grid, lon_target)
+#     ctr_lat = measure.find_contours(lat_grid, lat_target)
+
+#     # Find the intersection of these two lines
+#     for _lon, _lat in zip(ctr_lon, ctr_lat):
+#         line_1 = LineString(_lon[:, ::-1])
+#         line_2 = LineString(_lat[:, ::-1])
+#         intersection = line_1.intersection(line_2)
+
+#         x.append(intersection.x)
+#         y.append(intersection.y)
+
+#     # Unpack if only one target coordinate
+#     if len(x) == 1:
+#         x, y = x[0], y[0]
+
+#     # Otherwise convert to numpy array
+#     else:
+#         x, y = np.array(x), np.array(y)
+
+#     return x, y
+
+
+def lonlat2xy(lon_target, lat_target, lon_grid, lat_grid, x=None, y=None):
+    """
+    Find regular grid position of irregular grid coordinate. 
+    
+    Parameters
+    ----------
+    lon_target, lat_target: float or 1D array
+        Irregular coordinate(s) to position on regular grid. 
+    lon_grid, lat_grid: 2D arrays
+        Irregular grid coordinates.
+
+    Returns
+    -------
+    x, y: float or 1D array
+        Target regular grid positions
+
+    """
+    # Make target iterable if single point
+    if isinstance(lon_target, (int, float)):
+        lon_target, lat_target = [lon_target], [lat_target]
+
+    # Initialize output
+    x, y = [], []
+
+    # Loop over targets
+    for _lon_target, _lat_target in zip(lon_target, lat_target):
+
+        # Find contour line of target in both irregular grid coordinates
+        ctr_lon = measure.find_contours(lon_grid, _lon_target)
+        ctr_lat = measure.find_contours(lat_grid, _lat_target)
+
+        # Unless contour not found
+        if ctr_lon and ctr_lat:
+
+            # Find the intersection of these two lines
+            line_1 = LineString(ctr_lon[0][:, ::-1])
+            line_2 = LineString(ctr_lat[0][:, ::-1])
+            intersection = line_1.intersection(line_2)
+
+            x.append(intersection.x)
+            y.append(intersection.y)
+
+    # Unpack if only one target coordinate
+    if len(x) == 1:
+        x, y = x[0], y[0]
+
+    # Otherwise convert to numpy array
+    else:
+        x, y = np.array(x), np.array(y)
+
+    return x, y
+
+
+def lonlat_gradient(lon, lat, data):
+    """
+    Calculate the 2D gradient of data on a regular lonlat grid.
+
+    Parameters
+    ----------
+    lon, lat : 1D array
+        Coordinates of the regular grid (sizes N, M).
+    data: 2D array
+        Whose derivative is taken (size M, N).
+
+    Returns
+    -------
+    d_dx, d_dy, grad_norm: 2D array
+        Gradients along lon and lat axes, and gradient norm (data units / m).
+
+    """
+    # Call pyproj
+    geod = Geod(ellps='WGS84')
+
+    # Ensure the grid is regular
+    dlons = np.unique(np.diff(lon))
+    dlats = np.unique(np.diff(lat))
+    if (dlons.size > 1) | (dlats.size > 1):
+        msg = 'Grid not regular. dlons, dlats: '
+        raise ValueError(msg, dlons, dlats)
+
+    # Make regularly spaced vectors around grid points
+    _lon_bin = ps.binc2edge(lon)
+    _lat_bin = ps.binc2edge(lat)
+
+    # x spacing for each y value
+    _, _, _dx = geod.inv(_lon_bin[0] * np.ones(lat.size), _lat_bin[:-1],
+                         _lon_bin[1] * np.ones(lat.size), _lat_bin[1:])
+
+    # y spacing for each x value
+    _, _, _dy = geod.inv(_lon_bin[:-1], _lat_bin[0] * np.ones(lon.size),
+                         _lon_bin[1:], _lat_bin[1] * np.ones(lon.size))
+
+    # Convert to m
+    dy, dx = np.meshgrid(_dy, _dx)
+
+    # Calculate gradient assuming dlon = dlat = 1
+    diff_y, diff_x = np.gradient(data)
+
+    # Divide each gradient grid point by the represented distance
+    d_dx = diff_x / dx
+    d_dy = diff_y / dy
+
+    # Calculate the norm of the gradient
+    norm = np.sqrt(d_dx ** 2 + d_dy ** 2)
+
+    return d_dx, d_dy, norm
+
+
 def lonlat_rectangle(lon_0, lat_0, bearing, box_len_a, box_wid_a, box_len_b=None, box_wid_b=None, axes=None):
     """
     Draw an almost rectangular polygon in plate carree coordinates.
@@ -647,6 +951,62 @@ def lonlat_rectangle(lon_0, lat_0, bearing, box_len_a, box_wid_a, box_len_b=None
         axes.plot([lon_a, lon_b], [lat_a, lat_b], 'k--', transform=ccrs.PlateCarree())
 
     return lon_box, lat_box, lon_center, lat_center
+
+
+def lonlat_rectangle_tr(top_right, angle, width, length, print_error):
+    """
+    Return coordinates of an almost rectangular box.
+
+    Parameters
+    ----------
+    top_right: 2-tuple of float
+        Lon and lat of rectangle top right corner.
+    angle: float
+        Bearing from `o` to `n` and `p` to `q` (0--360).
+    width: float
+        Distance between `o` and `p` (km).
+    length: float
+        Distance between `o` and `n` and `p` and `q` (km).
+    print_error: bool
+        Print the difference between `o--p` and `n--q` (km).
+
+    Returns
+    -------
+    lon, lat: 1D array of float
+        The wraping vertice coordinates.
+
+    Note
+    ----
+    For definitions of the input dimensions refer to the following diagram.
+
+    ..code::
+
+       n ---- o
+       |      |
+       q ---- p
+
+    """
+    # For a more explicit argument, but better readability
+    o_ = top_right
+
+    # Calculate other vertices
+    n_ = destination_point(*o_, length, angle)
+    p_ = destination_point(*o_, width, angle - 90)
+    q_ = destination_point(*n_, width, angle - 90)
+
+    # Make a wrapping list of vertices
+    lon, lat = [], []
+    for v_ in [n_, o_, p_, q_, n_]:
+        lon.append(v_[0])
+        lat.append(v_[1])
+
+    # Print error between two length segments
+    if print_error:
+        q_p_segment = ps.lonlat2distancefrom([q_[0]], [q_[1]], p_[0], p_[1], meters_per_unit=1000)
+        error_ = q_p_segment - length
+        print('Difference between o--p and n--q: %.1f km' % error_)
+
+    return np.array(lon), np.array(lat)
 
 
 def polygon_area(xpts, ypts, lonlat=False, pos=True):
@@ -1006,6 +1366,35 @@ def xr_abs(dataset, field):
     return dataset
 
 
+def xr_lonlat_gradient(dataset, lon, lat, data):
+    """
+    xarray wrapper for mxtoolbox.process.math_.lonlat_gradient
+
+    Parameters
+    ----------
+    dataset: xarray.Dataset
+        In which to get coordinates and data.
+    lon, lat, data: str
+        Names of the coordinate and data variables.
+
+    Returns
+    -------
+    xarray.Dataset
+        With the gradients added as data variables.
+    """
+    # Calculate gradients
+    d_dx, d_dy, norm = lonlat_gradient(dataset[lon].values,
+                                       dataset[lat].values,
+                                       dataset[data].values)
+
+    # Add to dataset
+    dataset['%s_dx' % data] = (dataset[data].dims, d_dx)
+    dataset['%s_dy' % data] = (dataset[data].dims, d_dy)
+    dataset['%s_grad_norm' % data] = (dataset[data].dims, norm)
+
+    return dataset
+
+
 def xr_time_step(dataset, tname, unit):
     """
     Get median step of the time axis in dataset.
@@ -1081,3 +1470,64 @@ def mxy2abc(m, x0, y0):
 
     """
     return 1, -1/m, y0 / m - x0
+
+
+def pp2abc(p1, p2):
+    """
+    For a line defined by two points,
+
+    reformulate as,
+
+    .. math::
+
+       ax + by + c = 0
+
+    Parameters
+    ----------
+    p1, p2 : 2-iterable
+        Line definition.
+
+    Returns
+    -------
+    a, b, c : float
+        Line parameters in form 2.
+
+    """
+    A = (p1[1] - p2[1])
+    B = (p2[0] - p1[0])
+    C = (p1[0] * p2[1] - p2[0] * p1[1])
+
+    return A, B, C
+
+
+def intersection(L1, L2):
+    """
+    Find the intersection between two lines (A, B, C) using Kramer.
+
+    Parameters
+    ----------
+    L1, L2: 3-tuples
+        Line parameters A, B, C.
+
+    Returns
+    -------
+    x, y: 2-tuple
+        Coordinates of the line intersection.
+
+    Note
+    ----
+
+       Not original work. Found on StackOverflow.
+       https://stackoverflow.com/questions/20677795/how-do-i-compute-the-intersection-point-of-two-lines
+
+    """
+    
+    D  = L1[0] * L2[1] - L1[1] * L2[0]
+    Dx = -1 * L1[2] * L2[1] + L1[1] * L2[2]
+    Dy = -1 * L1[0] * L2[2] + L1[2] * L2[0]
+    if D != 0:
+        x = Dx / D
+        y = Dy / D
+        return x, y
+    else:
+        return None

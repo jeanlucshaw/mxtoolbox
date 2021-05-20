@@ -10,10 +10,12 @@ import pandas as pd
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.interpolate import interp1d
+from scipy.signal import periodogram
 from matplotlib.ticker import FormatStrFormatter
 from .mplutils import text_array, colorbar
 from .cputils import cp_proj, cp_ticks
 from ..process.math_ import xr_abs, doy_mean, doy_std, date_abb
+from ..process.signal_ import running_mean
 from ..read.text import list2cm
 from ..process.convert import anomaly2rgb, binc2edge, dd2dms
 
@@ -25,6 +27,7 @@ __all__ = ['anomaly_bar',
            'gsl_bathy_contourf',
            'gsl_map',
            'gsl_temperature_cast',
+           'psd',
            'pd_scorecard',
            'scorecard',
            'scorecard_bottom_monthly',
@@ -1259,6 +1262,33 @@ def pd_scorecard(axes,
     axes.set(ylim=(y_edges.min(), y_edges.max()), xlim=(x_edges.min(), x_edges.max()))
     axes.set(xticklabels=[], yticklabels=[])
     axes.tick_params(which='both', bottom=False, left=False)
+
+
+def psd(ax, var_, period, smooth_window=20):
+    """
+    Periodogram plot on a loglog scale.
+
+    Parameters
+    ----------
+    ax: pyplot.Axes
+        Where to draw.
+    var_: 1D array
+        The time series data.
+    period: float
+        Time interval of the series.
+    smooth_window: int
+        Plot smoothed curve. Running mean window size.
+
+    """
+    sampling_frequency = 1 / period
+
+    # Calculate psd
+    freqs, psd = periodogram(var_, sampling_frequency)
+    periods = 1 / freqs
+
+    # Plot
+    ax.loglog(periods, psd, color='lightgray')
+    ax.loglog(periods, running_mean(psd, smooth_window, mode='same'), color='k')
 
 
 def wa_map(axes,
