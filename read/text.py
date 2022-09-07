@@ -6,6 +6,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
+from dateutil.parser import parse
 from matplotlib.colors import LinearSegmentedColormap
 from ..process.convert import dmd2dd
 
@@ -207,8 +208,16 @@ def pd_read_cnv(FNAME,
 
     # Add metadata columns
     if metadata_cols:
-        if md['date']:
-            DF.loc[:, 'date'] = md['date']
+        if 'time' not in DF.keys() and 'date' not in DF.keys():
+            if 'date' in md.keys() and 'interval' in md.keys():
+                # Convert interval to nanoseconds
+                dt_ns = np.floor(md['interval'] * 10 ** 9)
+                dt_ = dt_ns * np.ones(DF.shape[0] - 1)
+                dt_ = [0, *np.cumsum(dt_)]
+                dt_ = np.array([np.timedelta64(int(t_), 'ns') for t_ in dt_])
+                DF.loc[:, 'time'] = np.datetime64(md['date']) + dt_ 
+            elif 'date' in md.keys():
+                DF.loc[:, 'date'] = md['date']
         if md['lon']:
             DF.loc[:, 'Longitude'] = md['lon']
         if md['lat']:
@@ -276,7 +285,7 @@ def pd_read_odf(FNAME,
             # NAME = PAR_STRING.findall(L.split('=')[-1])[0]
             NAME = ' '.join(PAR_STRING.findall(L.split('=')[-1]))
             NAMES.append(NAME)
-            if 'SYTM' in NAME:
+            if 'SYTM' in NAME or 'SYTM_01' in NAME:
                 NAMES[-1] = 'SYTM'
                 NAMES.append('HOUR')
                 UNITS.append('None')
@@ -294,8 +303,14 @@ def pd_read_odf(FNAME,
             break
 
     # Merge variable names and units
-    COLUMNS = ['%s [%s]' % (NAME, UNIT) for NAME, UNIT in zip(NAMES, UNITS)]
-
+    # COLUMNS = ['%s [%s]' % (NAME, UNIT) for NAME, UNIT in zip(NAMES, UNITS)]
+    COLUMNS = []
+    for NAME, UNIT in zip(NAMES, UNITS):
+        if NAME in ['SYTM', 'HOUR']:
+            COLUMNS.append('%s' % (NAME))
+        else:
+            COLUMNS.append('%s [%s]' % (NAME, UNIT))
+    
     # Manually mangle duplicate names
     for index, name in enumerate(COLUMNS):
         if name in COLUMNS[:index]:
@@ -305,6 +320,9 @@ def pd_read_odf(FNAME,
     if usecols is None:
         usecols = list(range(len(COLUMNS)))
 
+    # print(COLUMNS)
+    # print(NAMES)
+    # print(PARSE_DATES)
     # Read the data
     DF = pd.read_csv(FNAME,
                      skiprows=HEADER_LINES,
@@ -358,6 +376,11 @@ def read_cnv_metadata(FNAME, short_names=True):
             day_ = re.findall('\d{4}-\d{2}-\d{2}', L)[0]
             hour = re.findall('\d{2}:\d{2}[:0-9]*', L)[0]
             metadata['date'] = np.datetime64('%sT%s' % (day_, hour))
+        if re.search('# start_time', L):
+            date_fmt = '[a-zA-Z]{3} [0-9]+ \d{4} \d{2}:\d{2}:\d{2}'
+            date_str = re.findall(date_fmt, L)[0]
+            if metadata['date'] is None:
+                metadata['date'] = parse(date_str).isoformat()
         if re.search('\* Longitude:', L):
             degree = float(L.split()[-3])
             minute = float(L.split()[-2])
@@ -370,17 +393,26 @@ def read_cnv_metadata(FNAME, short_names=True):
             metadata['lat'] = dmd2dd(degree, minute, direction)
         if re.search('# bad_flag', L):
             metadata['missing_values'] = L.split()[-1]
+        if re.search('# interval', L):
+            if 'seconds' not in L:
+                print('Warning: `interval` may not be in seconds.')
+            metadata['interval'] = float(L.split()[-1])
+        if re.search('\* <HardwareData', L):
+            metadata['device'] = re.findall("DeviceType='([A-Za-z0-9- ]+)'", L)[0]
+            metadata['serial'] = re.findall("SerialNumber='([A-Za-z0-9- ]+)'", L)[0]
 
         # Scan for variables
         if re.search('# name', L):
-            full_name = L.split('=')[-1].strip()
-            short_name = full_name.split()[1]
-            short_name = re.findall('[A-Za-z]+', short_name)[0]
+            full_name = L.split('=')[1].strip()
+            # full_name = L.split('=')[1].strip()
+            # short_name = full_name.split()[1]
+            # short_name = re.findall('[A-Za-z]+', short_name)[0]
+            short_name = re.findall(r': ([a-zA-Z0-9+. ]+)(,| \[|$)', full_name)[0][0]
             if short_names:
                 name = short_name
             else:
                 name = full_name
-            metadata['names'].append(name)
+            metadata['names'].append(name.lower())
             metadata['seabird_names'].append(full_name.split(':')[0])
 
             if re.findall('\[.*\]', L):

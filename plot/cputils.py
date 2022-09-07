@@ -538,7 +538,7 @@ def km_legend(geoax,
     """
     # Manage whether of not the transform is given
     if plot_kw is None:
-        plot_kw = dict(transform=ccrs.PlateCarree())
+        plot_kw = dict(color='k', transform=ccrs.PlateCarree())
     elif isinstance(plot_kw, dict) and 'transform' not in plot_kw.keys():
         plot_kw['transform'] = ccrs.PlateCarree()
 

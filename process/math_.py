@@ -8,7 +8,7 @@ import pandas as pd
 import shapely.speedups
 # from mpl_toolkits.basemap import Basemap
 from skimage import measure
-from shapely.geometry import Point, Polygon, LineString
+from shapely.geometry import Point, MultiPoint, Polygon, LineString
 from scipy.interpolate import interp1d
 from scipy.special import erf
 from pyproj import Geod
@@ -31,6 +31,7 @@ __all__ = ['array_corners',
            'doy_std',
            'destination_point',
            'distance_along_bearing',
+           'expand_to_dims',
            'f_erf',
            'f_gaussian',
            'f_sine',
@@ -56,7 +57,8 @@ __all__ = ['array_corners',
            'xr_unique',
            'mxy2abc',
            'pp2abc',
-           'intersection']
+           'intersection',
+           'intersections']
 
 
 # Brief functions
@@ -434,6 +436,49 @@ def distance_along_bearing(xpts,
     return distance
 
 
+def expand_to_dims(small, large, along=None):
+    """
+    Expand small array by tiling to match large array dimensions.
+
+    Parameters
+    ----------
+    small: 1D array
+        which has a common dimension with `large`.
+    large: ND array
+        which has a common dimension with `small`. This array can not have
+        a size 1 dimension.
+    along: int
+        index of the common dimension in `large.shape`. If none, will be
+        determined by what is possible according to broadcasting rules. Note,
+        if many possibilities, specify the desired dimension here.
+
+    Returns
+    -------
+    ND array:
+        `small` tiled to match the dimensions of `large`.
+
+    """
+    # Ensure input is numpy arrays
+    small, large = np.array(small), np.array(large)
+
+    # Determine new shape of small for broadcasting
+    if along is None:
+        newdims = broadcastable(large, small)
+    else:
+        newdims = [1 for _ in large.shape]
+        newdims[along] = small.size
+
+    # Determine shape of output array
+    tile_dims = list()
+    for sdim, ldim in zip(newdims, large.shape):
+        if sdim == ldim:
+            tile_dims.append(1)
+        else:
+            tile_dims.append(ldim)
+
+    return np.tile(small.reshape(newdims), tile_dims)
+
+
 def f_erf(x, a, b, c, d):
     """
     Parametric error function.
@@ -566,7 +611,7 @@ def get_contour_xy(x,
             y_c.append(y_c_)
 
     # Only return specified contour
-    if return_index:
+    if return_index is not None:
         x_c, y_c = x_c[return_index], y_c[return_index]
 
     # Flatten if requested
@@ -630,7 +675,7 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
-def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
+def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl', radius=0.0):
     """
     Find points inside an arbitraty polygon.
 
@@ -648,6 +693,10 @@ def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
         Polygon coordinates.
     lib : str
         Library to use ('mpl' or 'shp')
+    radius : float
+        Include points within `radius` distance of the polygon
+        path. Passed to `matplotlib.path.Path.contains_points`, so
+        only used if lib is `mpl`.
 
     Returns
     -------
@@ -655,6 +704,19 @@ def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
         True for points inside polygon.
 
     """
+    # Handle single point requests
+    if isinstance(xpts, (int, float)):
+        xpts = np.array([xpts])
+        ypts = np.array([ypts])
+
+    # Flatten if higher dimension array
+    unflatten = False
+    if len(xpts.shape) > 1:
+        shape = xpts.shape
+        xpts = xpts.flatten()
+        ypts = ypts.flatten()
+        unflatten = True
+
     if lib == 'shp':
         # Polygon border
         poly = Polygon([(xp, yp) for (xp, yp) in zip(x_poly, y_poly)])
@@ -669,7 +731,11 @@ def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl'):
         poly = mpltPath.Path([[xp, yp] for (xp, yp) in zip(x_poly, y_poly)])
 
         # Bool vector
-        boolean = poly.contains_points(pts)
+        boolean = poly.contains_points(pts, radius=radius)
+
+    # Reshape like input arrays
+    if unflatten:
+        boolean = boolean.reshape(shape)
 
     return boolean
 
@@ -718,6 +784,9 @@ def increase_resolution(xpts, ypts, N, offset_idx=0):
     # Make the distance with respect to poin offset_idx
     origin = np.flatnonzero(np.logical_and(xout == xpts[offset_idx],
                                            yout == ypts[offset_idx]))
+    if np.array(origin).size > 1:
+        origin = origin[0]
+
     dout -= dout[origin]
 
     return xout, yout, dout
@@ -1009,51 +1078,44 @@ def lonlat_rectangle_tr(top_right, angle, width, length, print_error):
     return np.array(lon), np.array(lat)
 
 
-def polygon_area(xpts, ypts, lonlat=False, pos=True):
-    return None
-#     """
-#     Compute polygon area.
+def polygon_area(xpts, ypts, pos=True):
+    """
+    Compute polygon area in linear space using Greene's theorem.
 
-#     Use Greene's theorem to compute polygon area. Input vectors
-#     can be longitudes and latitudes if lonlat is specified. Otherwise
-#     they are assumed coordinates of linear space.
+    Parameters
+    ----------
+    xpts, ypts : array like
+        Polygon coordinates.
+    pos : bool
+        Return absolute value of area, defaults to True.
 
-#     Parameters
-#     ----------
-#     xpts, ypts : array like
-#         Polygon coordinates.
-#     lonlat : bool
-#         If input is lonlat, convert to CEA projection.
-#     pos : bool
-#         Return absolute value of area, defaults to True.
+    Returns
+    -------
+    float
+        Polygon area. Units are coordinate dependent.
 
-#     Returns
-#     -------
-#     float
-#         Polygon area. Units are coordinate dependent.
+    """
+    # Ensure polygon is closed
+    if xpts[0] != xpts[-1] or ypts[0] != ypts[-1]:
+        xpts, ypts = np.hstack((xpts, xpts[0])), np.hstack((ypts, ypts[0]))
 
-#     """
-#     # Ensure polygon is closed
-#     if xpts[0] != xpts[-1] or ypts[0] != ypts[-1]:
-#         xpts, ypts = np.hstack((xpts, xpts[0])), np.hstack((ypts, ypts[0]))
+    # # If in longitudes and latitudes, convert to linear 2D space
+    # if lonlat:
+    #     cea = Basemap(projection='cea',
+    #                   llcrnrlat=ypts.min(),
+    #                   urcrnrlat=ypts.max(),
+    #                   llcrnrlon=xpts.min(),
+    #                   urcrnrlon=xpts.max())
+    #     xpts, ypts = cea(xpts, ypts)
 
-#     # If in longitudes and latitudes, convert to linear 2D space
-#     if lonlat:
-#         cea = Basemap(projection='cea',
-#                       llcrnrlat=ypts.min(),
-#                       urcrnrlat=ypts.max(),
-#                       llcrnrlon=xpts.min(),
-#                       urcrnrlon=xpts.max())
-#         xpts, ypts = cea(xpts, ypts)
+    # Compute area
+    area = 0.5 * np.sum(ypts[:-1] * np.diff(xpts) - xpts[:-1] * np.diff(ypts))
 
-#     # Compute area
-#     area = 0.5 * np.sum(ypts[:-1] * np.diff(xpts) - xpts[:-1] * np.diff(ypts))
+    # By default, disregard sign
+    if pos:
+        area = np.abs(area)
 
-#     # By default, disregard sign
-#     if pos:
-#         area = np.abs(area)
-
-#     return area
+    return area
 
 
 def project_to_line(xpts,
@@ -1531,3 +1593,48 @@ def intersection(L1, L2):
         return x, y
     else:
         return None
+
+
+def intersections(x1, y1, x2, y2):
+    """
+    Find intersection points of two 2D vectors.
+
+    Parameters
+    ----------
+    x1, y1, x2, y2: 1D array
+        Coordinates of the input 2D vectors
+
+    Returns
+    -------
+    intersection_x, intersection_y: 1D array
+        The coordinates of the intersection points.
+    """
+     # Convert datetime to numeric
+    if isinstance(x1[0], np.datetime64) and isinstance(x2[0], np.datetime64):
+        x1 = ps.dt2epoch(x1)
+        x2 = ps.dt2epoch(x2)
+        x_date = True
+    else:
+        x_date = False
+
+    # Create linestring objects
+    L1 = LineString([(x_, y_) for x_, y_ in zip(x1, y1)])
+    L2 = LineString([(x_, y_) for x_, y_ in zip(x2, y2)])
+
+    # Calculate intersections and form coordinate array
+    x_obj = L1.intersection(L2)
+    if isinstance(x_obj, MultiPoint):
+        x_coords = np.array([(c_.x, c_.y) for c_ in x_obj.geoms])
+        x_out = x_coords[:, 0]
+        y_out = x_coords[:, 1]
+    elif isinstance(x_obj, Point):
+        x_out = x_obj.x
+        y_out = x_obj.y 
+    else:
+        x_out = None
+        y_out = None
+
+    if x_date and x_out is not None:
+        x_out = ps.epoch2dt(x_out)
+
+    return x_out, y_out

@@ -8,7 +8,7 @@ import xarray as xr
 import scipy.signal as signal
 from scipy.stats import mode
 import pandas as pd
-from statsmodels.nonparametric.smoothers_lowess import lowess
+from statsmodels.nonparametric import smoothers_lowess
 from .math_ import xr_time_step
 from .convert import binc2edge, bine2center
 from pandas.tseries.frequencies import to_offset
@@ -20,6 +20,7 @@ __all__ = ['ctd_flag_inversions',
            'pd_bin',
            'pd_bin_2',
            'pd_at_var_stat',
+           'pd_cross_correlate',
            'regularize_xy',
            'running_mean',
            'xr_at_var_max',
@@ -176,7 +177,7 @@ def ctd_flag_spikes(dataset,
     return output
 
 
-def lowess(*args, **kwargs):
+def lowess(endog, exog, **kwargs):
     """
     Wrapper for lowess from statsmodels.
 
@@ -198,7 +199,16 @@ def lowess(*args, **kwargs):
     1D array
         The smoothed independent variable.
     """
-    return lowess(*args, **{'return_sorted': False, **kwargs})
+    # Ensure endog and exog are numpy arrays
+    endog = np.array(endog)
+    exog = np.array(exog)
+
+    # Convert datetime independent variable to numeric if needed
+    time_types = (np.datetime64, pd.Timestamp)
+    if isinstance(endog[0], time_types):
+        endog = np.array([pd.Timestamp(dt).to_julian_date() for dt in endog])
+
+    return smoothers_lowess.lowess(endog, exog, **{'return_sorted': False, **kwargs})
 
 
 def pd_bin(dataframe, dim, binc, func=np.nanmean):
@@ -238,7 +248,8 @@ def pd_bin_2(dataframe,
              bins,
              on,
              centers=True,
-             func=np.mean):
+             func=np.mean,
+             **kwargs):
     """
     Bin values in pandas dataframe using `cut`.
 
@@ -254,6 +265,8 @@ def pd_bin_2(dataframe,
         `bins` is the bin centers (or edges).
     func: callable
         Apply to groupy object for aggregation.
+    **kwargs: dict
+        Keyword arguments passed to `func`.
 
     Returns
     -------
@@ -272,8 +285,9 @@ def pd_bin_2(dataframe,
         labels = bine2center(bins)
 
     # Bin and format output
-    dataframe.loc[:, 'bin'] = pd.cut(series, bins=bins, labels=labels)
-    dataframe = dataframe.groupby('bin').apply(func)
+    bin_series = pd.cut(series, bins=bins, labels=labels)
+    dataframe = dataframe.assign(bins=bin_series)
+    dataframe = dataframe.groupby('bins').apply(func, **kwargs)
     dataframe.loc[:, on] = labels
     dataframe = dataframe.reset_index()
 
@@ -347,6 +361,45 @@ def pd_at_var_stat(dataframe, varname, func, interval, drop=True):
     return df_match
 
 
+def pd_cross_correlate(a, b, lag_range=(-1, 2)):
+    """
+    Cross correlate pandas series by sliding `b` across `a`.
+
+    Parameters
+    ----------
+    a, b: pandas.Series
+        Can be of different lengths but must be on same index grid.
+    lag_range: 2-tuple of int
+        Correlation will be computed for `b` shifted by values in this range.
+
+    Returns
+    -------
+    best_lat: int
+        Shift of `b` providing best correlation to `a` (# periods).
+    best_var_explained: float
+        Variance explained at best correlation (%).
+    cc: list of float
+        Correlation coefficients for each shift of `b`.
+    b_shifted: pandas.Series
+        Series `b` shifted to best match `a`.
+
+    """
+    # Make array of lags to compute
+    lg = np.arange(*lag_range)
+
+    # Compute cross correlation
+    cc = [a.corr(b.shift(l_)) for l_ in lg]
+
+    # Determine best lag to maximise correlation
+    best_index = np.argmax(cc)
+
+    # Calculate lag and variance explained at best
+    best_lag = lg[best_index]
+    best_var_explained = cc[best_index] ** 2 * 100
+
+    return best_lag, best_var_explained, cc, b.shift(lg[best_index])
+
+
 def regularize_xy(x, y):
     """
     Force regular intervals of the coordinate in x,y data.
@@ -379,7 +432,7 @@ def regularize_xy(x, y):
     return da.x.values, da.values, dx
 
 
-def running_mean(x, ws, *args, **kwargs):
+def running_mean(x, ws, wrap=False, *args, **kwargs):
     """
     Running mean using convolve.
 
@@ -389,6 +442,8 @@ def running_mean(x, ws, *args, **kwargs):
         The variable to smooth.
     ws: int
         The window size in data points.
+    wrap: bool
+        Pad `x` periodically. Overrides `*args, **kwargs`.
     *args, **kwargs: arguments, keyword arguments
         Passed to `numpy.convolve`.
 
@@ -397,8 +452,22 @@ def running_mean(x, ws, *args, **kwargs):
     1D array:
         Smoothed variable.
 
+    Note
+    ----
+
+    The running mean is only centered if `ws` is odd.
+
     """
-    return np.convolve(x, np.ones(ws) / ws, *args, **kwargs)
+
+    # Second pass in reverse direction if centered
+    if wrap:
+        n_pad = (ws - (ws % 2)) // 2
+        x_pad = np.hstack((x[-n_pad:], x, x[:n_pad]))
+        convolution = np.convolve(x_pad, np.ones(ws) / ws, mode='valid')
+    else:
+        convolution = np.convolve(x, np.ones(ws) / ws, *args, **kwargs)
+
+    return convolution
 
 
 def xr_at_var_max(dataset, variable, dim=None):
@@ -653,7 +722,7 @@ def xr_create_lagged(dataset, variable, dim='time', sign_td=1, args_td=None, nam
     return dataset
 
 
-def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):
+def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None, window='butter'):
     """
     Pass xarray data through variable state forward-backward filter.
 
@@ -699,13 +768,20 @@ def xr_filtfilt(dataset, dim, cutoff, btype='low', order=2, vars_=None):
     fs = 1 / time_step
     fn = fs / 2
 
-    # Create the filter function 
-    b, a = sl.butter(int(order / 2), cutoff / fn, btype=btype, output="ba")
-    filtfilt = lambda x : sl.filtfilt(b, a, x)
+    # Create the filter function
+    if window == 'butter':
+        b, a = signal.butter(int(order / 2), cutoff / fn, btype=btype, output="ba")
+    elif window == 'cheby1':
+        b, a = signal.cheby1(int(order / 2), 5, cutoff / fn, btype=btype, output="ba")
+    elif window == 'cheby2':
+        b, a = signal.cheby2(int(order / 2), 5, cutoff / fn, btype=btype, output="ba")
+    # elif window == 'ellip':
+    #     b, a = signal.butter(int(order / 2), cutoff / fn, btype=btype, output="ba")
+    filtfilt = lambda x : signal.filtfilt(b, a, x)
 
     # apply_ufunc interface
     if vars_ is None:
-        vars_ = dataset.keys()
+        vars_ = dataset.data_vars
 
     output = dataset.copy()
     for var in vars_:

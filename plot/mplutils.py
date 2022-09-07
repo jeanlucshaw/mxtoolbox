@@ -8,6 +8,7 @@ import os
 import numpy as np
 from matplotlib.collections import LineCollection
 import matplotlib.dates as md
+import matplotlib.ticker as tkr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from ..process.math_ import xr_abs
 from ..read.text import list2cm
@@ -22,6 +23,7 @@ __all__ = ['anomalycmap',
            'data_to_axis_coordinates',
            'divergent',
            'format_dateaxis',
+           'format_dateaxis_left_tick_center_month',
            'labeled_colorbar',
            'move_axes',
            'sequential',
@@ -110,7 +112,7 @@ def axlabel_woy2months(axes, place='tick', labels=True, ycoord=-10, ltype='abbr'
     axes.tick_params(axis='x', which='minor', top=False, bottom=False)
 
 
-def bshow(savename, close=True, show=False, save=True):
+def bshow(savename, close=True, show=False, save=True, **save_kw):
     """
     Show matplotlib figure in browser.
 
@@ -127,6 +129,8 @@ def bshow(savename, close=True, show=False, save=True):
         Show plot interactively (X11).
     save : bool
         Save a figure copy at `savename`.
+    **save_kw : dict
+        Passed to pyplot.savefig.
     """
     # Separate input name and path
     name_ = os.path.basename(savename)
@@ -144,7 +148,7 @@ def bshow(savename, close=True, show=False, save=True):
 
     # Save figure
     if save:
-        plt.savefig(savepath)
+        plt.savefig(savepath, **save_kw)
 
     # Symlink to browser accessible location
     # linkname = '/var/www/jls/t/%s' % name_
@@ -153,7 +157,7 @@ def bshow(savename, close=True, show=False, save=True):
     # os.symlink(savepath, linkname)
 
     # Save in browser accessible location
-    plt.savefig('/var/www/jls/t/%s' % name_)
+    plt.savefig('/var/www/jls/t/%s' % name_, **save_kw)
 
     # Show figure if requested
     if show:
@@ -169,7 +173,7 @@ def colorbar(axes,
              label=None,
              pad_size=0.05,
              cbar_size=0.05,
-             loc='bottom',
+             loc='right',
              **cbar_kw):
     """
     Add colorbar to axes.
@@ -198,6 +202,10 @@ def colorbar(axes,
         Pad width in fraction of axes width.
     cbar_size : float
         Colorbar width in fraction of axes width.
+    loc: str
+        One of `left`, `right`, `bottom`, `top`. Keyword argument
+        `orientation` (default: `vertical`) must be `vertical` for
+        side colorbars and `horizontal` for over/under colorbars.
     **cbar_kw : keyword arguments
         Passed on to pyplot.colorbar.
 
@@ -215,7 +223,7 @@ def colorbar(axes,
     # Save axes position
     if type(axes) is np.ndarray:
         left0, bottom0, width0, height0 = axes[0].get_position().bounds
-        left1, bottom1, width1, height1 = axes[1].get_position().bounds
+        left1, bottom1, width1, height1 = axes[-1].get_position().bounds
         if cbar_kw['orientation'] == 'vertical':
             left, bottom, width, height = left0, bottom1, width0, bottom0 + height0 - bottom1
         else:
@@ -226,21 +234,35 @@ def colorbar(axes,
 
     # Set colorbar position
     if cbar_kw['orientation'] == 'vertical':
-        cbar_pos = (left + width + pad_size * width,
-                    bottom,
-                    cbar_size * width,
-                    height)
-    else:
+        if loc == 'right':
+            cbar_pos = (left + width + pad_size * width,
+                        bottom,
+                        cbar_size * width,
+                        height)
+        elif loc == 'left':
+            cbar_pos = (left - pad_size * width - cbar_size * width,
+                        bottom,
+                        cbar_size * width,
+                        height)
+        else:
+            _ = 'Unrecognized value for parameter loc: %s' % loc
+            raise ValueError(_)
+    elif cbar_kw['orientation'] == 'horizontal':
+        # Place colorbar on top
         if loc == 'top':
             cbar_pos = (left,
                         bottom + height + pad_size * width,
                         width,
                         height * cbar_size)
-        else:
+        # Place colorbar on bottom
+        elif loc == 'bottom':
             cbar_pos = (left,
                         bottom - height * cbar_size - pad_size * width,
                         width,
                         height * cbar_size)
+        else:
+            _ = 'Unrecognized value for parameter loc: %s' % loc
+            raise ValueError(_)
 
     # Create axes for colorbar
     cax = plt.axes(cbar_pos)
@@ -256,9 +278,12 @@ def colorbar(axes,
         else:
             cax.set_xlabel(label)
 
-    if loc == 'top' or loc == 'bottom':
+    if loc in ['top', 'bottom']:
         cax.xaxis.set_ticks_position(loc)
         cax.xaxis.set_label_position(loc)
+    elif loc in ['left', 'right']:
+        cax.yaxis.set_ticks_position(loc)
+        cax.yaxis.set_label_position(loc)
 
     return cbar, cax
 
@@ -429,7 +454,7 @@ def divergent(N=256):
     """
     return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/DivergentPalette', N=N)
 
-def format_dateaxis(ax, fmt):
+def format_dateaxis(ax, fmt, rotation=None, ha='right'):
     """
     Format date axis using strftime format.
 
@@ -447,10 +472,41 @@ def format_dateaxis(ax, fmt):
         Of which to format the tick labels.
     fmt: str
         Description of the format.
+    rotation: float
+        Rotate labels by this angle in degrees.
 
     """
+    # Change date formatting
     fmt_obj = md.DateFormatter(fmt)
     ax.xaxis.set_major_formatter(fmt_obj)
+
+    # Rotate text if requested
+    if rotation is not None:
+        for label in ax.get_xmajorticklabels():
+            label.set_rotation(rotation)
+            label.set_ha(ha)
+
+
+def format_dateaxis_left_tick_center_month(ax):
+    """
+    Keep monthly xticks on the first day but center labels
+
+    Parameters
+    ----------
+    ax : pyplot.Axes
+        on which to tweak the labels.
+
+    """
+    ax.xaxis.set_major_locator(md.MonthLocator())
+    ax.xaxis.set_minor_locator(md.MonthLocator(bymonthday=16))
+
+    ax.xaxis.set_major_formatter(tkr.NullFormatter())
+    ax.xaxis.set_minor_formatter(md.DateFormatter("%b"))
+
+    for tick in ax.xaxis.get_minor_ticks():
+        tick.tick1line.set_markersize(0)
+        tick.tick2line.set_markersize(0)
+        tick.label1.set_horizontalalignment("center")
 
 
 def make_segments(x, y):
@@ -464,7 +520,7 @@ def make_segments(x, y):
     return segments
 
 
-def move_axes(axes, ud=0, rl=0):
+def move_axes(axes, ud=0, rl=0, scale=1):
     """
     Moves axes ud upwards and rl right-wards.
 
@@ -479,13 +535,24 @@ def move_axes(axes, ud=0, rl=0):
         Move panel up by `ud` in axes units (0-1).
     rl : float
         Move panel right by `rl` in axes units (0-1).
+    scale: float
+        Grow moved axes by this factor with bottom left fixed.
 
     """
+    # Get axes position
     box = axes.get_position()
+
+    # Move axes
     box.x0 += rl
     box.x1 += rl
     box.y0 += ud
     box.y1 += ud
+
+    # Scale axes
+    box.x1 = scale * (box.x1 - box.x0) + box.x0
+    box.y1 = scale * (box.y1 - box.y0) + box.y0
+
+    # Set new position
     axes.set_position(box)
 
 
@@ -577,10 +644,16 @@ def xr_saturate(dataset, vars_, clevels):
         clevels = np.array(clevels)
 
     for v_ in vars_:
-        is_finite = np.isfinite(dataset[v_].values)
-        max_condition = is_finite & (dataset[v_] < clevels.max())
-        min_condition = is_finite & (dataset[v_] > clevels.min())
-        dataset[v_] = dataset[v_].where(max_condition, clevels.max())
-        dataset[v_] = dataset[v_].where(min_condition, clevels.min())
-        dataset[v_] = dataset[v_].where(is_finite)
+        if False:
+            is_finite = ~dataset[v_].isnull()
+            max_condition = is_finite & (dataset[v_] <= clevels.max())
+            min_condition = is_finite & (dataset[v_] >= clevels.min())
+            dataset[v_] = dataset[v_].where(max_condition, clevels.max())
+            dataset[v_] = dataset[v_].where(min_condition, clevels.min())
+            dataset[v_] = dataset[v_].where(is_finite)
+        else:
+            max_condition = ~dataset[v_].isnull() & (dataset[v_] > clevels.max())
+            min_condition = ~dataset[v_].isnull() & (dataset[v_] < clevels.min())
+            dataset[v_].values[max_condition] = clevels.max()
+            dataset[v_].values[min_condition] = clevels.min()
     return dataset

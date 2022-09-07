@@ -44,6 +44,7 @@ import argparse as ap
 import xarray as xr
 import pandas as pd
 import numpy as np
+import os
 
 __all__ = ['xr2fakecnv']
 
@@ -73,13 +74,16 @@ def xr2fakecnv(dataset,
                dataset_info=False,
                flip_longitude=True,
                infer_descriptors=True,
-               verbose=False):
+               verbose=False,
+               sort_by=None,
+               require=None):
     """
     Write xarray dataset to fake cnv text file.
 
     The input xarray is expected to have time, level, longitude,
     and latitude as coordinates. Data variables are expected to
-    have the strings `units` and `standard_name` as attributes.
+    have the strings `units` and `standard_name` as attributes. This
+    routine is meant for 1D measurements along time, depth or both.
 
     Parameters
     ----------
@@ -101,6 +105,11 @@ def xr2fakecnv(dataset,
         Infer variable descriptors from input file.
     verbose: bool
         Print to std when descriptors must be inferred.
+    sort_by: str
+        Sort data of the cnv file by this column.
+    require: str
+        Omit row if data are missing from this column.
+
     """
     # # Show variable and coordinate names
     # if dataset_info:
@@ -119,12 +128,39 @@ def xr2fakecnv(dataset,
     LON_NAME = lon_name if lon_name is not None else 'longitude'
     LAT_NAME = lat_name if lat_name is not None else 'latitude'
 
+    # Determine master coordinate
+    if TIME_NAME in dataset[TIME_NAME].dims:
+        MASTER_COORD = TIME_NAME
+    elif DEPTH_NAME in dataset[DEPTH_NAME].dims:
+        MASTER_COORD = DEPTH_NAME
+
+    # ====================
     # Set output file name
-    DATE = str(dataset[TIME_NAME].values)[:10]
-    if label:
-        CNVNAME = "%s_%s.cnv" % (label, DATE)
+    # ====================
+
+    # If time is provided for each data
+    if dataset[TIME_NAME].values.size > 1:
+        mtime = dataset[TIME_NAME].mean().values
+        DATE = str(mtime)[:10]
+        TIME = str(mtime)[11:16]
+
+    # If time is a single value
     else:
-        CNVNAME = "%s.cnv" % DATE
+        DATE = str(dataset[TIME_NAME].values[0])[:10]
+        TIME = str(dataset[TIME_NAME].values[0])[11:16]
+    
+    # Set output file name and increment if filename exists
+    FILE_INC = 0
+    if label:
+        CNVNAME = "%s_%s_%03d.cnv" % (label, DATE, FILE_INC)
+    else:
+        CNVNAME = "%s_%03d.cnv" % (DATE, FILE_INC)
+    while os.path.isfile(CNVNAME):
+        FILE_INC += 1
+        if label:
+            CNVNAME = "%s_%s_%03d.cnv" % (label, DATE, FILE_INC)
+        else:
+            CNVNAME = "%s_%03d.cnv" % (DATE, FILE_INC)
 
     # Init output dataframe
     DF = pd.DataFrame()
@@ -133,26 +169,30 @@ def xr2fakecnv(dataset,
     with open(CNVNAME, 'w') as CNVFILE:
 
         # Manage header time info
-        TIME = str(dataset[TIME_NAME].values)[11:16]
+        # TIME = str(dataset[TIME_NAME].values)[11:16]
         CNVFILE.write("* NL CTD file\n")
         CNVFILE.write("** Date:        %s %s UTC\n" % (DATE, TIME))
 
+        # ===========================
         # Manage header position info
+        # ===========================
+
+        # Convert to dms
         longitude = np.unique(dataset[LON_NAME].values).squeeze()
         latitude = np.unique(dataset[LAT_NAME].values).squeeze()
-        LOND = int(longitude)
+        LOND = np.int64(longitude)
         LONM = longitude - LOND
         LONM *= 60                      # convert to decimal minutes
-        LATD = int(latitude)
+        LATD = np.int64(latitude)
         LATM = latitude - LATD
         LATM *= 60                      # convert to decimal minutes
 
         # Convert lat/lon info to usual format
-        if dataset[LAT_NAME].units == 'degree_north':
+        if dataset[LAT_NAME].units in ['degree_north', 'degrees_north']:
             LAT_DIR = 'N'
         else:
             LAT_DIR = 'S'
-        if dataset[LON_NAME].units == 'degree_east':
+        if dataset[LON_NAME].units in ['degree_east', 'degrees_east']:
             if flip_longitude:
                 LON_DIR = 'W'
                 LOND *= -1
@@ -165,10 +205,19 @@ def xr2fakecnv(dataset,
             else:
                 LON_DIR = 'W'
 
-        CNVFILE.write("** Latitude:    %d %.3f %s\n" % (LATD, LATM, LAT_DIR))
-        CNVFILE.write("** Longitude:   %03d %.3f %s\n" % (LOND, abs(LONM), LON_DIR))
+        # Write single value or mean of the array
+        if isinstance(LATD, (int, np.int64)):
+            CNVFILE.write("** Latitude:    %d %.3f %s\n" % (LATD, LATM, LAT_DIR))
+            CNVFILE.write("** Longitude:   %03d %.3f %s\n" % (LOND, abs(LONM), LON_DIR))
+        else:
+            hlatd, hlatm = np.mean(LATD), np.mean(LATM)
+            hlond, hlonm = np.mean(LOND), np.mean(LONM)
+            CNVFILE.write("** Latitude:    %d %.3f %s\n" % (hlatd, hlatm, LAT_DIR))
+            CNVFILE.write("** Longitude:   %03d %.3f %s\n" % (hlond, abs(hlonm), LON_DIR))
 
+        # ===================
         # Manage z coordinate
+        # ===================
         ZNAME = dataset[DEPTH_NAME].standard_name
         ZUNIT = dataset[DEPTH_NAME].units
         if infer_descriptors:
@@ -179,15 +228,24 @@ def xr2fakecnv(dataset,
                     print(MSGS[1] % ZNAME)
                     print(MSGS[2] % (ZNAME, ZUNIT))
 
+        # Write depth as first column
         DF[ZNAME] = dataset[DEPTH_NAME].values
         CNVFILE.write("# name %d = %s [%s]\n" % (0, ZNAME, ZUNIT))
 
+        # Remove for data variables if in data variables
+        if DEPTH_NAME in dataset.data_vars:
+            dataset = dataset.drop(DEPTH_NAME)
+
+        # =====================
         # Write variable header
-        i = 1
+        # =====================
+        i = 1                   # column number
+
         # for NAME in dataset.keys():
         for NAME in dataset.data_vars:
             # Check this variable is along the depth coordinate
-            if DEPTH_NAME in dataset[NAME].dims:
+            # if DEPTH_NAME in dataset[NAME].dims:
+            if MASTER_COORD in dataset[NAME].dims:
 
                 # Print non data variable
                 if dataset[NAME].dtype == 'O':
@@ -224,8 +282,22 @@ def xr2fakecnv(dataset,
                     i += 1
         CNVFILE.write("*END*\n")
 
+        # Filter if requested
+        if require is not None:
+            DF = DF.query('~%s.isnull()' % require, engine='python')
+
+        # Sort if requested
+        if sort_by is not None:
+            DF = DF.sort_values(by=sort_by)
+
         # Append data
-        DF.to_csv(CNVFILE, mode='a', sep=' ', header=False, index=False, float_format='%.5f', na_rep='nan')
+        DF.to_csv(CNVFILE,
+                  mode='a',
+                  sep=' ',
+                  header=False,
+                  index=False,
+                  float_format='%.5f',
+                  na_rep='nan')
 
 if __name__ == '__main__':
     # Manage input flags

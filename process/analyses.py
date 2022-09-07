@@ -10,8 +10,9 @@ from statsmodels.multivariate.pca import PCA
 from statsmodels.stats.outliers_influence import OLSInfluence
 from scipy.optimize import leastsq
 from scipy.signal import find_peaks
-from .math_ import f_gaussian, f_sine, xr_time_step, xr_unique
-from .convert import dt2epoch
+from .math_ import *
+from .signal_ import *
+from .convert import dt2epoch, binc2edge
 
 
 __all__ = ['pca',
@@ -23,6 +24,8 @@ __all__ = ['pca',
            'pd_regression_statistics',
            'sm_lin_fit',
            'sm_lin_fit_diagnostics',
+           'successive_interp_1D',
+           'transect_bins',
            'xr_2D_to_1D_interp',
            'xr_2D_to_2D_interp',
            'xr_cross_correlate',
@@ -159,7 +162,7 @@ def sm_pca(u, v):
     data = pd.DataFrame({'u': u, 'v': v})
 
     # Clean data
-    data = data.query('~u.isnull() & ~v.isnull()')
+    data = data.query('~u.isnull() & ~v.isnull()', engine='python')
 
     # Perform PCA
     pca_model = PCA(data, demean=True, standardize=False)
@@ -467,7 +470,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
         Variance in y explained by x.
     """
     # Clean
-    dataframe = dataframe.query('~%s.isnull() & ~%s.isnull()' % (x, y))
+    dataframe = dataframe.query('~%s.isnull() & ~%s.isnull()' % (x, y), engine='python')
 
     # Convert time to julian day if time series
     if isinstance(dataframe[x].values[0], np.datetime64):
@@ -486,7 +489,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
 
     # Manage fit coordinates
     if xfit is None:
-        xfit = dataframe[x]
+        xfit = dataframe[x].values
 
     # Convert to julian date if time series
     if isinstance(xfit[0], np.datetime64):
@@ -500,7 +503,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
 
     # Calculate fit line
     yfit = model.params[0] + model.params[1] * np.array(xfit)
-    fit = pd.DataFrame({'x': fit_labels, 'y': yfit})
+    fit = pd.DataFrame({'x': fit_labels, 'y': yfit}).sort_values(by='x')
 
     return model, fit, model.rsquared
 
@@ -560,6 +563,200 @@ def sm_lin_fit_diagnostics(model, max_leverage=0.3, cook_th=0.25, cook_labels=No
     plt.clabel(ctr, fmt='%.1f')
 
     return ax, cook_distance(standardized_resid, leverage, k_vars)
+
+
+def successive_interp_1D(dataset,
+                         xgrid,
+                         ygrid,
+                         var,
+                         xvar,
+                         yvar,
+                         max_xgap=None):
+    """
+    Make 2D interpolated array from jagged 1D data.
+
+    Given a 1D dataset varying along dimensions `x` and `y` (e.g., an
+    autonomous profiling instrument) interpolate successively along
+    `x` and `y` to fill the grid defined by `xgrid` and `grid` for each
+    variable listed in `var`.
+
+    Parameters
+    ==========
+    dataset: xarray.Dataset
+        From which to read 1D data.
+    xgrid, ygrid: 1D array
+        Definition of the interpolation grid.
+    var: list of str
+        Names of the variables to interpolate.
+    xvar, yvar: str
+        Names of the dimensions of all variables in `var`.
+    max_xgap: int, float, pandas.Timestamp or np.datetime64
+        Limit `x` interpolation to points closer to each other than
+        `max_xgaq`. Must be in same units as `xgrid`.
+
+    Returns
+    =======
+    xarray.Dataset:
+        with `var` interpolated to the input grid.
+
+    """
+
+    # Init Gridded array
+    vgrid = np.zeros((ygrid.size, xgrid.size, len(var))) * np.nan
+
+    # Calculate bin width
+    dy = np.median(np.diff(ygrid))
+
+    # Loop over y levels
+    for i_, y_ in enumerate(ygrid):
+        at_level = (dataset[yvar] < y_ + dy / 2) & (dataset[yvar] >= y_ - dy / 2)
+
+        # Require two points for this level
+        if at_level.sum() > 2:
+            # Subset data at this y level
+            ss_ = dataset.where(at_level, drop=True)
+
+            # Bin average for this level along x
+            for j_, v_ in enumerate(var):
+                vgrid[i_, :, j_] = xr_bin(ss_[v_], xvar, xgrid)
+
+    # Form new 2D dataset
+    crds_ = {xvar : xgrid, yvar: ygrid}
+    vars_ = {v_: ([yvar, xvar], vgrid[:, :, i_]) for i_, v_ in enumerate(var)}
+    gridded = xr.Dataset(vars_, coords=crds_)
+
+    # Interpolate missing values
+    gridded = gridded.interpolate_na(dim=xvar, max_gap=max_xgap)
+    gridded = gridded.interpolate_na(dim=yvar)
+
+    return gridded
+
+
+def transect_bins(profile_pos, depth_x, depth_y, z):
+    """
+    Divide a transect into bins centered on profiles.
+
+    Parameters
+    ----------
+    profile_pos: float or iterable of float
+        Positions of the profiles along the transect (km).
+    depth_x, depth_y: 1D array
+        Bathymetric curve along the transect, (km) and (m).
+    z: 1D array
+        Requested profile depths (m). Must be the same for
+        all profiles.
+
+    Returns
+    -------
+    areas: pandas.DataFrame
+        Surface area of each bin (m^2).
+    vertices_x: list of 5-list
+        Distance along transect of each bin's vertices (km).
+    vertices_y: list of 5-list
+        Depth of each bin's vertices (m).
+
+    """
+    # If the transect is open, close it at the sides
+    if depth_y[0] > 0:
+        depth_x = np.hstack((depth_x[0], depth_x))
+        depth_y = np.hstack((-1, depth_y))
+    if depth_y[-1] > 0:
+        depth_x = np.hstack((depth_x, depth_x[-1]))
+        depth_y = np.hstack((depth_y, -1))
+
+    # Make an x grid enclosing the whole transect
+    x_inf_m = depth_x.min() - 1
+    x_inf_p = depth_x.max() + 1
+    x_grid = np.hstack((x_inf_m, profile_pos, x_inf_p))
+
+    # Get vertical bin widths
+    _ = np.diff(z)
+    z_widths = np.hstack((_[0], _))
+    bin_top = binc2edge(z)[:-1]
+    bin_bot = binc2edge(z)[1:]
+
+    # Ensure the surface bin does not extend beyond the surface
+    if bin_top[0] < 0:
+        z_widths[0] += bin_top[0]
+        bin_top[0] = 0
+
+    # Ensure input positions are iterable
+    if isinstance(profile_pos, (int, float)):
+        profile_pos = tuple(profile_pos)
+
+    # Init list of box vertices
+    vertices_x = list()
+    vertices_y = list()
+
+    # Build the empty output dataframe
+    areas = pd.DataFrame({'z' : z,
+                          'z_widths': z_widths,
+                          'bin_top': bin_top,
+                          'bin_bottom': bin_bot})
+    for pp_ in profile_pos:
+        areas.loc[:, pp_] = np.nan
+
+    # Loop over depths to fill the dataframe
+    for i_ in areas.index:
+        # Make a z grid for this depth
+        zp_ = areas.loc[i_, 'z']
+        z_grid = zp_ * np.ones_like(x_grid)
+
+        # Find intersections between this level and the bathy
+        xc, yc = intersections(depth_x, depth_y, x_grid, z_grid)
+
+        # Check that this level intersects with the bathy
+        if (xc is not None) and (yc is not None):
+
+            # Assemble the relevant positions
+            grid = np.sort([*xc, *profile_pos])
+
+            # Loop over relevant positions
+            for j_, gp_ in enumerate(grid):
+
+                # Check that position is requested and in water
+                cond_1 = gp_ in profile_pos
+                cond_2 = in_polygon(gp_, zp_, depth_x, depth_y)[0]
+
+                # Calculate bin width and vertices
+                if cond_1 and cond_2:
+
+                    # Get neighboor positions
+                    ln_ = grid[j_ - 1]
+                    rn_ = grid[j_ + 1]
+
+                    # Both positions are land boundaries
+                    if (rn_ in xc) and (ln_ in xc):
+                        lb_ = ln_
+                        rb_ = rn_
+                    # Right land boundary, left profile boundary
+                    elif (rn_ in xc) and (ln_ in profile_pos):
+                        lb_ = (gp_ - (gp_ - ln_) / 2)
+                        rb_ = rn_
+                    # Right profile boundary, left land boundary
+                    elif (ln_ in xc) and (rn_ in profile_pos):
+                        lb_ = ln_
+                        rb_ = (gp_ + (rn_ - gp_) / 2)
+                    # Right profile boundary, left profile boundary
+                    elif (ln_ in profile_pos) and (rn_ in profile_pos):
+                        lb_ = (gp_ - (gp_ - ln_) / 2)
+                        rb_ = (gp_ + (rn_ - gp_) / 2)
+                    else:
+                        raise ValueError('Grid pt neither neighboor or profile')
+
+                    # Set width in output
+                    areas.loc[i_, gp_] = (rb_ - lb_) * areas.loc[i_, 'z_widths']
+                    areas.loc[i_, gp_] *= 1000
+
+                    # Append to lists of vertices
+                    zt_ = areas.loc[i_, 'bin_top']
+                    zb_ = areas.loc[i_, 'bin_bottom']
+                    xv_ = [lb_, rb_, rb_, lb_, lb_]
+                    yv_ = [zt_, zt_, zb_, zb_, zt_]
+                    vertices_x.append(xv_)
+                    vertices_y.append(yv_)
+
+    return areas, vertices_x, vertices_y
 
 
 def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, z):

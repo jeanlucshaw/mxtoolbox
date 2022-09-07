@@ -20,16 +20,22 @@ max_depth = 200
 # Long, standard, units
 seabird_std_names = {'tv290C': 'sea_water_temperature',
                      't090C': 'sea_water_temperature',
+                     'potemp090C': 'sea_water_conservative_temperature',
+                     'tv90C': 'sea_water_temperature',
                      'prdM': 'sea_water_pressure',
                      'sal00': 'sea_water_practical_salinity',
                      'c0S/m': 'sea_water_electrical_conductivity',
+                     'cond0mS/cm': 'sea_water_electrical_conductivity',
                      'sigma-t00': 'sea_water_density',
+                     'density00': 'sea_water_density',
                      'flTC7': 'mass_concentration_of_chlorophyll_in_sea_water',
                      'ox': 'mass_concentration_of_chlorophyll_in_sea_water',
                      'AroFTox': 'volume_fraction_of_oxygen_in_sea_water',
                      'flag': 'flags',
                      'scan': 'sample_id',
-                     'timeK': 'time'}
+                     'timeK': 'time',
+                     'depSM': 'depth',
+}
 
 
 def time_series_init(time, series_metadata=None):

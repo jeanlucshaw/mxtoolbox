@@ -266,7 +266,7 @@ if __name__ == '__main__':
     path = '%s/' % os.path.dirname(abs_path)
 
     # Read teledyne ADCP data
-    if args.adcptype in ['wh', 'bb', 'os']:
+    if args.adcptype in ['wh', 'bb', 'os', 'sv']:
         ds = load_rdi_binary(args.files,
                              args.adcptype,
                              force_dw=args.force_dw,

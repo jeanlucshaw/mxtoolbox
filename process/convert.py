@@ -9,6 +9,7 @@ import xarray as xr
 import cartopy.crs as ccrs
 import warnings
 from pyproj import Geod
+from geopy.distance import geodesic
 from shapely.geometry import LineString, Point, Polygon
 from scipy.interpolate import interp1d
 from datetime import datetime, timezone, timedelta
@@ -18,15 +19,20 @@ __all__ = ['anomaly2rgb',
            'binc2edge',
            'bine2center',
            'crs2crs',
+           'datenum2datetime',
            'dd2dms',
+           'dd2dmd',
            'dmd2dd',
            'dms2dd',
            'degrees_180_to_360',
            'degrees_360_to_180',
            'dt2epoch',
+           'epoch2dt',
+           'isoweek2monthnumber',
            'gsw_SA_CT_rho_sigma0',
            'hd2uv',
            'lonlat2area',
+           'lonlatgrid2areas',
            'lonlat2distances',
            'lonlat2distancefrom',
            'lonlat2heading',
@@ -36,6 +42,7 @@ __all__ = ['anomaly2rgb',
            'pd_sa_ct_rho_sigmatheta',
            'sa_ct_rho_sigmatheta',
            'theta2hd',
+           'hd2theta',
            'uv2hd',
            'xr_SA_CT_pden',
            'dayofyear2dt']
@@ -249,6 +256,40 @@ def crs2crs(x, y, target, origin=ccrs.PlateCarree()):
     return x_dest, y_dest
 
 
+def datenum2datetime(datenum):
+    """
+    Convert Matlab datenum to numpy datetime64[ns].
+
+    Matlab datetime is fractionnal days since January
+    0, of the year 0.
+
+    Parameters
+    ----------
+    datenum: int, float, list or 1D array
+        times to convert.
+
+    Returns
+    -------
+    datetime: numpy.datetime64 or 1D array of numpy.datetime64
+        the converted times.
+
+    """
+    if isinstance(datenum, (int, float)):
+        datenum = np.array([datenum])
+    elif isinstance(datenum, list):
+        datenum = np.array(datenum)
+    ref_ = np.datetime64('0000-01-01')
+    # separate days and nanoseconds
+    day_ = np.floor(datenum) - 1
+    nano = np.floor((datenum % 1) * 24 * 3600 * 10 ** 9)
+
+    # Make timedelta arrays
+    td_day = np.array([np.timedelta64(int(t_), 'D') for t_ in day_])
+    td_ns_ = np.array([np.timedelta64(int(t_), 'ns') for t_ in nano])
+
+    return ref_ + td_day + td_ns_
+
+
 def dmd2dd(degrees, minutes, direction):
     """
     Convert geographical coordinate from degree (decimal) minute to DMS.
@@ -334,6 +375,33 @@ def dd2dms(degrees_decimal):
     return (degrees, abs(minutes), abs(seconds))
 
 
+def dd2dmd(degrees_decimal):
+    """
+    Convert coordinates from decimal degrees to deg., min.
+
+    Parameters
+    ----------
+    degrees_decimal : float or 1D array
+        Coordinates in decimal degrees, positive east.
+
+    Returns
+    -------
+    degrees : float or 1D array
+        Degree of coordinate, positive east.
+    minutes : float or 1D array
+        Minutes of coordinate, positive definite.
+
+    See Also
+    --------
+
+       * convert.dd2dms
+
+    """
+    degrees = np.int16(degrees_decimal)
+    minutes = (degrees_decimal - degrees) * 60.
+    return (degrees, abs(minutes))
+
+
 def degrees_180_to_360(angles):
     """
     Change degree range: (-180, 180) -> (0, 360)
@@ -397,6 +465,74 @@ def dt2epoch(datetimes, div=1):
         Time in numeric values.
     """
     return datetimes.astype('datetime64[s]').astype('int') / div
+
+
+def epoch2dt(time, unit='s'):
+    """
+    Transform epoch time to numpy datetime.
+
+    Parameters
+    ----------
+    time: 1D array of int or float
+        interval from 1970-01-01. Internally converted to int.
+    unit: 's' or 'D'
+        time is in seconds of days.
+
+    Returns
+    -------
+    1D array of datetime:
+        the converted time array.
+
+    """
+    # Manage input type
+    if unit == 's':
+        time = np.int64(time)
+    elif unit == 'D':
+        time = np.int64(24 * 3600 * time)
+    else:
+        raise ValueError('Unsupported unit: %s ' % unit)
+
+    # Epoch reference
+    r_ = np.datetime64('1970-01-01')
+
+    # Intervals of input vector
+    delta = [np.timedelta64(np.int64(t_), 's') for t_ in time]
+
+    return r_ + np.array(delta)
+
+
+def isoweek2monthnumber(year, week, dayofweek=1):
+    """
+    Find month number for ISO week.
+
+    Parameters
+    ----------
+    year: float or 1D array
+        The year(s) in which the weeks are.
+    week: float or 1D array
+        Weeks to convert to month number.
+    dayofweek: int
+        Day of week (Sunday=0) when month is checked.
+
+    Returns
+    -------
+    int or 1D array:
+        The month number(s) associated with the input weeks.
+
+    """
+    if isinstance(year, (list, np.ndarray)):
+        # Init output
+        month_number = np.zeros(week.size) * np.nan
+
+        # Loop over input
+        for i_, (y_, w_) in enumerate(zip(year, week)):
+            str_ = '%d%02d%d' % (y_, w_, dayofweek)
+            month_number[i_] = pd.to_datetime(str_, format='%Y%W%w').month
+    else:
+        str_ = '%d%02d%d' % (year, week, dayofweek)
+        month_number = pd.to_datetime(str_, format='%Y%W%w').month
+
+    return month_number
 
 
 def gsw_SA_CT_rho_sigma0(temperature,
@@ -504,7 +640,37 @@ def lonlat2area(lon, lat, sq_meters_per_unit=10**6):
     return np.abs(area / sq_meters_per_unit)
 
 
-def lonlat2distances(lon, lat, meters_per_unit=1, **kwargs):
+def lonlatgrid2areas(lon, lat, meters_per_unit=1000):
+    """
+    Calculate the cell areas of a regular lon/lat grid
+
+    Parameters
+    ----------
+    lon, lat: 1D array
+        The grid coordinates.
+
+    Returns
+    -------
+    areas: 2D array
+        The area of each cell.
+
+    """
+    # Initialize arrays
+    lon_c = bine2center(lon)
+    lat_c = bine2center(lat)
+    heights = lonlat2distances(lon[0] * np.ones_like(lat), lat)
+    bottoms = np.zeros((lon_c.size, lat_c.size))
+    tops = np.zeros((lon_c.size, lat_c.size))
+
+    # Calculate top and bottom bases of parallelograms
+    for i_, (lb, lt) in enumerate(zip(lat[:-1], lat[1:])):
+        tops[:, i_] = lonlat2distances(lon, lt * np.ones_like(lon))
+        bottoms[:, i_] = lonlat2distances(lon, lb * np.ones_like(lon))
+
+    return (bottoms + tops) / 2 * heights / meters_per_unit ** 2
+
+
+def lonlat2distances(lon, lat, meters_per_unit=1, lib='proj', **kwargs):
     """
     Get distance between points of a GPS track.
 
@@ -526,12 +692,17 @@ def lonlat2distances(lon, lat, meters_per_unit=1, **kwargs):
     distances : 1D array
         Separating the input coordinates.
     """
-    kwargs = {'ellps': 'WGS84', **kwargs}
-    _geod = Geod(**kwargs)
+    if lib == 'proj':
+        kwargs = {'ellps': 'WGS84', **kwargs}
+        _geod = Geod(**kwargs)
 
-    distances = np.array([_geod.inv(lon1, lat1, lon2, lat2)
-                          for (lon1, lat1, lon2, lat2)
-                          in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 2]
+        distances = np.array([_geod.inv(lon1, lat1, lon2, lat2)
+                              for (lon1, lat1, lon2, lat2)
+                              in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 2]
+    elif lib == 'geopy':
+        distances = np.array([geodesic((lon1, lat1), (lon2, lat2)).meters
+                              for (lon1, lat1, lon2, lat2)
+                              in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])
 
     distances /= meters_per_unit
 
@@ -562,14 +733,42 @@ def lonlat2distancefrom(lon, lat, lon_0, lat_0, meters_per_unit=1, **kwargs):
     distances : 1D array
         Separating the input coordinates.
     """
+    # Ensure input is iterable (single point requests)
+    # if isinstance(lon, (int, float)):
+    #     lon = np.array([lon])
+    #     lat = np.array([lat])
+    if np.array(lon).size == 1:
+        lon = np.array([lon])
+    if np.array(lat).size == 1:
+        lat = np.array([lat])
+    if lon.size != lat.size:
+        raise ValueError('Input array sizes must match.')
+
+    if len(lon.shape) > 1:
+        lon_shape = lon.shape
+        lon = lon.flatten()
+        lat = lat.flatten()
+        matrix = True
+    else:
+        matrix = False
+        
+    # Set up proj datum
     kwargs = {'ellps': 'WGS84', **kwargs}
     _geod = Geod(**kwargs)
 
+    # Compute distance(s)
     distances = np.array([_geod.inv(lon_, lat_, lon_0, lat_0)
                           for (lon_, lat_)
                           in zip(lon, lat)])[:, 2]
 
+    # Unit conversion
     distances /= meters_per_unit
+
+    # Unpack if single value
+    if distances.size == 1:
+        distances, = distances
+    elif matrix:
+        distances = distances.reshape(lon_shape)
 
     return distances
 
@@ -606,7 +805,8 @@ def lonlat2speed(lon,
                  heading=None,
                  top_speed=None,
                  meters_per_unit=1,
-                 seconds_per_unit=1):
+                 seconds_per_unit=1,
+                 distance_lib='proj'):
     """
     Convert GPS track u, v and speed.
 
@@ -641,7 +841,10 @@ def lonlat2speed(lon,
     time = time.astype('datetime64[ns]')
 
     # Compute dx
-    distances = lonlat2distances(lon, lat, meters_per_unit=meters_per_unit)
+    distances = lonlat2distances(lon,
+                                 lat,
+                                 meters_per_unit=meters_per_unit,
+                                 lib=distance_lib)
 
     # Compute dt
     time_delta = np.diff(time) / 10 ** 9
@@ -906,6 +1109,39 @@ def theta2hd(theta):
     return bearing
 
 
+def hd2theta(heading):
+    """
+    Convert angles:  (E=90, N=0) to (E=0, N=90).
+
+    Parameters
+    ----------
+    heading : int, float or 1D array
+        Angle in compass reference frame.
+
+    Returns
+    -------
+    1D array
+        Angle as read on an xy plot.
+
+    """
+    # Manage single value or array input
+    if isinstance(heading, (int, float)):
+        heading = np.array([heading])
+        single_value = True
+    else:
+        heading = np.array(heading)
+        single_value = False
+
+    # Convert
+    theta = 90 - heading
+    theta[theta < 0] += 360
+
+    # Manage single value or array output
+    if single_value:
+        theta = theta[0]
+    return theta
+
+
 def uv2hd(u, v):
     """
     Convert 2D cartesian (u, v) vectors to polar (r, bearing).
@@ -981,7 +1217,7 @@ def xr_SA_CT_pden(dataset,
     return dataset
 
 
-def dayofyear2dt(days, yearbase):
+def dayofyear2dt(days, yearbase, julian=False):
     """ Function yb2dt() syntax:        out     = yb2dt(input,yearbase)
 
     Takes as input days since january first of the year specified by yearbase and
@@ -995,6 +1231,8 @@ def dayofyear2dt(days, yearbase):
         Dates in day of year format.
     yearbase : int
         Year when the data starts.
+    julian: bool
+        Subtract 1 to `days` because Julian days start on January, 0.
 
     Returns
     -------
@@ -1002,6 +1240,10 @@ def dayofyear2dt(days, yearbase):
         Datetime equivalent of day of year dates.
 
     """
+    if julian:
+        days -= 1
+
     start = np.array(['%d-01-01' % yearbase], dtype='M8[us]')
-    deltas = np.array([np.int32(np.floor(days * 24 * 3600))], dtype='m8[s]')
+    # deltas = np.array([np.int32(np.floor(days * 24 * 3600))], dtype='m8[s]')
+    deltas = np.array([np.int64(np.floor(days * 24 * 3600))], dtype='m8[s]')
     return (start + deltas).flatten()

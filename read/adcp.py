@@ -489,6 +489,12 @@ def load_rdi_binary(files,
         bt_vars = ['u_bt', 'v_bt', 'w_bt', 'range_bt', 'pg_bt', 'corr_bt']
         ds = ds.drop_vars(names=bt_vars)
 
+    # Add navigation if available
+    if 'nav_start_txy' in data.keys():
+        nav_ = np.array(data['nav_start_txy'].tolist())
+        ds['lon'].values = np.asarray(nav_[:, 1])
+        ds['lat'].values = np.asarray(nav_[:, 2])
+
     # Attributes
     ds.attrs['beam_angle'] = data.sysconfig['angle']
     ds.attrs['ping_frequency'] = data.sysconfig['kHz'] * 1000

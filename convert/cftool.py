@@ -26,10 +26,10 @@ var_dict = {'CT': ('Conservative temperature',
                    'sea_water_absolute_salinity',
                    'g kg-1'),
             'salinity': ('Practical salinity',
-                         'sea_water_practival_salinity',
+                         'sea_water_practical_salinity',
                          '1'),
             'sal': ('Practical salinity',
-                    'sea_water_practival_salinity',
+                    'sea_water_practical_salinity',
                     '1'),
             'density': ('In situ density',
                         'sea_water_density',
@@ -49,6 +49,18 @@ var_dict = {'CT': ('Conservative temperature',
             'rho': ('In situ density',
                     'sea_water_density',
                     'kg m-3'),
+            'oxygen': ('Dissolved oxygen',
+                    'volume_fraction_of_oxygen_in_sea_water',
+                    'ml l-1'),
+            'turbidity': ('Dissolved oxygen',
+                          'sea_water_turbidity',
+                          'NTU'),
+            'fluorescence': ('Chlorophyll',
+                             'chlorophyll_concentration_in_sea_water',
+                             'mg m-3'),
+            'chlorophyll': ('Chlorophyll',
+                            'chlorophyll_concentration_in_sea_water',
+                            'mg m-3'),
             'u': ('Velocity east',
                   'eastward_sea_water_velocity',
                   'm s-1'),
@@ -157,7 +169,7 @@ def pd_dataframe_2_ragged(dataframe,
     vars_ = dict()
     for v_, t_ in zip(var_names_, var_types_):
         vars_[v_] = (['obs'], np.empty(
-            dataframe[v_].values.size, dtype=np.float64))
+            dataframe[v_].values.size, dtype=t_))
         vars_['%s_row_size' % v_] = (
             ['profiles'], np.zeros(index_.size, dtype=np.int64))
 
@@ -166,7 +178,7 @@ def pd_dataframe_2_ragged(dataframe,
     if coord_var_names_:
         for c_, t_ in zip(coord_var_names_, coord_var_types_):
             coord_vars_[c_] = ('obs', np.empty(
-                dataframe[v_].values.size, dtype=np.float64))
+                dataframe[v_].values.size, dtype=t_))
             vars_['%s_row_size' % c_] = (
                 ['profiles'], np.zeros(index_.size, dtype=np.int64))
 
@@ -178,7 +190,10 @@ def pd_dataframe_2_ragged(dataframe,
 
         # Reintegrate coordinates to this profile
         for j_, c_ in enumerate(coords_):
-            coords_[c_][1][i_] = name_[j_]
+            try:
+                coords_[c_][1][i_] = name_[j_]
+            except:
+                coords_[c_][1][i_] = name_
 
         # Get downcast size
         rs_ = profile.shape[0]
