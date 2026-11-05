@@ -8,8 +8,8 @@ import pandas as pd
 import xarray as xr
 import cartopy.crs as ccrs
 import warnings
+from metpy.calc import lat_lon_grid_deltas
 from pyproj import Geod
-from geopy.distance import geodesic
 from shapely.geometry import LineString, Point, Polygon
 from scipy.interpolate import interp1d
 from datetime import datetime, timezone, timedelta
@@ -640,37 +640,58 @@ def lonlat2area(lon, lat, sq_meters_per_unit=10**6):
     return np.abs(area / sq_meters_per_unit)
 
 
-def lonlatgrid2areas(lon, lat, meters_per_unit=1000):
+def lonlatgrid2areas(lon,
+                     lat,
+                     lon_bounds=None,
+                     lat_bounds=None,
+                     geod=Geod(ellps='WGS84'),
+                     units='meter'):
     """
-    Calculate the cell areas of a regular lon/lat grid
+    Calculate the cell areas of a lon/lat grid.
 
     Parameters
     ----------
-    lon, lat: 1D array
-        The grid coordinates.
+    lon, lat : 1D or 2D arrays
+        For a regular grid, the center of the grid points can be specified as 1D arrays
+        or 2D arrays. For irregular grids, use 2D arrays as input and specify the
+        `lon_bounds` and `lat_bounds` arguments.
+    lon_bounds, lat_bounds : 1D or 2D arrays
+        For `lon_bounds`, a grid centered in latitude and staggered in longitude, and
+        for `lat_bounds`, a grid centered in longitude and staggered in latitude.
+    geod : None or pyproj.Geod
+        `None` to calculate on a regular sphere, or Geod instance for a realistic ellipsoid.
+    units : str
+        Passed to the pint `.to` method. The choices `kilometer` and `meter` are tested.
 
     Returns
     -------
-    areas: 2D array
-        The area of each cell.
+    surface : pint.Quantity
+        An array of surface areas, in squared `units`. Dimensions are (lat, lon) and
+        correspond to the centered input grid.
 
     """
-    # Initialize arrays
-    lon_c = bine2center(lon)
-    lat_c = bine2center(lat)
-    heights = lonlat2distances(lon[0] * np.ones_like(lat), lat)
-    bottoms = np.zeros((lon_c.size, lat_c.size))
-    tops = np.zeros((lon_c.size, lat_c.size))
+    # Convert to numpy arrays
+    lon = np.array(lon)
+    lat = np.array(lat)
+    
+    # Boundaries around
+    if (lon_bounds is None) and (lat_bounds is None):
+        if (lon.ndim > 1) or (lat.ndim > 1):
+            raise ValueError('Specify `lon_bounds` and `lat_bounds` for 2D array input.')
+        lon_bounds = binc2edge(lon)
+        lat_bounds = binc2edge(lat)
 
-    # Calculate top and bottom bases of parallelograms
-    for i_, (lb, lt) in enumerate(zip(lat[:-1], lat[1:])):
-        tops[:, i_] = lonlat2distances(lon, lt * np.ones_like(lon))
-        bottoms[:, i_] = lonlat2distances(lon, lb * np.ones_like(lon))
+    # Calculate distances
+    x_size, _ = lat_lon_grid_deltas(lon_bounds, lat, geod=geod)
+    _, y_size = lat_lon_grid_deltas(lon, lat_bounds, geod=geod)
 
-    return (bottoms + tops) / 2 * heights / meters_per_unit ** 2
+    # Calculate the size
+    surface = x_size.to(units) * y_size.to(units)
+
+    return surface
 
 
-def lonlat2distances(lon, lat, meters_per_unit=1, lib='proj', **kwargs):
+def lonlat2distances(lon, lat, meters_per_unit=1, **kwargs):
     """
     Get distance between points of a GPS track.
 
@@ -692,17 +713,12 @@ def lonlat2distances(lon, lat, meters_per_unit=1, lib='proj', **kwargs):
     distances : 1D array
         Separating the input coordinates.
     """
-    if lib == 'proj':
-        kwargs = {'ellps': 'WGS84', **kwargs}
-        _geod = Geod(**kwargs)
+    kwargs = {'ellps': 'WGS84', **kwargs}
+    _geod = Geod(**kwargs)
 
-        distances = np.array([_geod.inv(lon1, lat1, lon2, lat2)
-                              for (lon1, lat1, lon2, lat2)
-                              in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 2]
-    elif lib == 'geopy':
-        distances = np.array([geodesic((lon1, lat1), (lon2, lat2)).meters
-                              for (lon1, lat1, lon2, lat2)
-                              in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])
+    distances = np.array([_geod.inv(lon1, lat1, lon2, lat2)
+                          for (lon1, lat1, lon2, lat2)
+                          in zip(lon[:-1], lat[:-1], lon[1:], lat[1:])])[:, 2]
 
     distances /= meters_per_unit
 

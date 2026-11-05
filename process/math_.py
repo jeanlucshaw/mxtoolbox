@@ -11,6 +11,7 @@ from skimage import measure
 from shapely.geometry import Point, MultiPoint, Polygon, LineString
 from scipy.interpolate import interp1d
 from scipy.special import erf
+from scipy.spatial import cKDTree
 from pyproj import Geod
 # import mxtoolbox.process.convert.crs2crs as crs2crs
 import mxtoolbox.process as ps
@@ -36,6 +37,7 @@ __all__ = ['array_corners',
            'f_gaussian',
            'f_sine',
            'haversine',
+           'histogram_polar',
            'increase_resolution',
            'in_polygon',
            'get_contour_xy',
@@ -43,6 +45,8 @@ __all__ = ['array_corners',
            'lonlat_gradient',
            'lonlat_rectangle',
            'lonlat_rectangle_tr',
+           'nearest_neighbor_2D',
+           'overall_min_max',
            'perpendicular_line',
            'project_to_line',
            'proj_grid',
@@ -675,6 +679,52 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
+def histogram_polar(x, bin_edges, wrap_at=360, wrap_to=0):
+    """
+    Count array elements in polar coordinate bins
+
+    Parameters
+    ----------
+    x : array-like
+        angular elements to count
+    bin_edges : 1D-array
+        angular edges of the bins
+    wrap_at : int or float
+        highest angular coordinate value
+    wrap_to : int or float
+        lowest angular coordinate value
+
+    Returns
+    -------
+    hist : 1D array
+        number of data inside the bins
+
+    """
+    # Work on arrays
+    x = np.asarray(x)
+    bin_edges = np.asarray(bin_edges)
+
+    # Ensure wrapping
+    if bin_edges[-1] != bin_edges[0]:
+        bin_edges = np.append(bin_edges, bin_edges[0])
+
+    # Init arrays
+    hist = np.zeros(bin_edges.size - 1)
+    bin_centers = np.zeros(bin_edges.size - 1)
+
+    # Count values
+    for i, (l, h) in enumerate(zip(bin_edges[:-1], bin_edges[1:])):
+        if l < h:
+            hist[i] = np.sum((x >= l) & (x < h))
+            bin_centers[i] = 0.5 * (l + h)
+        else:
+            hist[i] = np.sum((x >= l) & (x < wrap_at))
+            hist[i] += np.sum((x >= wrap_to) & (x < h))
+            bin_centers[i] = (l + 0.5 * (wrap_at - l + h)) % wrap_at
+
+    return hist, bin_centers
+
+
 def in_polygon(xpts, ypts, x_poly, y_poly, lib='mpl', radius=0.0):
     """
     Find points inside an arbitraty polygon.
@@ -1076,6 +1126,71 @@ def lonlat_rectangle_tr(top_right, angle, width, length, print_error):
         print('Difference between o--p and n--q: %.1f km' % error_)
 
     return np.array(lon), np.array(lat)
+
+
+def nearest_neighbor_2D(x_grid, y_grid, x_points, y_points, *args, **kwargs):
+    """
+    Get the 2D indices of the nearest point(s) on a 2D irregular grid.
+
+    Parameters
+    ----------
+    x_grid, y_grid : 2D np.ndarray
+        The 2D irregular grid coordinates.
+    x_points, y_points : int, float or 1D array-like of int, float
+        The coordinates for which to find the nearest neighbor.
+    *args, **kwargs : tuple, dict
+        Passed to scipy.spatial.cKDTree.
+
+    Returns
+    -------
+    x_index, y_index : int or 1D array of int
+        The 2D index values of the nearest grid points.
+
+    """
+    # Format grid coordinates for cKDTree
+    x_grid = np.asarray(x_grid)
+    y_grid = np.asarray(y_grid)
+    points = np.column_stack([x_grid.ravel(), y_grid.ravel()])
+
+    # Calculate the KDTree
+    tree = cKDTree(points, *args, **kwargs)
+
+    # Get the linear index (scalar in, scalar out)
+    scalar_input = np.isscalar(x_points) and np.isscalar(y_points)
+    query_points = np.column_stack([np.atleast_1d(x_points).ravel(),
+                                    np.atleast_1d(y_points).ravel()])
+    _, index = tree.query(query_points)
+    if scalar_input:
+        index = index[0]
+
+    # Get the 2D index
+    return np.unravel_index(index, x_grid.shape)
+
+
+def overall_min_max(*args, rounded=None):
+    """
+    Find the min and max of many 1D arrays
+
+    Parameters
+    ----------
+    args : tuple
+        variable number of 1D arrays
+    rounded : bool
+        round down the minimum and up the maximum
+
+    Returns
+    -------
+    minimum, maximum : float
+        the overall min and max of the input arrays
+
+    """
+    array = np.hstack(args)
+    minimum = float(np.nanmin(array))
+    maximum = float(np.nanmax(array))
+    if rounded == True:
+        minimum = np.floor(minimum)
+        maximum = np.ceil(maximum)
+    return minimum, maximum
 
 
 def polygon_area(xpts, ypts, pos=True):
@@ -1595,7 +1710,7 @@ def intersection(L1, L2):
         return None
 
 
-def intersections(x1, y1, x2, y2):
+def intersections(x1, y1, x2, y2, sort_values=False):
     """
     Find intersection points of two 2D vectors.
 
@@ -1603,6 +1718,8 @@ def intersections(x1, y1, x2, y2):
     ----------
     x1, y1, x2, y2: 1D array
         Coordinates of the input 2D vectors
+    sort_values : bool
+        sort output by the `x` coordinate.
 
     Returns
     -------
@@ -1627,6 +1744,10 @@ def intersections(x1, y1, x2, y2):
         x_coords = np.array([(c_.x, c_.y) for c_ in x_obj.geoms])
         x_out = x_coords[:, 0]
         y_out = x_coords[:, 1]
+        if sort_values is True:
+            sort_key = np.argsort(x_out)
+            x_out = x_out[sort_key]
+            y_out = y_out[sort_key]
     elif isinstance(x_obj, Point):
         x_out = x_obj.x
         y_out = x_obj.y 

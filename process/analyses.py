@@ -6,16 +6,21 @@ import pandas as pd
 import xarray as xr
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import gsw
+from skimage.measure import marching_cubes
 from statsmodels.multivariate.pca import PCA
 from statsmodels.stats.outliers_influence import OLSInfluence
+from scipy.interpolate import griddata, interp1d, LinearNDInterpolator
 from scipy.optimize import leastsq
 from scipy.signal import find_peaks
+from scipy.spatial import cKDTree as KDTree
 from .math_ import *
 from .signal_ import *
 from .convert import dt2epoch, binc2edge
 
 
-__all__ = ['pca',
+__all__ = ['idw_scatter_interp',
+           'pca',
            'pd_pca',
            'sm_pca',
            'principal_modes',
@@ -28,8 +33,140 @@ __all__ = ['pca',
            'transect_bins',
            'xr_2D_to_1D_interp',
            'xr_2D_to_2D_interp',
+           'xr_array_to_transect',
            'xr_cross_correlate',
+           'xr_definite_integral',
+           'xr_irregular_grid_subset',
+           'xr_marching_cubes',
+           'xr_nsquared_1D_depth',
+           'xr_stratification_parameter',
            'xr_time_aht']
+
+
+def idw_scatter_interp(x,
+                       y,
+                       v,
+                       x_vec,
+                       y_vec,
+                       neighboors=8,
+                       power=1,
+                       x_name='x',
+                       y_name='y',
+                       v_name='z',
+                       lonlat=False,
+                       n_par=None,
+                       radius=None):
+    """
+    Inverse distance weighted interpolation of 2D scattered data
+
+    Parameters
+    ----------
+    x, y : 1D array
+        the horizontal and vertical coordinates of the scatter
+    v : 1D array
+        the values of the field to interpolate at coordinates `x`,`y`
+    x_vec, y_vec : 1D array
+        the horizontal and vertical axes of the regular interpolation grid
+    neighboors : int
+        the number of neighboors the calculate the IDW values from
+    power : float
+        weights = 1 / distance ** `power`
+    x_name, y_name, v_name : str
+        names of the coordinates and field in the output dataset
+    lonlat : bool
+        scatter and grid coordinates are supplied in lon,lat coordinates. In this
+        case, the distances are calculated in a 3D cartesian space, converted from
+        the spherical earth coordinates.
+    n_par : int or None
+        Large scatters (>>1_000_000 pts) could result in calculating a very big
+        matrix. Set n_par to indicate how many grid points for which to calculate the
+        IDW values at once.
+    radius : int, float or None
+        require all neighboord to be within this radius, otherwise return NaN
+
+    Returns
+    -------
+    v_interp : xarray.Dataset
+        containing the gridded observations and their coordinates
+    """
+
+    
+    def lonlat2threeD_(lon, lat):
+        """ Convert spherical lon, lat -> cartesian x, y, z """
+        lon_rad, lat_rad = np.radians(lon), np.radians(lat)
+        x_3D = np.cos(lat_rad) * np.cos(lon_rad) * 6_371_000
+        y_3D = np.cos(lat_rad) * np.sin(lon_rad) * 6_371_000
+        z_3D = np.sin(lat_rad) * 6_371_000
+        return x_3D, y_3D, z_3D
+
+
+    # Build interpolation grid
+    x_grid, y_grid = np.meshgrid(x_vec, y_vec)
+    v_grid_flat = x_grid.ravel() * np.nan
+
+    # Convert to 3D cartesian coordinates if given in latitude, longitude horizontal coordinates
+    if lonlat == True:
+        x_3D, y_3D, z_3D = lonlat2threeD_(x, y)
+        tree_coords = np.array([x_3D, y_3D, z_3D]).T
+        x_grid_3D, y_grid_3D, z_grid_3D = lonlat2threeD_(x_grid, y_grid)
+        query_coords = np.array([x_grid_3D.ravel(), y_grid_3D.ravel(), z_grid_3D.ravel()]).T
+    else:
+        tree_coords = np.array([x, y]).T
+        query_coords = np.array([x_grid.ravel(), y_grid.ravel()]).T
+
+    # Build KDTree
+    tree = KDTree(tree_coords)
+
+    # Nearest neighboor lookup and distance calculation
+    distance, idx_nearest = tree.query(query_coords, k=neighboors)
+
+    if (n_par is not None) and (v_grid_flat.size > n_par):
+        """ If the scatter contains >> 1_000_000 """
+        idx = np.arange(0, v_grid_flat.size, n_par)
+
+        # Loop over sets of points to calculate in parallel
+        for i_start, i_stop in zip(idx[:-1], idx[1:]):
+            # Weights and norm of weights
+            w_ = (1 / distance[i_start:i_stop, :]) ** power
+            w_norm_ = np.sum(w_, axis=-1)
+
+            # Calcuate IDW value(s)
+            v_grid_flat[i_start:i_stop] = np.sum(w_ * v[idx_nearest[i_start:i_stop]], axis=-1) / w_norm_
+
+        # Weights and norm of weights
+        w_ = (1 / distance[i_stop:, :]) ** power
+        w_norm_ = np.sum(w_, axis=-1)
+
+        # Calculate the last slice
+        v_grid_flat[i_stop:] = np.sum(w_ * v[idx_nearest[i_stop:]], axis=-1) / w_norm_
+    else:
+        """ If the scatter is in the tested size range """
+        weights = (1 / distance) ** power
+        v_grid_flat = np.sum(weights * v[idx_nearest], axis=-1) / np.sum(weights, axis=-1)
+
+    # Remove clear points excluded by the radius
+    if isinstance(radius, (int, float)):
+        v_grid_flat[(distance > radius).all(axis=-1)] = np.nan
+
+    # Reshape to gridded form
+    v_grid = v_grid_flat.reshape(x_grid.shape)
+
+    # Format as xarray
+    v_interp = xr.Dataset({v_name: ([y_name, x_name], v_grid)}, coords={y_name: y_vec, x_name: x_vec})
+
+    # Calculate the data and grid spatial resolutions
+    distance_nearest, _ = tree.query(query_coords, k=1)
+    v_interp.attrs['scatter_resolution_mean'] = np.mean(distance_nearest)
+    v_interp.attrs['scatter_resolution_std'] = np.std(distance_nearest)
+    v_interp.attrs['scatter_resolution_min'] = np.min(distance_nearest)
+    v_interp.attrs['scatter_resolution_max'] = np.max(distance_nearest)
+    v_interp.attrs['scatter_resolution_percentile_10'] = np.percentile(distance_nearest, 10)
+    v_interp.attrs['scatter_resolution_percentile_25'] = np.percentile(distance_nearest, 25)
+    v_interp.attrs['scatter_resolution_percentile_50'] = np.percentile(distance_nearest, 50)
+    v_interp.attrs['scatter_resolution_percentile_75'] = np.percentile(distance_nearest, 75)
+    v_interp.attrs['scatter_resolution_percentile_90'] = np.percentile(distance_nearest, 90)
+
+    return v_interp
 
 
 def pca(input_):
@@ -154,9 +291,29 @@ def pd_pca(dataframe, features, target=None, plot=False, **plt_kwargs):
     return pcdf, lbda, UL_sr
 
 
-def sm_pca(u, v):
+def sm_pca(u, v, *args, **kwargs):
     """
     Compute principal directions of variation
+
+    Parameters
+    ----------
+    u, v : 1D arrays
+        observations in the 1st and 2nd dimension
+    *args, **kwargs :
+        passed to `statsmodels.multivariate.pca.PCA`. Defaults are
+        `demean=True` and `standardize=False`.
+
+    Returns
+    -------
+    u1, v1 : float
+        1st and 2nd component of the most powerful eigenvector.
+    u2, v2 : float
+        1st and 2nd component of the second most powerful eigenvector.
+    l_1, l_2 : float
+        eigenvalues of the first 2 eigenvectors
+    theta : float
+        orientation of the first eigenvector
+
     """
     # Form input into dataframe
     data = pd.DataFrame({'u': u, 'v': v})
@@ -165,7 +322,8 @@ def sm_pca(u, v):
     data = data.query('~u.isnull() & ~v.isnull()', engine='python')
 
     # Perform PCA
-    pca_model = PCA(data, demean=True, standardize=False)
+    kwargs = {'demean': True, 'standardize': False, **kwargs}
+    pca_model = PCA(data, *args, **kwargs)
 
     # Component vectors
     u_1, v_1 = pca_model.eigenvecs.iloc[:, 0]
@@ -502,7 +660,7 @@ def sm_lin_fit(dataframe, x, y, xfit=None):
         fit_labels = xfit
 
     # Calculate fit line
-    yfit = model.params[0] + model.params[1] * np.array(xfit)
+    yfit = model.params.iloc[0] + model.params.iloc[1] * np.array(xfit)
     fit = pd.DataFrame({'x': fit_labels, 'y': yfit}).sort_values(by='x')
 
     return model, fit, model.rsquared
@@ -759,7 +917,7 @@ def transect_bins(profile_pos, depth_x, depth_y, z):
     return areas, vertices_x, vertices_y
 
 
-def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, z):
+def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, z, **kwargs):
     """
     Interpolate 2D field along arbitrary track.
 
@@ -775,6 +933,8 @@ def xr_2D_to_1D_interp(dataset, x, y, xcoord, ycoord, z):
         Name of the track coordinate or dictionnary with two fields:
         `name` a string to be the name of the track and `values` to
         be the coordinate of the track.
+    **kwargs : dict
+        passed to `xarray.Dataset.interp`
 
     Returns
     -------
@@ -825,6 +985,57 @@ def xr_2D_to_2D_interp(dataarray, xx, yy, dims):
 
     # Interpolate
     return dataarray.interp(**{dims[0]: x_i, dims[1]: y_i}).values
+
+
+def xr_array_to_transect(grid,
+                         transect,
+                         x_name='x',
+                         y_name='y',
+                         lon_name='lon',
+                         lat_name='lat',
+                         transect_dim='distance'):
+    """
+    Linear interpolation of irregularly gridded data to a 1D axis in 2D
+
+    Parameters
+    ----------
+    grid : xarray.Dataset
+        containing the irregularly gridded data
+    transect : xarray.Dataset
+        containing the coordinates of the track on which to interpolate
+    x_name, y_name : str
+        names of the regular coordinates in `grid`
+    lon_name, lat_name : str
+        names of the irregular coordinates in `grid` and `transect`
+    transect_dim : str
+        name of the dimension along which transect[lon_name;lat_name] are aligned
+
+    Returns
+    -------
+    subset : xarray.Dataset
+        containing the data interpolated on the `transect` path.
+
+    """
+    # Make the grids, and points arrays
+    lon_array = grid[lon_name].values
+    lat_array = grid[lat_name].values
+    x_array, y_array = np.meshgrid(grid[x_name].values, grid[y_name].values)
+    points = np.array([lon_array.ravel(), lat_array.ravel()]).T
+
+    # Generate the scattered interpolators going from irregular -> regular coords
+    x_interpolator = LinearNDInterpolator(points, x_array.ravel())
+    y_interpolator = LinearNDInterpolator(points, y_array.ravel())
+
+    # Generate regular coordinates for the transect
+    transect_x = x_interpolator(transect[lon_name].values, transect[lat_name].values)
+    transect_y = y_interpolator(transect[lon_name].values, transect[lat_name].values)
+
+    # Format these as DataArray s along the transect dimension
+    transect = transect.assign_coords({x_name: (transect_dim, transect_x),
+                                       y_name: (transect_dim, transect_y)})
+
+    # Interpolate model values to the transect coordinates
+    return grid.interp({x_name: transect[x_name], y_name: transect[y_name]})
 
 
 def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
@@ -892,6 +1103,307 @@ def xr_cross_correlate(dataarray_a, dataarray_b, coord='time'):
     return tau, r2, dataarray_c, cc
 
 
+def xr_definite_integral(dataset,
+                         variable,
+                         low_bounds,
+                         high_bounds,
+                         dimension):
+    """
+    Integrate ND DataArray along dimension with specified integration bounds
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+       containing the variable to integrate
+    variable : str
+       the name of the variable to integrate
+    low_bounds, high_bounds : int, float or (N-1)D array
+       bottom and top integration bounds. Numeric values are used for all
+       integrated vectors.
+    dimension : str
+       coordinate along which to integrate
+
+    Returns
+    -------
+    integrated : xarray.DataArray
+       the integrated variable of N-1 dimensions
+
+    """
+    # The 1D case is standard xarray functionnality
+    if dataset[variable].ndim == 1:
+        integrated = (dataset[variable]
+                      .sel({dimension: slice(low_bounds, high_bounds)})
+                      .integrate(coord=dimension))
+
+    # The ND case needs user implementation
+    else:
+        # Assess output dimension
+        output_dims = tuple([d for d in dataset[variable].dims if d != dimension])
+        output_shape = tuple([dataset[d].size for d in output_dims])
+
+        # Init output
+        output = np.zeros(output_shape) * np.nan
+
+        # Manage input bounds provided as int
+        if np.array(low_bounds).size == 1:
+            low_bounds = np.tile(low_bounds, output_shape)
+        if np.array(high_bounds).size == 1:
+            high_bounds = np.tile(high_bounds, output_shape)
+
+        # Loop over dimension
+        for indices in np.ndindex(output_shape):
+            sel_dims = {k: v for k, v in zip(output_dims, indices)}
+            output[*indices] = (dataset[variable]
+                                .isel(sel_dims)
+                                .sel({dimension: slice(low_bounds[*indices],
+                                                       high_bounds[*indices])})
+                                .integrate(coord=dimension))
+
+        # Format to xarray
+        integrated = xr.DataArray(output,
+                                  dims=output_dims,
+                                  coords={d: dataset[d] for d in output_dims})
+
+    return integrated
+
+
+def xr_irregular_grid_subset(dataset,
+                             bounds,
+                             x_name='x',
+                             y_name='y',
+                             lon_name='lon',
+                             lat_name='lat'):
+    """
+    Subset an irregularly gridded, n-dim xarray.Dataset by bounds on the irregular grid
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        to subset according to input parameters
+    bounds : 4-tuple
+        limits of the subset in irregular grid coordinates (lon_min, lon_max, lat_min, lat_max)
+    x_name, y_name : str
+        names of the regular grid coordinates in `dataset`
+    lon_name, lat_name : str
+        names of the irregular grid coordinates in `dataset`
+
+    Returns
+    -------
+    subset : xarray.Dataset
+        smallest rectangle of regular coordinates containing the area defined in `bounds`
+
+    """
+    # unpack the input bounds
+    lon_min, lon_max, lat_min, lat_max = bounds
+
+    # Identify the irregular grid points in bounds
+    in_lon = (dataset[lon_name] <= lon_max) & (dataset[lon_name] >= lon_min)
+    in_lat = (dataset[lat_name] <= lat_max) & (dataset[lat_name] >= lat_min)
+
+    # Identify the corresponding regular grid indices
+    X, Y = np.meshgrid(dataset[x_name].values, dataset[y_name].values)
+    X = np.where(in_lon & in_lat, X, np.nan)
+    Y = np.where(in_lon & in_lat, Y, np.nan)
+
+    # Subset to the smallest regular grid which includes the provided bounds
+    x_min, x_max = np.nanmin(X).astype(int), np.nanmax(X).astype(int)
+    y_min, y_max = np.nanmin(Y).astype(int), np.nanmax(Y).astype(int)
+
+    # Perform subsetting
+    dataset = dataset.sel({x_name: slice(x_min, x_max), y_name: slice(y_min, y_max)})
+
+    # Save subsetting indices
+    dataset.attrs['subset_x_0'] = x_min
+    dataset.attrs['subset_x_f'] = x_max
+    dataset.attrs['subset_y_0'] = y_min
+    dataset.attrs['subset_y_f'] = y_max
+
+    return dataset
+
+
+def xr_marching_cubes(dataset,
+                      variable,
+                      level,
+                      crd_1=None,
+                      crd_2=None,
+                      crd_3=None):
+    """
+    Find x,y,z coordinates of a `value` layer inside a 3D volume
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        containing the 3D volume and coordinates
+    variable : str
+        name of the 3D volume variable
+    level : float
+        value identifying the layer of interest
+    crd_1 : str
+        name of the 3D volume first dimension
+    crd_2 : str
+        name of the 3D volume second dimension
+    crd_3 : str
+        name of the 3D volume third dimension, i.e., whose value to return
+        for the `level` layer.
+
+    Returns
+    -------
+    output : xr.Dataset
+        containing the coordinates of `level` layer in the 3D volume
+
+    """
+    if (crd_1 == None) or (crd_2 == None) or (crd_3 == None):
+        crd_1, crd_2, crd_3 = dataset[variable].dims
+
+    # Get real vertices of the surface using MC algorithm
+    verts, _, _, _ = marching_cubes(dataset[variable].values, level)
+    verts_real = np.isfinite(verts).all(axis=1)
+
+    # Convert back to original coordinates
+    dataframe = pd.DataFrame()
+    for i_, d_ in enumerate(dataset[variable].dims):
+        # Make interpolant from the vertices
+        y_ = dataset[d_].values
+        x_ = np.arange(y_.size)
+
+        # Add interpolated coordinates to the dataframe
+        dataframe[d_] = interp1d(x_, y_).__call__(verts[verts_real, i_])
+
+    # Construct a 2D linear interpolant
+    xg, yg = np.meshgrid(dataset[crd_2].values, dataset[crd_1].values)
+    layer_coord = griddata((dataframe[crd_2], dataframe[crd_1]), dataframe[crd_3], (xg, yg))
+
+    # Construct the 2D mask for input coordinates
+    crd_1_bins = binc2edge(dataset[crd_1])
+    crd_2_bins = binc2edge(dataset[crd_2])
+    data_count, _, _ = np.histogram2d(dataframe[crd_1],
+                                      dataframe[crd_2],
+                                      bins=[crd_1_bins, crd_2_bins],
+                                      density=False)
+    mask = data_count > 0
+
+    # Mask values outside surface
+    layer_coord = np.where(mask, layer_coord, np.nan)
+
+    # Form as Dataset
+    output = xr.Dataset({crd_3: ([crd_1, crd_2], layer_coord)},
+                        coords={crd_1: dataset[crd_1], crd_2: dataset[crd_2]})
+
+    return output
+
+
+def xr_nsquared_1D_depth(dataset, s, t, z):
+    """
+    Calculate buoyancy frequency from ocean data in xarray
+
+    Paramaters:
+    -----------
+    dataset : xarray.Dataset
+        containing the ocean properties
+    s, t, z : str
+        names of the salinity, temperature and depth objects
+
+    Returns:
+    --------
+    nsquared : xr.DataArray
+        interpolated back to the dimensions and coordinates of
+        the input salinity. The output values are in (s^-2)
+
+    Notes:
+    ------
+    Mostly useful for 3+ dimension arrays without pressure data, i.e.,
+    depth is used as pressure. The array broadcasting rules inside
+    gsw.nsquared can complicate this or silently use the wrong dimension
+    to calculate the vertical derivative.
+    """
+    # Work on copy to avoid affecting input axes and dimensions
+    ds = dataset.copy()
+
+    # Get input arrays with depth on the last axis
+    salinity = ds[s].transpose(..., z)
+    temperature = ds[t].transpose(..., z)
+    pressure = ds[z]
+
+    # Calculate
+    nsquared, pmid = gsw.Nsquared(salinity, temperature, pressure, axis=-1)
+    other_dims = [0 for i in range(pmid.ndim - 1)]
+
+    # Insert pressure at the depth coordinate
+    coords = dict()
+    for c_ in salinity.dims:
+        if c_ in [z]:
+            coords[c_] = pmid[*other_dims, :]
+        else:    
+            coords[c_] = salinity[c_].values
+
+    # Form xarray, interpolated to original depths and transposed to input dims
+    da_nsquared = (xr
+                   .DataArray(nsquared, dims=salinity.dims, coords=coords)
+                   .interp({z: pressure})
+                   .transpose(*dataset[s].dims))
+
+    # Return in units of (1 / s ** 2)
+    return  da_nsquared / 2 / np.pi
+
+
+def xr_stratification_parameter(dataset,
+                                density,
+                                depth,
+                                depth_up=False,
+                                ):
+    """
+    Potential density anomaly (PHI): Simpson and Sharples (2012)
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+       containing the density values and depth coordinate
+    density : str
+       name of the density field variable (should work with ND data).
+       Units of kg / m^3 are assumed.
+    depth : str
+       name of the vertical coordinate. Units of meters are assumed.
+    depth_up : bool
+       set `True` if coordinate `depth` is positive upwards
+
+    Returns
+    -------
+    phi : xarray.DataArray
+       same shape as `density`, flattened along `depth`. The potential
+       density anomaly per meter; units of J m^-3
+
+    Notes
+    -----
+    Reference: Simpson, J. and Sharples, J. (2012).
+               Introduction to the Physical and Biological Oceanography of Shelf Seas
+               Chapter 6: Seasonal stratification and the spring bloom.
+               Cambridge University Press.
+               
+    """
+
+    # Ensure not modifying input
+    dataset = dataset.copy()
+
+    # Make the depth axis positive upwards
+    if depth_up == False:
+        dataset = dataset.assign_coords({depth: -1 * dataset[depth]}).sortby(depth)
+
+    # Find the water depth at which the profile ends
+    index = dataset[density].notnull().sum(dim=depth) - 1
+    water_depth = (dataset[depth].isel({depth: -index}) ** 2) ** (1/2)
+
+    # Calculate the average density
+    rho_hat = dataset[density].mean(dim=depth)
+
+    # Calculate the integrand for PHI
+    dataset['integrand'] = (rho_hat - dataset[density]) * dataset[depth] * 9.81 / water_depth
+
+    # Calculate the stratification parameter
+    phi = xr_definite_integral(dataset, 'integrand', -water_depth, 0, depth)
+
+    return phi
+
+
 def xr_time_aht(dataset, field='h', period=12.4166):
     """
     Add time after high tide variable to dataset.
@@ -916,7 +1428,8 @@ def xr_time_aht(dataset, field='h', period=12.4166):
     Returns
     -------
     xarray.Dataset
-        Data structure with the added `aht` variable (h).
+        Data structure with the added `aht` variable (h) and the
+        `tide_cycle_label` variable.
     1D array
         Index values of high tides in input time array.
 
@@ -935,10 +1448,12 @@ def xr_time_aht(dataset, field='h', period=12.4166):
 
     # Numerical values of time after first high tide
     aht = time - time[0]
+    labels = np.zeros(aht.shape, dtype=int)
 
     # Subtract time of the previous high tide
-    for (start, end) in zip(locs[:-1], locs[1:]):
+    for label, (start, end) in enumerate(zip(locs[:-1], locs[1:])):
         aht[start: end] = aht[start: end] - aht[start]
+        labels[start: end] = label + 1  # start at 1
 
     # Manage data before first high tide
     aht[:locs[0]] = period - time[locs[0]] + time[:locs[0]]
@@ -946,8 +1461,10 @@ def xr_time_aht(dataset, field='h', period=12.4166):
 
     # Manage data after last high tide
     aht[locs[-1]:] = aht[locs[-1]:] - aht[locs[-1]]
+    labels[locs[-1]:] = labels.max() + 1
 
     # Add to dataset and return
     dataset['aht'] = (['time'], aht)
+    dataset['tide_cycle_label'] = (['time'], labels)
 
     return dataset, locs

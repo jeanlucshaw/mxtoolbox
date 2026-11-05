@@ -81,7 +81,7 @@ def tex_write(signature, results, mode='w'):
     signature : str
         Nickname of the generating script.
     results : sequence of tuple
-        Sequence of (value, comment, format) triplets.
+        Sequence of (value, comment, format, unit) values.
     mode : str
         Passed to `open`. Set `a` for append, or `w` for overwrite.
 
@@ -99,12 +99,18 @@ def tex_write(signature, results, mode='w'):
         signature = regex.sub(lambda x: _int_to_roman(int(x.group(0))), signature)
 
         # Write saved values to file
+        breaks = 0
         for i, (value, comment, fmt, unit) in enumerate(results):
-            cname = 'tsv_%s_%s' % (signature, _int_to_roman(i + 1))
-            cname = ''.join(word.title() for word in cname.split('_'))
+            if value is not None:
+                cname = 'tsv_%s_%s' % (signature, _int_to_roman(i + 1 - breaks))
+                cname = ''.join(word.title() for word in cname.split('_'))
 
-            line = '\\newcommand{\\%s}{'+ fmt + '} %% %s : units %s\n'
-            ofile.write(line % (cname, value, comment, unit))
+                # Anything that is not a letter is invalid in a TeX command name
+                cname = re.sub(r'[^A-Za-z]', '', cname)
+                line = '\\newcommand{\\%s}{'+ fmt + '} %% %s : units %s\n'
+                ofile.write(line % (cname, value, comment, unit))
+            else:
+                breaks += 1
 
 
 def tex_print(results):
@@ -122,24 +128,28 @@ def tex_print(results):
     max_value_length = 0
     max_unit_length = 0
     for value, string, fmt, unit in results:
-        if len(string) > max_string_length:
-            max_string_length = len(string)
-        if len(unit) > max_unit_length:
-            max_unit_length = len(unit)
-        if len(fmt % value) > max_value_length:
-            max_value_length = len(fmt % value)
+        if value is not None:
+            if len(string) > max_string_length:
+                max_string_length = len(string)
+            if len(unit) > max_unit_length:
+                max_unit_length = len(unit)
+            if len(fmt % value) > max_value_length:
+                max_value_length = len(fmt % value)
 
     # Print saved values
     print('\n\n')
     for i, (value, comment, fmt, unit) in enumerate(results):
-        fmt = '%%%d' % max_value_length + fmt[1:]
-        if i % 2 == 0:
-            tc, bc = 'white', 'red'
+        if value is None:
+            print('\n')
         else:
-            tc, bc = 'red', 'white'
+            fmt = '%%%d' % max_value_length + fmt[1:]
+            if i % 2 == 0:
+                tc, bc = 'white', 'red'
+            else:
+                tc, bc = 'red', 'white'
 
-        line = ('%%-%ds  :  ' % max_string_length + fmt +
-                '  :  %%%ds' % max_unit_length)
-        cprint(colored(line % (comment, value, unit), '%s' % tc, 'on_%s' % bc))
+            line = ('%%-%ds  :  ' % max_string_length + fmt +
+                    '  :  %%%ds' % max_unit_length)
+            cprint(colored(line % (comment, value, unit), '%s' % tc, 'on_%s' % bc))
     print('\n\n')
 

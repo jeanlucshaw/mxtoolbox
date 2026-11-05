@@ -6,6 +6,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
+from glob import glob
 from dateutil.parser import parse
 from matplotlib.colors import LinearSegmentedColormap
 from ..process.convert import dmd2dd
@@ -13,6 +14,7 @@ from ..process.convert import dmd2dd
 __all__ = ['list2cm',
            'mangle_list_duplicates',
            'pd_cat_column_files',
+           'pd_read_mfcsv',
            'pd_read_cnv',
            'pd_read_odf',
            'read_cnv_metadata',
@@ -154,6 +156,96 @@ def pd_cat_column_files(path_list,
     return dataframe
 
 
+def pd_read_mfcsv(expression, *args, query=None, label=None, **kwargs):
+    """
+    pandas.read_csv wrapper to allow globbing and concatenation.
+
+    Parameters
+    ----------
+    expression : str
+        designating the files to read.
+    query : str
+        subset the individual dataframes using `pandas.DataFrame.query`.
+    label : None, str, tuple, list or dict
+        label data from each text file before concatenation. The type of
+        argument determines how the file is labeled. The options are shown
+        below. By default, the labels are stored in column `label`, but
+        this can be changed by using the tuple or dict forms, where `column`
+        is the name of the new column. The `exp` parameter is passed to
+        `re.search` and the first group is returned.
+
+            1) None : no labeling
+            2) 'file' : label data with file name
+            3) 'dir' : label data with file directory 1 level up
+            4) ('column', 'file')
+            5) ('column', 'dir')
+            6) ['file', 'exp']
+            7) ['dir', 'exp']
+            8) {'column': ['file', 'exp']}
+            9) {'column': ['dir', 'exp']}
+
+    *args, **kwargs :
+        passed to pandas.read_csv
+
+    Returns
+    -------
+    dataframe : pandas.DataFrame
+        containing the concatenated data.
+
+    Note
+    ----
+        This produces the same result as dask.dataframe.read_csv, but
+        it is faster (although slow) for databases of manageable size.
+
+    """
+    files = sorted(glob(expression))
+    if len(files) == 0:
+        raise FileNotFoundError(f'No files match `{expression}`.')
+
+    dflist = []
+    for file_ in files:
+        df_ = pd.read_csv(file_, *args, **kwargs)
+
+        # Apply reduction to individual dataframes
+        if query is not None:
+            df_ = df_.query(query).copy()
+
+        # Parse labeling input
+        if isinstance(label, str):
+            label_name, label_mode, label_exp = 'label', label, None
+        elif isinstance(label, tuple):
+            (label_name, label_mode), label_exp = label, None
+        elif isinstance(label, list):
+            label_name, (label_mode, label_exp) = 'label', label
+        elif isinstance(label, dict):
+            label_name, = label.keys()
+            label_mode, label_exp = label[label_name]
+        else:
+            label_name, label_mode = None, None
+
+        # Determine file label based on its directory
+        if label_mode == 'dir':
+            if label_exp is None:
+                label_str = os.path.dirname(file_).split('/')[-1]
+            else:
+                label_str = re.search(label_exp, os.path.dirname(file_)).group(1)
+        # Determine file label based on its name
+        elif label_mode == 'file':
+            if label_exp is None:
+                label_str = os.path.basename(file_)
+            else:
+                label_str = re.search(label_exp, os.path.basename(file_)).group(1)
+        elif label_mode is not None:
+            raise ValueError(f'Unknown label mode `{label_mode}`; use `file` or `dir`.')
+
+        # Label these data and save for concatenation
+        if label is not None:
+            df_[label_name] = label_str
+        dflist.append(df_)
+
+    return pd.concat(dflist, ignore_index=True)
+
+
 def pd_read_cnv(FNAME,
                 sep=r'\s+',
                 usecols=None,
@@ -231,7 +323,9 @@ def pd_read_odf(FNAME,
                 col_name='WMO_CODE',
                 usecols=None,
                 missing_values=None,
-                header_depth=False):
+                header_depth=False,
+                return_dict=False,
+                no_units=False):
     """
     Read ocean data format (odf) files into pandas dataframe.
 
@@ -251,6 +345,10 @@ def pd_read_odf(FNAME,
         Expression to evaluate as missing_values. Passed to pd.read_csv.
     header_depth: bool
         Add column with depth read in the odf header. Disabled by default.
+    return_dict: bool
+        Return a dictionnary of column names and units as second output argument.
+    no_units: bool
+        Do not write the units in the column names.
 
     Returns
     -------
@@ -258,6 +356,8 @@ def pd_read_odf(FNAME,
         A dataframe containing the requested data columns of the odf file.
         Column names are `col_name [unit]` read directly from the odf file
         header.
+    dict
+        with keys the column names and values their units.
 
     """
     LINES = open(FNAME, 'r', errors='replace').readlines()
@@ -277,7 +377,7 @@ def pd_read_odf(FNAME,
         if re.search('EVENT_HEADER', L):
             SEEK_DEPTH = True
         if SEEK_DEPTH and ('DEPTH' in L):
-            DEPTH = float(re.findall('[0-9]+\.[0-9]+', L)[0])
+            DEPTH = float(re.findall(r'[0-9]+\.[0-9]+', L)[0])
             SEEK_DEPTH = False
         if re.search('PARAMETER_HEADER', L):
             SEEK_NAME, SEEK_UNIT = True, True
@@ -308,6 +408,8 @@ def pd_read_odf(FNAME,
     for NAME, UNIT in zip(NAMES, UNITS):
         if NAME in ['SYTM', 'HOUR']:
             COLUMNS.append('%s' % (NAME))
+        elif no_units is True:
+            COLUMNS.append('%s' % NAME)
         else:
             COLUMNS.append('%s [%s]' % (NAME, UNIT))
     
@@ -330,13 +432,17 @@ def pd_read_odf(FNAME,
                      usecols=usecols,
                      names=COLUMNS,
                      parse_dates=PARSE_DATES,
-                     na_values=missing_values)
+                     na_values=missing_values,
+                     encoding_errors='replace')
 
     # Add depth column if specified
     if header_depth:
         DF['header depth'] = DEPTH * np.ones(DF.shape[0])
 
-    return DF
+    if return_dict:
+        return DF, {n_: u_ for n_, u_ in zip(NAMES, UNITS)}
+    else:
+        return DF
 
 
 def read_cnv_metadata(FNAME, short_names=True):
@@ -372,21 +478,21 @@ def read_cnv_metadata(FNAME, short_names=True):
     for LN, L in enumerate(LINES):
 
         # Scan for metadata
-        if re.search('\* Date:', L):
-            day_ = re.findall('\d{4}-\d{2}-\d{2}', L)[0]
-            hour = re.findall('\d{2}:\d{2}[:0-9]*', L)[0]
+        if re.search(r'\* Date:', L):
+            day_ = re.findall(r'\d{4}-\d{2}-\d{2}', L)[0]
+            hour = re.findall(r'\d{2}:\d{2}[:0-9]*', L)[0]
             metadata['date'] = np.datetime64('%sT%s' % (day_, hour))
         if re.search('# start_time', L):
-            date_fmt = '[a-zA-Z]{3} [0-9]+ \d{4} \d{2}:\d{2}:\d{2}'
+            date_fmt = r'[a-zA-Z]{3} [0-9]+ \d{4} \d{2}:\d{2}:\d{2}'
             date_str = re.findall(date_fmt, L)[0]
             if metadata['date'] is None:
                 metadata['date'] = parse(date_str).isoformat()
-        if re.search('\* Longitude:', L):
+        if re.search(r'\* Longitude:', L):
             degree = float(L.split()[-3])
             minute = float(L.split()[-2])
             direction = L.split()[-1]
             metadata['lon'] = dmd2dd(degree, minute, direction)
-        if re.search('\* Latitude:', L):
+        if re.search(r'\* Latitude:', L):
             degree = float(L.split()[-3])
             minute = float(L.split()[-2])
             direction = L.split()[-1]
@@ -397,7 +503,7 @@ def read_cnv_metadata(FNAME, short_names=True):
             if 'seconds' not in L:
                 print('Warning: `interval` may not be in seconds.')
             metadata['interval'] = float(L.split()[-1])
-        if re.search('\* <HardwareData', L):
+        if re.search(r'\* <HardwareData', L):
             metadata['device'] = re.findall("DeviceType='([A-Za-z0-9- ]+)'", L)[0]
             metadata['serial'] = re.findall("SerialNumber='([A-Za-z0-9- ]+)'", L)[0]
 
@@ -415,14 +521,14 @@ def read_cnv_metadata(FNAME, short_names=True):
             metadata['names'].append(name.lower())
             metadata['seabird_names'].append(full_name.split(':')[0])
 
-            if re.findall('\[.*\]', L):
-                units = re.findall('\[.*\]', L)[0].strip('[]')
+            if re.findall(r'\[.*\]', L):
+                units = re.findall(r'\[.*\]', L)[0].strip('[]')
                 metadata['units'].append(units)
             else:
                 metadata['units'].append('')
 
         # Scan for end of header
-        if re.search('\*END\*', L):
+        if re.search(r'\*END\*', L):
             metadata['header_lines'] = LN + 1
             break
 
@@ -486,11 +592,17 @@ def read_odf_metadata(fname, vnames, dtype=None):
     for i, (r, t) in enumerate(zip(results, dtype)):
         # Parse datestrings before datetime conversions
         if t == np.datetime64:
-            r = dateparser.parse(r)
+            try:
+                r = dateparser.parse(r)
+            except Exception:
+                r = pd.Timestamp(r)
 
         # Type conversion
-        results[i] = t(r)
-    
+        if r == '':
+            results[i] = r
+        else:
+            results[i] = t(r)
+
     return results
 
 

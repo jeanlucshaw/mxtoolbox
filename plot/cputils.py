@@ -4,9 +4,10 @@ Functions to streamline work when using cartopy
 import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from cartopy.mpl.gridliner import _DEGREE_SYMBOL
 from matplotlib.ticker import FormatStrFormatter
 from ..process.math_ import destination_point
+
+_DEGREE_SYMBOL = u'\u00B0'
 
 __all__ = ['cp_map_ruler',
            'cp_mercator_panel',
@@ -311,7 +312,7 @@ def cp_proj(axes, proj, **m_kwargs):
     map_kw = dict(transform=geoaxes.projection, add_colorbar=False)
 
     # Reduce frame width
-    geoaxes.outline_patch.set_linewidth(0.5)
+    geoaxes.spines['geo'].set_linewidth(0.5)
     
     return geoaxes, map_kw
 

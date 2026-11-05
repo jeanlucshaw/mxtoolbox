@@ -4,9 +4,12 @@ Tweak details of matplotlib.
 import calendar as cd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import xarray as xr
 import os
 import numpy as np
+import pandas as pd
 from matplotlib.collections import LineCollection
+import matplotlib.colors as mcolors
 import matplotlib.dates as md
 import matplotlib.ticker as tkr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -17,6 +20,8 @@ __all__ = ['anomalycmap',
            'axlabel_doy2months',
            'axlabel_woy2months',
            'bshow',
+           'cmap_get',
+           'cmap_test',
            'colorbar',
            'colorline',
            'contour_n_largest',
@@ -24,8 +29,10 @@ __all__ = ['anomalycmap',
            'divergent',
            'format_dateaxis',
            'format_dateaxis_left_tick_center_month',
+           'group_axes_label',
            'labeled_colorbar',
            'move_axes',
+           'scatter',
            'sequential',
            'text_array',
            'xr_saturate']
@@ -51,7 +58,7 @@ def anomalycmap(N, renew=False):
                       [0.000, 0.000, 0.900],
                       [0.450, 0.450, 0.900],
                       [0.700, 0.700, 1.000],
-                      [0.875, 0.875, 1.000],
+                      [1.0, 1.0, 1.0],
                       [1.0, 1.0, 1.0],
                       [1.0, 1.0, 1.0],
                       [1.000, 0.875, 0.875],
@@ -65,21 +72,27 @@ def anomalycmap(N, renew=False):
         return list2cm('%s/Anomaly.dat' % p_, N)
 
 
-def axlabel_doy2months(axes):
+def axlabel_doy2months(axes, which='x'):
     """
-    Change x axis labels from day of year to month abbreviation.
+    Change axis labels from day of year to month abbreviation.
 
     Parameters
     ----------
     axes : matplotlib.axes
         Matplotlib axes on which to operate.
+    which : on of [`x`, `y`]
+        Which axis to label with months.
 
     """
     mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     days = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-    axes.set(xticks=days, xticklabels=mons, xlabel=None)
-    axes.tick_params(axis='x', which='minor', top=False, bottom=False)
+    if which == 'x':
+        axes.set(xticks=days, xticklabels=mons, xlabel=None)
+        axes.tick_params(axis='x', which='minor', top=False, bottom=False)
+    elif which == 'y':
+        axes.set(yticks=days, yticklabels=mons, ylabel=None)
+        axes.tick_params(axis='y', which='minor', top=False, bottom=False)
 
 
 def axlabel_woy2months(axes, place='tick', labels=True, ycoord=-10, ltype='abbr', **kwargs):
@@ -150,12 +163,6 @@ def bshow(savename, close=True, show=False, save=True, **save_kw):
     if save:
         plt.savefig(savepath, **save_kw)
 
-    # Symlink to browser accessible location
-    # linkname = '/var/www/jls/t/%s' % name_
-    # if os.path.islink(linkname):
-    #     os.remove(linkname)
-    # os.symlink(savepath, linkname)
-
     # Save in browser accessible location
     plt.savefig('/var/www/jls/t/%s' % name_, **save_kw)
 
@@ -166,6 +173,100 @@ def bshow(savename, close=True, show=False, save=True, **save_kw):
     # Close figure
     if close and not show:
         plt.close(plt.gca().figure)
+
+
+def cmap_get(name, levels, *args, **kwargs):
+    """
+    Colormap and normalization for the requested levels
+
+    Parameters
+    ----------
+    name : str
+       either a default MPL cm or one of ['sequential', 'divergent', 'anomaly']
+    levels : 1D array of float
+       the color levels
+    *args, **kwargs : tuple, dict
+       passed to mcolors.BoundaryNorm. Usually, use `clip=True`.
+
+    Returns
+    -------
+    cmap : color map object
+        for input to plotting methods
+    norm : BoundaryNorm object
+        for input to plotting methods
+    """
+
+    # Count the color levels
+    n_colors = np.array(levels).size - 1
+
+    # Get custom or generic color maps
+    if name == 'sequential':
+        cmap = sequential(n_colors + 1)
+    elif name == 'divergent':
+        cmap = divergent(n_colors)
+    elif name == 'anomaly':
+        cmap = anomalycmap(n_colors)
+    else:
+        cmap = plt.get_cmap(name, n_colors)
+
+    # Instanciate the normalization
+    norm = mcolors.BoundaryNorm(levels, n_colors, *args, **kwargs)
+
+    return cmap, norm
+
+
+def cmap_test(data, levels, cmap, norm):
+    """
+    Illustrate color/data relationship for cmap and norm
+
+    Parameters
+    ----------
+    data : 1D array of float
+        values to test
+    levels : 1D array of float
+        levels at which to switch colors
+    cmap : color map object
+        used to specify colors to plotting methods
+    norm : BoundaryNorm object
+        used to specify normalization to plotting methods
+
+    Returns
+    -------
+    None
+    """
+    # Form to xarray
+    x = np.arange(data.size)
+    ds = xr.Dataset({'data': (['y', 'x'], [data])},
+                    coords={'x': x, 'y': [0]})
+
+    # Init plot
+    gskw = dict(right=1)
+    fig, ax = plt.subplots(figsize=(8, 3), gridspec_kw=gskw)
+
+    # Draw the color scatter
+    ds.plot.scatter(x='x',
+                    y='y',
+                    hue='data',
+                    levels=levels,
+                    cmap=cmap,
+                    norm=norm,
+                    ax=ax,
+                    s=750)
+
+    # Write the value in the dot
+    for x_, d_ in zip(x, data):
+        ax.text(x_, 0, f'{d_:.2f}', color='w', ha='center', va='center')
+
+    # Plot parameters
+    ax.set_title('')
+    ax.set(xlabel='', ylabel='', xticklabels=[], yticklabels=[])
+    ax.tick_params(which='both', top=False, bottom=False, right=False, left=False)
+
+    # Display
+    bshow('cmap.test.png', save=False)
+    plt.close(fig)
+
+    return None
 
 
 def colorbar(axes,
@@ -221,7 +322,7 @@ def colorbar(axes,
     cbar_kw = {'orientation': 'vertical', **cbar_kw}
 
     # Save axes position
-    if type(axes) is np.ndarray:
+    if isinstance(axes, (np.ndarray, list)):
         left0, bottom0, width0, height0 = axes[0].get_position().bounds
         left1, bottom1, width1, height1 = axes[-1].get_position().bounds
         if cbar_kw['orientation'] == 'vertical':
@@ -269,6 +370,7 @@ def colorbar(axes,
 
     # Draw colorbar
     cbar = plt.colorbar(mappable, cax=cax, **cbar_kw)
+    cbar.minorticks_off()
     # axes.set_position(position)
 
     # Colorbar label
@@ -390,6 +492,101 @@ def data_to_axis_coordinates(axes, xdata, ydata):
     return xaxes, yaxes
 
 
+def group_axes_label(axes,
+                     label=None,
+                     pad_size=0.05,
+                     cbar_size=0.05,
+                     loc='right',
+                     **cbar_kw):
+    """
+    Add a vertical or horizontal line to label a group of axes
+
+    Parameters
+    ----------
+    axes : matplotlib.axes
+        Add colorbar to this (these) axes.
+    label : str
+        Text label of colorbar.
+    pad_size : float
+        Pad width in fraction of axes width.
+    loc: str
+        One of `left`, `right`, `bottom`, `top`. Keyword argument
+        `orientation` (default: `vertical`) must be `vertical` for
+        side colorbars and `horizontal` for over/under colorbars.
+
+    Returns
+    -------
+    axes : matplotlib.axes
+        Axes for which the label is drawn.
+
+    """
+    # Orientation is vertical if otherwise not specified
+    cbar_kw = {'orientation': 'vertical', **cbar_kw}
+
+    # Save axes position
+    if isinstance(axes, (np.ndarray, list)):
+        left0, bottom0, width0, height0 = axes[0].get_position().bounds
+        left1, bottom1, width1, height1 = axes[-1].get_position().bounds
+        if cbar_kw['orientation'] == 'vertical':
+            left, bottom, width, height = left0, bottom1, width0, bottom0 + height0 - bottom1
+        else:
+            left, bottom, width, height = left0, bottom0, left1 + width1 - left0, height0
+    else:
+        position = axes.get_position()
+        left, bottom, width, height = position.bounds
+
+    # Set colorbar position
+    if cbar_kw['orientation'] == 'vertical':
+        if loc == 'right':
+            cbar_pos = (left + width + pad_size * width,
+                        bottom,
+                        0.000001,
+                        height)
+        elif loc == 'left':
+            cbar_pos = (left - pad_size * width - cbar_size * width,
+                        bottom,
+                        0.000001,
+                        height)
+        else:
+            _ = 'Unrecognized value for parameter loc: %s' % loc
+            raise ValueError(_)
+    elif cbar_kw['orientation'] == 'horizontal':
+        # Place colorbar on top
+        if loc == 'top':
+            cbar_pos = (left,
+                        bottom + height + pad_size * width,
+                        width,
+                        0.000001)
+        # Place colorbar on bottom
+        elif loc == 'bottom':
+            cbar_pos = (left,
+                        bottom - height * cbar_size - pad_size * width,
+                        width,
+                        0.000001)
+        else:
+            _ = 'Unrecognized value for parameter loc: %s' % loc
+            raise ValueError(_)
+
+    # Create axes for colorbar
+    nax = plt.axes(cbar_pos)
+
+    # Colorbar label
+    if label:
+        if cbar_kw['orientation'] == 'vertical':
+            nax.set_ylabel(label)
+        else:
+            nax.set_xlabel(label)
+
+    if loc in ['top', 'bottom']:
+        nax.xaxis.set_label_position(loc)
+    elif loc in ['left', 'right']:
+        nax.yaxis.set_label_position(loc)
+
+    nax.set(xticks=[], xticklabels=[], yticks=[], yticklabels=[])
+
+    return None
+
+
 def labeled_colorbar(position, col_arr, lab_array, fig, txt_w=None):
     """
     Add a discrete colorbar with labels on the colors.
@@ -487,7 +684,7 @@ def format_dateaxis(ax, fmt, rotation=None, ha='right'):
             label.set_ha(ha)
 
 
-def format_dateaxis_left_tick_center_month(ax):
+def format_dateaxis_left_tick_center_month(ax, fmt='abbreviated'):
     """
     Keep monthly xticks on the first day but center labels
 
@@ -495,18 +692,42 @@ def format_dateaxis_left_tick_center_month(ax):
     ----------
     ax : pyplot.Axes
         on which to tweak the labels.
+    fmt : str
+        label format one of [`letter`, `abbreviated`, `full`, `none`]
+
+    See also
+    --------
+        https://strftime.org/
 
     """
     ax.xaxis.set_major_locator(md.MonthLocator())
     ax.xaxis.set_minor_locator(md.MonthLocator(bymonthday=16))
 
-    ax.xaxis.set_major_formatter(tkr.NullFormatter())
-    ax.xaxis.set_minor_formatter(md.DateFormatter("%b"))
+    if fmt == 'abbreviated':
+        major_formatter = md.DateFormatter("%b")
+    elif fmt == 'full':
+        major_formatter = md.DateFormatter("%B")
+    elif fmt == 'letter':
+        def major_formatter(x, pos=None):
+            return md.DateFormatter("%B")(x)[0]
+    elif fmt == 'none':
+        major_formatter = None
+    else:
+        raise NotImplementedError(f'Parameter fmt value `{fmt}` not implemented.')
 
+    ax.xaxis.set_major_formatter(tkr.NullFormatter())
+    # ax.xaxis.set_minor_formatter(md.DateFormatter("%b"))
+    if major_formatter != None:
+        ax.xaxis.set_minor_formatter(major_formatter)
     for tick in ax.xaxis.get_minor_ticks():
         tick.tick1line.set_markersize(0)
         tick.tick2line.set_markersize(0)
         tick.label1.set_horizontalalignment("center")
+    for tick in ax.xaxis.get_major_ticks():
+        tick.tick1line.set_markersize(5)
+        tick.tick2line.set_markersize(0)
+
+    return None
 
 
 def make_segments(x, y):
@@ -554,6 +775,43 @@ def move_axes(axes, ud=0, rl=0, scale=1):
 
     # Set new position
     axes.set_position(box)
+
+
+def scatter(x, y, color, **sc_kwargs):
+    """
+    Wrapper around xarray.plot.scatter for use with numpy arrays
+
+    Parameters
+    ----------
+    x, y : 1D array
+        horizontal and vertical coordinates
+    color : 1D array
+        used to map data values to color
+    **sc_kwargs : dict
+        passed to xarray.plot.scatter
+
+    Returns
+    -------
+    ctr : matplotlib.collections.PathCollection
+        object returned by xarray.plot.scatter
+
+    """
+    # Silences a warning if non ns datetimes are passed
+    # if isinstance(x[0], (pd.Timestamp, np.datetime64)):
+    #     x = x.astype('datetime64[ns]')
+    # if isinstance(y[0], (pd.Timestamp, np.datetime64)):
+    #     y = y.astype('datetime64[ns]')
+
+    # Form data into an xarray Dataset
+    ds = xr.Dataset({'x': (['index'], x),
+                     'y': (['index'], y),
+                     'c': (['index'], color)},
+                    coords={'index': np.arange(x.size)})
+
+    # Draw the scatter
+    ctr = ds.plot.scatter(x='x', y='y', hue='c', **sc_kwargs)
+
+    return ctr
 
 
 def sequential(N=256):
@@ -640,6 +898,8 @@ def xr_saturate(dataset, vars_, clevels):
         With variables saturated.
 
     """
+    delta = 0.001
+    
     if ~isinstance(clevels, np.ndarray):
         clevels = np.array(clevels)
 
@@ -648,12 +908,12 @@ def xr_saturate(dataset, vars_, clevels):
             is_finite = ~dataset[v_].isnull()
             max_condition = is_finite & (dataset[v_] <= clevels.max())
             min_condition = is_finite & (dataset[v_] >= clevels.min())
-            dataset[v_] = dataset[v_].where(max_condition, clevels.max())
-            dataset[v_] = dataset[v_].where(min_condition, clevels.min())
+            dataset[v_] = dataset[v_].where(max_condition, clevels.max() - delta)
+            dataset[v_] = dataset[v_].where(min_condition, clevels.min() + delta)
             dataset[v_] = dataset[v_].where(is_finite)
         else:
             max_condition = ~dataset[v_].isnull() & (dataset[v_] > clevels.max())
             min_condition = ~dataset[v_].isnull() & (dataset[v_] < clevels.min())
-            dataset[v_].values[max_condition] = clevels.max()
-            dataset[v_].values[min_condition] = clevels.min()
+            dataset[v_].values[max_condition] = clevels.max() - delta
+            dataset[v_].values[min_condition] = clevels.min() + delta
     return dataset

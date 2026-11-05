@@ -432,7 +432,7 @@ def regularize_xy(x, y):
     return da.x.values, da.values, dx
 
 
-def running_mean(x, ws, wrap=False, *args, **kwargs):
+def running_mean(x, ws, wrap=False, *args, pad_type='nan', **kwargs):
     """
     Running mean using convolve.
 
@@ -444,6 +444,11 @@ def running_mean(x, ws, wrap=False, *args, **kwargs):
         The window size in data points.
     wrap: bool
         Pad `x` periodically. Overrides `*args, **kwargs`.
+    pad_type : str
+        Keyword only. Used when the convolution is shorter than `x`, e.g.,
+        `mode='valid'`. Border effects are replaced with nothing (`'none'`),
+        missing values (`'nan'`, default) or the first and last values of
+        `x` (`'x'`). The output then has the length of `x`.
     *args, **kwargs: arguments, keyword arguments
         Passed to `numpy.convolve`.
 
@@ -466,7 +471,19 @@ def running_mean(x, ws, wrap=False, *args, **kwargs):
         convolution = np.convolve(x_pad, np.ones(ws) / ws, mode='valid')
     else:
         convolution = np.convolve(x, np.ones(ws) / ws, *args, **kwargs)
-
+        if convolution.size < x.size:
+            n_left = (ws - 1) // 2
+            n_right = ws // 2
+            if pad_type == 'nan':
+                convolution = np.hstack((np.full(n_left, np.nan),
+                                         convolution,
+                                         np.full(n_right, np.nan)))
+            elif pad_type == 'x':
+                convolution = np.hstack((x[:n_left], convolution, x[x.size - n_right:]))
+            elif pad_type == 'none':
+                pass
+            else:
+                raise ValueError('`pad_type` must be in [`nan`, `x`, `none`]')
     return convolution
 
 
@@ -892,6 +909,8 @@ def xr_peaks(dataset, variable, troughs=False, **kwargs_fp):
         In which to operate.
     variable: str
         Name of variable to find peaks in.
+    troughs: bool
+        return minimums as well as maximums.
     **kwargs_fp: dict
         Keyword arguments passed to `find_peaks`.
 

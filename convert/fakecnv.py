@@ -52,11 +52,13 @@ __all__ = ['xr2fakecnv']
 SB_DESC = {'temperature': 'tv290C: Temperature',
            'salinity': 'sal00: Salinity, Practical',
            'pressure': 'prdM: Pressure, Strain Gauge',
+           'sea_water_pressure': 'prdM: Pressure, Strain Gauge',
            'conductivity': 'c0S/m: Conductivity',
            'sigma-t': 'sigma-t00: Density, sigma-t'}
 SB_UNIT = {'temperature': 'ITS 90, deg C',
            'salinity': 'PSU',
            'pressure': 'db',
+           'sea_water_pressure': 'db',
            'conductivity': 'S/m',
            'sigma-t': 'kg/m^3'}
 MSGS = []
@@ -76,7 +78,9 @@ def xr2fakecnv(dataset,
                infer_descriptors=True,
                verbose=False,
                sort_by=None,
-               require=None):
+               require=None,
+               cnvtitle='',
+               comment=None):
     """
     Write xarray dataset to fake cnv text file.
 
@@ -109,6 +113,11 @@ def xr2fakecnv(dataset,
         Sort data of the cnv file by this column.
     require: str
         Omit row if data are missing from this column.
+    cnvtitle: str
+        Title written to the cnv file first line.
+    comment: str, list, tuple or dict
+        Add comment(s) to the cnv file header. One comment (str), many
+        comments (list or tuple) or labeled comment(s) (dict).
 
     """
     # # Show variable and coordinate names
@@ -146,9 +155,13 @@ def xr2fakecnv(dataset,
 
     # If time is a single value
     else:
-        DATE = str(dataset[TIME_NAME].values[0])[:10]
-        TIME = str(dataset[TIME_NAME].values[0])[11:16]
-    
+        if dataset[TIME_NAME].shape == ():
+            DATE = str(dataset[TIME_NAME].data)[:10]
+            TIME = str(dataset[TIME_NAME].data)[11:16]
+        else:
+            DATE = str(dataset[TIME_NAME].values[0])[:10]
+            TIME = str(dataset[TIME_NAME].values[0])[11:16]
+
     # Set output file name and increment if filename exists
     FILE_INC = 0
     if label:
@@ -170,7 +183,7 @@ def xr2fakecnv(dataset,
 
         # Manage header time info
         # TIME = str(dataset[TIME_NAME].values)[11:16]
-        CNVFILE.write("* NL CTD file\n")
+        CNVFILE.write(f'* {cnvtitle}\n')
         CNVFILE.write("** Date:        %s %s UTC\n" % (DATE, TIME))
 
         # ===========================
@@ -214,6 +227,17 @@ def xr2fakecnv(dataset,
             hlond, hlonm = np.mean(LOND), np.mean(LONM)
             CNVFILE.write("** Latitude:    %d %.3f %s\n" % (hlatd, hlatm, LAT_DIR))
             CNVFILE.write("** Longitude:   %03d %.3f %s\n" % (hlond, abs(hlonm), LON_DIR))
+
+        # Add comments
+        if comment is not None:
+            if isinstance(comment, str):
+                CNVFILE.write(f"** Comment: {comment}\n")
+            elif isinstance(comment, (list, tuple)):
+                for c_ in comment:
+                    CNVFILE.write(f"** Comment: {c_}\n")
+            elif isinstance(comment, dict):
+                for k_, v_ in comment.items():
+                    CNVFILE.write(f"** {k_}: {v_}\n")
 
         # ===================
         # Manage z coordinate

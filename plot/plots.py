@@ -2,9 +2,15 @@
 Streamline making typical plots for time series analysis, and
 physical oceanography.
 """
+from __future__ import annotations
 import gsw
 import copy
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
+from matplotlib.collections import LineCollection
+from matplotlib.colorbar import Colorbar
 import numpy as np
 import xarray as xr
 import pandas as pd
@@ -16,10 +22,11 @@ from scipy.signal import periodogram
 from matplotlib.ticker import FormatStrFormatter
 from .mplutils import text_array, colorbar, anomalycmap, divergent, sequential
 from .cputils import cp_proj, cp_ticks
-from ..process.math_ import xr_abs, doy_mean, doy_std, date_abb
+from ..process.math_ import xr_abs, doy_mean, doy_std, date_abb, histogram_polar
 from ..process.signal_ import running_mean
 from ..read.text import list2cm
 from ..process.convert import anomaly2rgb, binc2edge, dd2dms, isoweek2monthnumber
+
 
 __all__ = ['anomaly_bar',
            'ts_diagram',
@@ -31,6 +38,7 @@ __all__ = ['anomaly_bar',
            'gsl_temperature_cast',
            'psd',
            'pd_scorecard',
+           'timeseries_daily_padded_plot',
            'scatter_inout',
            'scorecard',
            'scorecard_weekly',
@@ -38,7 +46,9 @@ __all__ = ['anomaly_bar',
            'sm_correlation_text',
            'wa_map',
            'wa_coastline',
-           'xr_plot_pm_patch']
+           'wind_rose',
+           'xr_plot_pm_patch',
+           'xr_colored_line']
 
 
 def anomaly_bar(axes,
@@ -208,10 +218,10 @@ def gebco_bathy(extent=None):
     Returns
     -------
     xarray.DataArray:
-        Bathymetry in the specified domain.
+        Bathymetry (positive downwards) in the specified domain.
 
     """
-    dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic.nc')
+    dataset = xr.open_dataset('/data/atlas/gebco/netCDF/gebco_west_atlantic_2022.nc')
     if extent:
         dataset = dataset.sel(lon=slice(*extent[:2]),
                               lat=slice(*extent[3:]))
@@ -266,7 +276,7 @@ def gebco_bathy_contour(axes, isobaths, xarray=True, step=1, **ctr_kw):
         for iso in isobaths:
             ctr = pd.read_csv('/data/atlas/gebco/GSL_%d.dat' % iso,
                               names=['lat', 'lon'],
-                              sep='\s+',
+                              sep=r'\s+',
                               na_values=-99.99)
             axes.plot(ctr.lon, ctr.lat, **ctr_kw)
         qcs = None
@@ -1420,17 +1430,17 @@ def sm_correlation_text(ax,
     ax.text(x, y - text_space, ('R$^2$ = %' + fmt_r2) % model.rsquared, **text_kw)
 
     # Equation line
-    if model.params[1] >= 0:
+    if model.params.iloc[1] >= 0:
         sign_symbol = '+'
-        slope = model.params[1]
+        slope = model.params.iloc[1]
     else:
         sign_symbol = '-'
-        slope = np.abs(model.params[1])
+        slope = np.abs(model.params.iloc[1])
 
     ax.text(x,
             y,
             (r'%s = %'+fmt_eq+' %s %'+fmt_eq+'%s') % (yname,
-                                                      model.params[0],
+                                                      model.params.iloc[0],
                                                       sign_symbol,
                                                       slope,
                                                       xname),
@@ -1443,12 +1453,15 @@ def ts_diagram(axes,
                t_max=20,
                s_min=32,
                s_max=37,
+               pressure=0,
                lab_curve_exp=1,
                levels=None,
                contour_kw=None,
+               contour_labels=True,
+               scale='instrument',
                **clabel_kw):
     """
-    Draw density contours as background of a TS plot.
+    Draw density contours as background of a TS plot (SA by CT).
 
     Parameters
     ----------
@@ -1462,10 +1475,16 @@ def ts_diagram(axes,
         Minimum salinity to display.
     s_max : float
         Maximum salinity to display.
+    pressure : float
+        of which the density lines are representative.
     lab_curve_exp : float
         Move labels towards the top right (>1) or bottom left (<1) corner.
     levels : 1D array
         Density contours to draw. Defaults to (5, 36).
+    scale: str
+        axes are `S_p` and `T_is` (`instrument`) or `SA` and `CT` (`absolute`). 
+    contour_labels : bool
+        add contour labels or not
     **clabel_kw : dict
         Arguments passed to `pyplot.clabel`.
 
@@ -1484,7 +1503,15 @@ def ts_diagram(axes,
     # Prepare TS grid and calculate density
     sal_grid, temp_grid = np.meshgrid(np.linspace(s_min, s_max, npts),
                                       np.linspace(t_min, t_max, npts))
-    sigma_theta_grid = gsw.density.sigma0(sal_grid, temp_grid)
+
+    if scale == 'instrument':
+        # s and t are in situ salinity and in temperature
+        sal_grid_abs = gsw.SA_from_SP(sal_grid, pressure, -68.87, 48.22)
+        temp_grid_abs = gsw.CT_from_t(sal_grid_abs, temp_grid, pressure)
+        sigma_theta_grid = gsw.sigma0(sal_grid_abs, temp_grid_abs)
+    else:
+        # s and t are absolute salinity and in conservative temperature
+        sigma_theta_grid = gsw.sigma0(sal_grid, temp_grid)
 
     # Draw density contours
     sigma_ctr = axes.contour(sal_grid,
@@ -1498,7 +1525,7 @@ def ts_diagram(axes,
     t_curve = (t_max
                - ((s_curve - s_min) / (s_max - s_min)) ** lab_curve_exp
                * (t_max - t_min))
-    r_curve = gsw.density.sigma0(s_curve, t_curve)
+    r_curve = gsw.sigma0(s_curve, t_curve)
     s_locs = interp1d(r_curve, s_curve, bounds_error=False).__call__(levels)
     t_locs = interp1d(r_curve, t_curve, bounds_error=False).__call__(levels)
 
@@ -1509,12 +1536,14 @@ def ts_diagram(axes,
             label_pos.append((s_loc, t_loc))
 
     # Draw contour labels
-    plt.clabel(sigma_ctr, manual=label_pos, **clabel_kw)
+    if contour_labels is True:
+        plt.clabel(sigma_ctr, manual=label_pos, **clabel_kw)
 
     # Set axis limits to input TS limits
     axes.set(xlim=(s_min, s_max), ylim=(t_min, t_max))
 
     return sal_grid, temp_grid, sigma_theta_grid
+
 
 def pd_scorecard(axes,
                  dataframe,
@@ -1687,7 +1716,7 @@ def pd_scorecard(axes,
     axes.tick_params(which='both', bottom=False, left=False)
 
 
-def psd(ax, var_, period, smooth_window=20):
+def psd(ax, data, period, smooth_window=20, subtract_noise=False):
     """
     Periodogram plot on a loglog scale.
 
@@ -1695,23 +1724,53 @@ def psd(ax, var_, period, smooth_window=20):
     ----------
     ax: pyplot.Axes
         Where to draw.
-    var_: 1D array
+    data: 1D array
         The time series data.
     period: float
         Time interval of the series.
     smooth_window: int
         Plot smoothed curve. Running mean window size.
+    subtract_noise: bool
+        plot the spectrum minus that of white noise.
 
     """
     sampling_frequency = 1 / period
 
     # Calculate psd
-    freqs, psd = periodogram(var_, sampling_frequency)
+    freqs, psd = periodogram(data, sampling_frequency)
     periods = 1 / freqs
+
+    if subtract_noise:
+        noise = np.random.normal(0, 1, data.size)
+        _, psd_noise = periodogram(noise, sampling_frequency)
+        psd -= psd_noise
 
     # Plot
     ax.loglog(periods, psd, color='lightgray')
-    ax.loglog(periods, running_mean(psd, smooth_window, mode='same'), color='k')
+    ax.loglog(periods, running_mean(psd, smooth_window, pad_type='x', mode='valid'), color='k')
+
+
+def timeseries_daily_padded_plot(axes, x, y, pad_days=3, **pkw):
+    """
+    Plot line of discontinuous time series with controlled interpolation.
+
+    Parameters
+    ----------
+    axes : pyplot.Axes
+        where to draw the data.
+    x : 1D array of numpy.datetime64
+        the time axis.
+    y : 1D array
+        the data to plot
+    pad_days : int
+        the number of consecutive days to interpolate across.
+    **pkw : dict
+        keyword arguments passed to pyplot.plot
+
+    """
+    padded = pd.DataFrame(data={'y': y}, index=x.astype('datetime64[D]'))
+    padded = padded.resample('1D').first().interpolate(limit=pad_days)
+    axes.plot(padded.index, padded.y, **pkw)
 
 
 def wa_map(axes,
@@ -1849,6 +1908,396 @@ def wa_coastline(geoax,
                color=watercolor,
                linewidth=0.25,
                transform=ccrs.PlateCarree())
+
+
+def wind_rose(axes,
+              U,
+              V,
+              speed_bins,
+              dir_bins=16,
+              dir_bins_width=0.9,
+              radial_axis_angle=30,
+              radial_axis_limit=None,
+              radial_axis_label=None,
+              radial_axis_label_position=1.25,
+              legend_kw=None,
+              cmap='jet'):
+    """
+    Polar histogram of earth-reference velocities
+
+    Parameters
+    ----------
+    axes : pyplot.Axes
+        the axes in which to plot the wind rose
+    U,V : numpy.ndarray
+        horizontal velocity components
+    speed_bins : 1D-array
+        the velocity norm bins
+    dir_bins : int or 1D-array
+        number of degree bins (start at zero, `int`) or bin edges (`1D-array`)
+    dir_bins_width : float
+        scale the width of degree bins (1 is full bin width)
+    radial_axis_angle : int or float
+        position of the radial tick labels
+    radial_axis_limit : int or float
+        outside limit of the radial axis
+    radial_axis_label : str
+        label of the radial axis
+    radial_axis_label_position : float
+        radial position of the label (1 is right next to plot)
+    legend_kw : dict
+        passed to pyplot.legend
+    cmap : str
+        pyplot colormap name
+
+    Returns
+    -------
+    axes : pyplot.Axes
+        handle of the axis in which the wind rose is drawn
+
+    """
+    # Convert U, V to wind direction and speed
+    wind_speed = np.sqrt(U**2 + V**2)
+    wind_direction = np.arctan2(U, V)  # radians, meteorological convention
+    wind_direction = np.degrees(wind_direction)  # convert to degrees
+    wind_direction = (wind_direction + 360) % 360  # ensure 0-360 range
+
+    # Define direction bins (e.g., 16 directions)
+    if isinstance(dir_bins, (int, float)):
+        direction_bins = np.arange(0, 360, 360 / dir_bins)
+    elif isinstance(dir_bins, (list, tuple, np.ndarray)):
+        dir_bins = np.array(dir_bins)
+        direction_bins = dir_bins % 360
+        direction_bins[direction_bins < 0] += 360 
+
+    # Define speed bins
+    speed_labels = [f'{l}-{h}' for l, h in zip(speed_bins[0:-2], speed_bins[1:-1])] + [f'{speed_bins[-2]}+']
+
+    # Create wind rose
+    a_ = axes
+
+    # Set theta zero location to North and direction to clockwise
+    a_.set_theta_zero_location('N')
+    a_.set_theta_direction(-1)
+    a_.set_rlabel_position(radial_axis_angle)
+
+    # Calculate histogram for each speed bin
+    width = 2 * np.pi / direction_bins.size * dir_bins_width
+    colors = plt.get_cmap(cmap)(np.linspace(0, 1, len(speed_bins)-1))
+
+    for i in range(len(speed_bins)-1):
+        # Filter by speed bin
+        mask = (wind_speed >= speed_bins[i]) & (wind_speed < speed_bins[i+1])
+        speeds_in_bin = wind_direction[mask]
+
+        # Create histogram
+        hist, centers = histogram_polar(speeds_in_bin, direction_bins)
+
+        # Convert to percentages
+        hist = hist / len(wind_direction) * 100
+
+        # Plot bars
+        theta = np.deg2rad(centers)
+        a_.bar(theta,
+               hist,
+               width=width,
+               bottom=sum_previous if i > 0 else 0,
+               label=speed_labels[i],
+               color=colors[i],
+               edgecolor='white',
+               align='center',
+               linewidth=0.5)
+
+        # To stack speed categories on top of each other
+        if i == 0:
+            sum_previous = hist
+        else:
+            sum_previous += hist
+
+    # Optionally set the radial axis limit
+    if isinstance(radial_axis_limit, (int, float)):
+        a_.set(ylim=(0, radial_axis_limit))
+
+    # Add the radial axis label outside the plot
+    if (radial_axis_angle < 180) and (radial_axis_angle > 0):
+        ha, va ='left', 'bottom'
+    elif (radial_axis_angle < 360) and (radial_axis_angle > 180):
+        ha, va ='right', 'bottom'
+    elif radial_axis_angle == 180:
+        ha, va ='center', 'top'
+    elif radial_axis_angle == 0:
+        ha, va ='center', 'bottom'
+    a_.text(np.deg2rad(radial_axis_angle),
+            a_.get_ylim()[1] * radial_axis_label_position, # relative to radial max
+            radial_axis_label or 'Frequency (%)', 
+            # rotation=-1 * (radial_axis_angle - 90),
+            ha=ha, va=va,
+            fontsize='large')
+
+    # Legend
+    if isinstance(legend_kw, dict):
+        # title='Wind Speed (m/s)', loc='upper left', bbox_to_anchor=(1.1, 1), frameon=False
+        a_.legend(**legend_kw)
+
+    # Fit everything in tightly
+    plt.tight_layout()
+
+    return a_
+
+
+# ---------------------------------------------------------------------------
+# xr_colored_line helpers
+# ---------------------------------------------------------------------------
+
+def _is_datetime(arr: np.ndarray) -> bool:
+    """
+    Helper for xr_colored_line : Return True if arr has a numpy datetime64 dtype.
+    """
+    return np.issubdtype(arr.dtype, np.datetime64)
+
+
+def _is_cftime(da: xr.DataArray) -> bool:
+    """
+    Helper for xr_colored_line : Return True if the DataArray holds cftime objects.
+    """
+    try:
+        import cftime  # noqa: F401
+        return xr.coding.times.contains_cftime_datetimes(da)
+    except Exception:
+        return False
+
+
+def _to_float(da: xr.DataArray) -> tuple[np.ndarray, bool]:
+    """
+    Helper for xr_colored_line : Convert a DataArray to a float64 array suitable for LineCollection.
+
+    Returns
+    -------
+    values : np.ndarray
+        Numeric representation of the data.
+    is_datetime : bool
+        True if a datetime conversion was performed.
+    """
+    arr = np.asarray(da).ravel()
+
+    if _is_datetime(arr):
+        # numpy datetime64 → Python datetime → matplotlib float
+        py_times = arr.astype("datetime64[us]").astype("object")
+        return mdates.date2num(py_times), True
+
+    if _is_cftime(da):
+        try:
+            import nc_time_axis  # noqa: F401
+            # nc_time_axis registers its own converter; date2num handles cftime
+            return mdates.date2num(arr.tolist()), True
+        except ImportError:
+            raise ImportError(
+                f"The coordinate '{da.name}' contains cftime objects. "
+                "Install nc_time_axis to plot cftime coordinates:\n"
+                "    pip install nc_time_axis"
+            )
+
+    return arr.astype(float), False
+
+
+def _setup_datetime_axis(ax: plt.Axes, axis: str) -> None:
+    """
+    Helper for xr_colored_line : Set to a date formatter without overwriting
+    """
+    _DATE_FORMATTERS = (mdates.DateFormatter,
+                        mdates.AutoDateFormatter,
+                        mdates.ConciseDateFormatter)
+    mpl_axis = ax.xaxis if axis == "x" else ax.yaxis
+    # Don't overwrite if a date formatter is already in place
+    if isinstance(mpl_axis.get_major_formatter(), _DATE_FORMATTERS):
+        return
+    locator = mdates.AutoDateLocator()
+    formatter = mdates.AutoDateFormatter(locator)
+    mpl_axis.set_major_locator(locator)
+    mpl_axis.set_major_formatter(formatter)
+    if axis == "x":
+        ax.figure.autofmt_xdate()
+
+        
+# ---------------------------------------------------------------------------
+# xr_colored_line: Main function
+# ---------------------------------------------------------------------------
+
+def xr_colored_line(
+    dataset: xr.Dataset,
+    x_coord: str,
+    y_coord: str,
+    hue: str,
+    ax: plt.Axes = None,
+    cmap: str = "plasma",
+    linewidth: float = 2.0,
+    levels: int | list | np.ndarray = None,
+    norm: mcolors.Normalize = None,
+    clim: tuple = None,
+    add_colorbar: bool = True,
+    colorbar_label: str = None,
+    **kwargs,
+) -> tuple[LineCollection, Colorbar | None]:
+    """
+    Plot a colored line from xarray Dataset variables using matplotlib LineCollection.
+
+    Datetime coordinates (numpy datetime64 or cftime) are fully supported for
+    x and y. cftime requires the nc_time_axis package.
+
+    Parameters
+    ----------
+    dataset : xr.Dataset
+        Dataset containing the variables to plot.
+    x_coord : str
+        Name of the variable to use as the x-axis.
+    y_coord : str
+        Name of the variable to use as the y-axis.
+    hue : str
+        Name of the variable whose values drive the line color.
+        Must be numeric (datetime hue is not supported).
+    ax : plt.Axes, optional
+        Axes to plot on. Creates a new figure/axes if not provided.
+    cmap : str or Colormap, optional
+        Colormap name or instance. Default is "plasma".
+    linewidth : float, optional
+        Width of the line. Default is 2.0.
+    levels : int or array-like, optional
+        Analogous to xarray's `levels`. If an int, the colormap is discretized
+        into that many evenly-spaced levels over the data range (or `clim` if
+        provided). If array-like, those exact boundaries are used. Internally
+        this constructs a BoundaryNorm, so the colorbar will show discrete bands.
+        Ignored if `norm` is provided explicitly.
+    norm : matplotlib.colors.Normalize, optional
+        A Normalize instance (e.g. LogNorm, TwoSlopeNorm, BoundaryNorm …).
+        Takes precedence over both `levels` and `clim`.
+    clim : tuple of (float, float), optional
+        (vmin, vmax) limits for the colormap. Used to set the normalisation
+        range when no `norm` is given, and as the range for auto-generating
+        level boundaries when `levels` is an int. Defaults to the data range
+        of `hue`.
+    add_colorbar : bool, optional
+        Whether to add a colorbar. Default is True.
+    colorbar_label : str, optional
+        Label for the colorbar. Defaults to the name of `hue` (with units if
+        present in the variable attributes).
+    **kwargs
+        Additional keyword arguments passed to LineCollection.
+
+    Returns
+    -------
+    lc : LineCollection
+        The LineCollection artist added to the axes.
+    cbar : Colorbar or None
+        The colorbar, or None if add_colorbar is False.
+
+    Notes
+    -----
+    Priority for colour scaling: norm > levels > clim > data range.
+
+    Examples
+    --------
+    # Datetime x-axis, numeric hue
+    xr_colored_line(ds, "time", "sst", "depth", cmap="thermal")
+
+    # Continuous, explicit range
+    xr_colored_line(ds, "x", "y", "speed", clim=(-1, 1), cmap="RdBu_r")
+
+    # Discrete bands — 10 levels auto-spaced over clim
+    xr_colored_line(ds, "x", "y", "speed", levels=10, clim=(-1, 1))
+
+    # Discrete bands — explicit boundaries
+    xr_colored_line(ds, "x", "y", "speed", levels=[-1, -0.5, 0, 0.5, 1])
+
+    # Logarithmic norm
+    from matplotlib.colors import LogNorm
+    xr_colored_line(ds, "x", "y", "speed", norm=LogNorm(vmin=0.01, vmax=10))
+
+    # Two-slope (diverging) norm centred on zero
+    from matplotlib.colors import TwoSlopeNorm
+    xr_colored_line(ds, "x", "y", "speed", norm=TwoSlopeNorm(vcenter=0))
+    """
+    # --- extract and convert coordinates ------------------------------------
+    x, x_is_datetime = _to_float(dataset[x_coord])
+    y, y_is_datetime = _to_float(dataset[y_coord])
+    c = np.asarray(dataset[hue]).ravel().astype(float)
+
+    if not (len(x) == len(y) == len(c)):
+       if (len(x) == 1) and (len(y) > 1):
+          x = np.ones(len(y)) * x
+       elif (len(x) > 1) and (len(y) == 1):
+          y = np.ones(len(x)) * y
+       else:
+          raise ValueError(
+             f"All variables must have the same length. "
+             f"Got {x_coord}={len(x)}, {y_coord}={len(y)}, {hue}={len(c)}."
+          )
+
+    # --- build segments -----------------------------------------------------
+    points = np.array([x, y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    segment_colors = c[:-1]
+
+    # --- resolve norm -------------------------------------------------------
+    boundaries = None   # kept for BoundaryNorm colorbar ticks
+
+    if norm is None:
+        vmin, vmax = (clim if clim is not None
+                      else (float(np.nanmin(c)), float(np.nanmax(c))))
+
+        if levels is not None:
+            if np.isscalar(levels):
+                boundaries = np.linspace(vmin, vmax, int(levels) + 1)
+            else:
+                boundaries = np.asarray(levels, dtype=float)
+            cmap_obj = plt.get_cmap(cmap, len(boundaries) - 1)
+            norm = mcolors.BoundaryNorm(boundaries, ncolors=cmap_obj.N)
+        else:
+            cmap_obj = cmap
+            norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    else:
+        cmap_obj = cmap
+    # ------------------------------------------------------------------------
+
+    if ax is None:
+        _, ax = plt.subplots()
+
+    lc = LineCollection(segments, cmap=cmap_obj, norm=norm,
+                        linewidth=linewidth, **kwargs)
+    lc.set_array(segment_colors)
+    ax.add_collection(lc)
+    ax.autoscale()
+
+    # --- datetime axis formatting -------------------------------------------
+    if x_is_datetime:
+        _setup_datetime_axis(ax, "x")
+    if y_is_datetime:
+        _setup_datetime_axis(ax, "y")
+
+    # --- axis labels --------------------------------------------------------
+    def _label(name, suppress_units=False):
+        if suppress_units:
+            return name
+        attrs = dataset[name].attrs
+        units = attrs.get("units", attrs.get("unit", None))
+        # CF-convention time units ("days since …") are not useful as labels
+        if units and units.startswith("days since"):
+            return name
+        return f"{name} ({units})" if units else name
+
+    ax.set_xlabel(_label(x_coord, suppress_units=x_is_datetime))
+    ax.set_ylabel(_label(y_coord, suppress_units=y_is_datetime))
+
+    # --- colorbar -----------------------------------------------------------
+    cbar = None
+    if add_colorbar:
+        label = colorbar_label if colorbar_label is not None else _label(hue)
+        cbar_kwargs = {}
+        if boundaries is not None:
+            cbar_kwargs["ticks"] = mticker.FixedLocator(boundaries)
+        cbar = plt.colorbar(lc, ax=ax, label=label, **cbar_kwargs)
+
+    return lc, cbar
+
 
 
 def xr_plot_pm_patch(ds, xcoord, base, interval, ax, color='lightskyblue'):
