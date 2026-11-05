@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mxtoolbox"
+version = "0.2.0"
+description = "Python code for time series analyses and physical oceanography"
+readme = "README.md"
+# analyses.py uses starred subscripts (a[*idx]), a Python 3.11 syntax
+requires-python = ">=3.11"
+# Loose on purpose. Tested pins live in ~/org/py312-requirements.txt
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "xarray",
+    "matplotlib",
+    "cartopy",
+    "shapely",
+    "pyproj",
+    "pyshp",
+    "gsw",
+    "statsmodels",
+    "scikit-image",
+    "metpy",
+    "pint",
+    "dateparser",
+    "python-dateutil",
+    "termcolor",
+    "cftime",
+]
+
+[project.optional-dependencies]
+# Only needed by the ADCP / RTI readers (read.adcp, read.rtitools, convert.adcp2nc)
+adcp = ["tqdm", "rti_python"]  # pycurrents is not on PyPI
+cftime-plots = ["nc-time-axis"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mxtoolbox = ["DivergentPalette", "TsatPalette"]

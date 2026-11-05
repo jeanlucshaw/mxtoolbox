@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import xarray as xr
 import os
+from importlib.resources import files
 import numpy as np
 import pandas as pd
 from matplotlib.collections import LineCollection
@@ -45,31 +46,30 @@ def anomalycmap(N, renew=False):
     Parameters
     ----------
     N: int
-        Size of the colormar
+        Size of the colormap.
     renew: bool
-        Calling with this True resets the colormap file to
-        the array written below.
+        Deprecated and ignored. The colors used to be read from a file
+        (`Anomaly.dat`) written by calling this function with `renew=True`.
+        They are now defined in this function.
+
+    Returns
+    -------
+    matplotlib.colors.LinearSegmentedColormap
+        For passing to color coding plot functions.
     """
-    # Path to the colormap file
-    p_ = '/opt/anaconda3/lib/python3.7/site-packages/mxtoolbox/'
-
-    if renew:
-        anomaly_cm = [[0.500, 0.000, 0.900],
-                      [0.000, 0.000, 0.900],
-                      [0.450, 0.450, 0.900],
-                      [0.700, 0.700, 1.000],
-                      [1.0, 1.0, 1.0],
-                      [1.0, 1.0, 1.0],
-                      [1.0, 1.0, 1.0],
-                      [1.000, 0.875, 0.875],
-                      [1.000, 0.700, 0.700],
-                      [0.900, 0.450, 0.450],
-                      [0.900, 0.000, 0.000],
-                      [0.500, 0.000, 0.000]]
-        np.savetxt('%s/Anomaly.dat' % p_, anomaly_cm, fmt='%.3f')
-
-    else:
-        return list2cm('%s/Anomaly.dat' % p_, N)
+    anomaly_cm = [[0.500, 0.000, 0.900],
+                  [0.000, 0.000, 0.900],
+                  [0.450, 0.450, 0.900],
+                  [0.700, 0.700, 1.000],
+                  [0.875, 0.875, 1.000],
+                  [1.000, 1.000, 1.000],
+                  [1.000, 1.000, 1.000],
+                  [1.000, 0.875, 0.875],
+                  [1.000, 0.700, 0.700],
+                  [0.900, 0.450, 0.450],
+                  [0.900, 0.000, 0.000],
+                  [0.500, 0.000, 0.000]]
+    return mcolors.LinearSegmentedColormap.from_list("Tsat", anomaly_cm, N=N)
 
 
 def axlabel_doy2months(axes, which='x'):
@@ -649,7 +649,7 @@ def divergent(N=256):
         For passing to color coding plot function.
 
     """
-    return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/DivergentPalette', N=N)
+    return list2cm(str(files('mxtoolbox') / 'DivergentPalette'), N=N)
 
 def format_dateaxis(ax, fmt, rotation=None, ha='right'):
     """
@@ -829,7 +829,7 @@ def sequential(N=256):
         For passing to color coding plot function.
 
     """
-    return list2cm('/opt/anaconda3/envs/py37/lib/python3.7/site-packages/mxtoolbox/TsatPalette', N=N)
+    return list2cm(str(files('mxtoolbox') / 'TsatPalette'), N=N)
 
 
 def text_array(axes, xpts, ypts, labels, fmt=None, xoffset=None, yoffset=None, **kwargs):
